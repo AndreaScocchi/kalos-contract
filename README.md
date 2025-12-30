@@ -195,14 +195,147 @@ Quando lo schema del database cambia, segui questi passi:
    ```
    Poi esegui `npm install` (o yarn/pnpm equivalent).
 
+## Database Workflow
+
+Questo repository è la **source of truth** per il database Supabase. Contiene migrations, functions, seed data e configurazione.
+
+### Struttura Supabase
+
+```
+supabase/
+  ├── migrations/          # Migrations canoniche (source of truth)
+  ├── functions/           # Edge functions
+  ├── seed.sql            # Seed data per sviluppo locale
+  ├── config.toml         # Configurazione Supabase CLI
+  ├── _legacy/            # Import storici da altri repo (solo archivio)
+  │   ├── kalos-app/
+  │   └── kalos-app-management/
+  └── _remote/            # Migration list remota (gitignored)
+```
+
+### Workflow Migrations
+
+1. **Crea una nuova migration**:
+   ```bash
+   # Crea migration da modifiche locali
+   npm run db:diff
+   
+   # Oppure crea manualmente in supabase/migrations/
+   # Formato: YYYYMMDDHHMMSS_description.sql
+   ```
+
+2. **Test locale** (opzionale):
+   ```bash
+   # Avvia Supabase locale
+   npm run db:start
+   
+   # Applica migrations localmente
+   npm run db:push --local
+   
+   # Oppure reset completo
+   supabase db reset
+   ```
+
+3. **Applica a produzione** (solo quando sei sicuro):
+   ```bash
+   # Assicurati di essere collegato al progetto remoto
+   npm run db:link
+   
+   # Applica migrations a produzione
+   npm run db:push
+   ```
+
+4. **Rigenera types** e bump versione:
+   ```bash
+   # Rigenera types dal database
+   supabase gen types typescript --project-id <project-id> > src/types/database.ts
+   
+   # Verifica che compili
+   npm run typecheck
+   npm run build
+   
+   # Bump versione, commit e tag
+   # (vedi sezione "Aggiornare il Contract")
+   ```
+
+### Scripts Database
+
+```bash
+# Autenticazione e collegamento
+npm run db:login           # Login a Supabase CLI
+npm run db:projects        # Lista progetti disponibili
+npm run db:link            # Collega al progetto remoto
+
+# Migrations
+npm run db:migrations:list # Genera lista migrations remote
+npm run db:canonical:select # Seleziona set canonico da legacy
+npm run db:diff            # Mostra differenze schema
+npm run db:push            # Applica migrations a remoto
+npm run db:pull            # Pull migrations da remoto (ATTENZIONE: può fallire se history mismatch)
+
+# Sviluppo locale
+npm run db:start           # Avvia Supabase locale
+npm run db:stop            # Ferma Supabase locale
+
+# Utilità
+npm run db:import:legacy   # Importa supabase/ dai repo legacy
+npm run db:unify           # Unifica functions/seed/config canonici
+npm run db:init:migrations # Inizializza migrations placeholder da remote list
+npm run db:dump:schema     # Genera dump completo dello schema remoto
+npm run db:fill:migrations # Riempie migrations placeholder con contenuto da dump
+npm run db:repair:history  # Ripara migration history dopo sincronizzazione (usa con cautela)
+```
+
+### ⚠️ Avvertenze Importanti
+
+- **Non modificare lo schema dal dashboard** senza poi trasformarlo in migration
+- **Non committare segreti** in `supabase/config.toml` o altri file
+- `db:pull` può fallire se c'è mismatch nella migration history
+- Prima di fare `db:push` a produzione, verifica sempre le migrations in locale
+
+### Setup Iniziale (solo la prima volta)
+
+Se hai appena clonato il repo e devi collegarlo al progetto Supabase:
+
+```bash
+# 1. Login
+npm run db:login
+
+# 2. Collega al progetto
+npm run db:link
+
+# 3. Genera lista migrations remote
+npm run db:migrations:list
+
+# 4. Inizializza migrations locali (crea placeholder)
+npm run db:init:migrations
+
+# 5. (Opzionale) Genera dump completo dello schema per riferimento
+npm run db:dump:schema
+
+# 6. Riempi le migrations placeholder con il contenuto SQL reale
+npm run db:fill:migrations
+
+# 7. (Se necessario) Ripara la migration history per sincronizzare remote e local
+npm run db:repair:history
+```
+
+**Nota importante**: 
+- Lo script `db:init:migrations` crea solo migrations placeholder vuote
+- Usa `db:fill:migrations` per riempirle automaticamente dal dump dello schema
+- Lo script divide lo schema in modo logico: 0000 (types/tables), 0001 (functions), 0002 (views), 0003 (RLS/grants)
+- `db:repair:history` modifica la migration history table remota - usa solo se sei sicuro che le migrations locali rappresentano correttamente lo stato del database
+
 ## Note Importanti
 
 - **Nessun env reading**: La libreria NON legge `process.env` o `import.meta.env`. I consumer devono passare URL e anon key.
 - **Solo anon key**: Non includere mai la service role key nella libreria.
 - **Compatibilità Expo**: La libreria è compatibile con Expo/Metro. Non usa Node-only APIs.
-- **Source of truth**: Questa libreria è la fonte di verità per types e helper/query condivisi.
+- **Source of truth**: Questa libreria è la fonte di verità per types, migrations, functions e helper/query condivisi.
 
 ## Scripts
+
+### Build e sviluppo
 
 ```bash
 # Build
@@ -218,6 +351,8 @@ npm run clean
 npm run prepublishOnly
 ```
 
+Vedi sezione "Database Workflow" per gli script relativi a Supabase.
+
 ## Struttura
 
 ```
@@ -232,6 +367,19 @@ src/
   │   └── index.ts          # Wrapper RPC (bookLesson, cancelBooking)
   └── queries/
       └── public.ts         # Query per views pubbliche (sito)
+
+supabase/
+  ├── migrations/           # Migrations canoniche (source of truth)
+  ├── functions/            # Edge functions
+  ├── seed.sql             # Seed data
+  ├── config.toml          # Configurazione Supabase CLI
+  ├── _legacy/             # Import storici (archivio)
+  └── _remote/             # Migration list remota (gitignored)
+
+scripts/
+  ├── import-legacy-supabase.mjs      # Importa supabase/ dai repo legacy
+  ├── select-canonical-migrations.mjs # Seleziona set canonico
+  └── unify-canonical-files.mjs       # Unifica functions/seed/config
 ```
 
 ## License

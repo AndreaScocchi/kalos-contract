@@ -34,3 +34,9 @@ coverage/
 *.tmp
 *.temp
 
+# Supabase remote migration list (generato dinamicamente)
+supabase/_remote/*
+
+# Temporary import directories
+_tmp*/
+_tmp_import/

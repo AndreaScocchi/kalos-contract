@@ -1,0 +1,51 @@
+/**
+ * @kalos/contract
+ * 
+ * Shared contract library for Kalos projects.
+ * Provides types, Supabase client factories, RPC wrappers, and public queries.
+ */
+
+// Types
+export type { Database } from './types/database';
+export type {
+  Tables,
+  TablesInsert,
+  TablesUpdate,
+  Enums,
+  Views,
+} from './types/helpers';
+
+// Supabase client factories
+export {
+  createSupabaseBrowserClient,
+  createSupabaseExpoClient,
+  assertSupabaseConfig,
+} from './supabase/client';
+export type {
+  SupabaseBrowserClientConfig,
+  SupabaseExpoClientConfig,
+} from './supabase/client';
+
+// RPC wrappers
+export {
+  bookLesson,
+  cancelBooking,
+} from './rpc';
+export type {
+  BookLessonResult,
+  CancelBookingResult,
+  BookLessonParams,
+  CancelBookingParams,
+} from './rpc';
+
+// Public queries
+export {
+  fromPublic,
+  getPublicSchedule,
+  getPublicPricing,
+} from './queries/public';
+export type {
+  PublicViewName,
+  GetPublicScheduleParams,
+} from './queries/public';
+

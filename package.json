@@ -1,0 +1,44 @@
+{
+  "name": "@kalos/contract",
+  "version": "0.1.0",
+  "description": "Shared contract library for Kalos projects - types, Supabase client factory, RPC wrappers, and public queries",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "clean": "rm -rf dist",
+    "lint": "echo 'Linting not configured'",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run clean && npm run build && npm run typecheck"
+  },
+  "keywords": [
+    "supabase",
+    "kalos",
+    "contract",
+    "types"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "tsup": "^8.0.1"
+  },
+  "peerDependencies": {},
+  "peerDependenciesMeta": {}
+}
+

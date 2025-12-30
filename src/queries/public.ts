@@ -26,7 +26,7 @@ export function fromPublic<T extends PublicViewName>(
   // Verrà risolto quando le views verranno create e i types rigenerati
   return client.from(view);
 }
-
+ 
 /**
  * Parametri opzionali per filtrare lo schedule pubblico per date
  */

@@ -43,9 +43,13 @@ export {
   fromPublic,
   getPublicSchedule,
   getPublicPricing,
+  getPublicActivities,
+  getPublicOperators,
+  getPublicEvents,
 } from './queries/public';
 export type {
   PublicViewName,
   GetPublicScheduleParams,
+  GetPublicEventsParams,
 } from './queries/public';
 

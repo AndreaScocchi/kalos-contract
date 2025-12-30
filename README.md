@@ -9,7 +9,7 @@ Installa la libreria usando GitHub dependency (tag Git):
 ```json
 {
   "dependencies": {
-    "@kalos/contract": "github:ORG/kalos-contract#v0.1.0"
+    "@kalos/contract": "github:ORG/kalos-contract#v0.1.2"
   }
 }
 ```
@@ -86,6 +86,18 @@ const schedule = await getPublicSchedule(supabase, {
 
 // Recupera prezzi pubblici
 const pricing = await getPublicPricing(supabase);
+
+// Recupera attività pubbliche
+const activities = await getPublicActivities(supabase);
+
+// Recupera operatori attivi
+const operators = await getPublicOperators(supabase);
+
+// Recupera eventi (tutti, o filtra per date)
+const events = await getPublicEvents(supabase, {
+  from: '2024-01-01', // opzionale
+  to: '2024-12-31',   // opzionale
+});
 ```
 
 ### 3. App Clienti (React Native + Expo PWA)
@@ -133,6 +145,84 @@ const result = await bookLesson(supabase, {
   lessonId: '123',
   subscriptionId: '456',
 });
+```
+
+## Views Pubbliche (Public Site Views)
+
+Il contract fornisce views pubbliche (`public_site_*`) per il sito pubblico (kalos-react). Queste views sono accessibili tramite anon key e espongono solo i dati minimi necessari, rispettando il principio di minimizzazione GDPR.
+
+### Views Disponibili
+
+#### `public_site_activities`
+- **Descrizione**: Attività pubbliche/attive
+- **Filtri**: Solo attività non soft-deleted (`deleted_at IS NULL`)
+- **Colonne**: `id`, `name`, `description`, `discipline`, `color`, `created_at`
+- **Helper**: `getPublicActivities(client)`
+- **Nota**: `slug` e `image_url` non sono disponibili nella tabella `activities` attualmente. Se necessari, aggiungere colonne nella tabella e aggiornare la view.
+
+#### `public_site_operators`
+- **Descrizione**: Operatori attivi
+- **Filtri**: Solo operatori con `is_active = true` e non soft-deleted
+- **Colonne**: `id`, `name`, `role`, `bio`, `disciplines`, `created_at`
+- **Helper**: `getPublicOperators(client)`
+- **Nota**: `image_url` non è disponibile nella tabella `operators` attualmente. NON include dati sensibili (email, note interne, `profile_id`, `is_admin`).
+
+#### `public_site_events`
+- **Descrizione**: Eventi (futuri e passati)
+- **Filtri**: Solo eventi non soft-deleted (`deleted_at IS NULL`). Il sito filtra client-side per futuri/passati.
+- **Colonne**: `id`, `title` (alias di `name`), `description`, `starts_at`, `ends_at`, `location`, `image_url`, `registration_url` (alias di `link`), `capacity`, `price_cents`, `currency`, `is_active`, `created_at`
+- **Helper**: `getPublicEvents(client, params?)` con filtri opzionali `from`/`to` su `starts_at`
+
+#### `public_site_schedule`
+- **Descrizione**: Schedule pubblico delle lezioni
+- **Filtri**: Solo lezioni future, pubbliche (non individuali), non soft-deleted
+- **Helper**: `getPublicSchedule(client, params?)` con filtri opzionali `from`/`to`
+
+#### `public_site_pricing`
+- **Descrizione**: Prezzi e piani disponibili
+- **Filtri**: Solo piani attivi e non soft-deleted
+- **Helper**: `getPublicPricing(client)`
+
+### Regole per Nuove Views Pubbliche
+
+Quando si aggiungono nuove views pubbliche:
+
+1. **Prefisso**: Tutte le views pubbliche devono iniziare con `public_site_`
+2. **Minimizzazione**: Includere solo colonne necessarie per il sito pubblico
+3. **GDPR**: NON esporre:
+   - Dati personali (email, telefono, note interne)
+   - Informazioni finanziarie sensibili
+   - Campi amministrativi (`is_admin`, `profile_id`, ecc.)
+   - ID interni non necessari
+4. **Grants**: Aggiungere `GRANT SELECT TO anon` e `GRANT SELECT TO authenticated`
+5. **Documentazione**: Aggiungere commenti SQL esplicativi su cosa NON è esposto
+
+### Esempio Completo
+
+```typescript
+import { 
+  createSupabaseBrowserClient,
+  getPublicActivities,
+  getPublicOperators,
+  getPublicEvents,
+  getPublicSchedule,
+  getPublicPricing,
+} from '@kalos/contract';
+
+const supabase = createSupabaseBrowserClient({
+  url: import.meta.env.VITE_SUPABASE_URL,
+  anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+  detectSessionInUrl: false,
+});
+
+// Tutte le query pubbliche
+const [activities, operators, events, schedule, pricing] = await Promise.all([
+  getPublicActivities(supabase),
+  getPublicOperators(supabase),
+  getPublicEvents(supabase, { from: '2024-01-01' }),
+  getPublicSchedule(supabase, { from: '2024-01-01', to: '2024-12-31' }),
+  getPublicPricing(supabase),
+]);
 ```
 
 ## Types

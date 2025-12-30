@@ -91,3 +91,89 @@ export async function getPublicPricing(client: SupabaseClient<Database>) {
   return data;
 }
 
+/**
+ * Recupera le attività pubbliche dal database.
+ * Questa funzione accede alla view public_site_activities.
+ * 
+ * NOTA: La view public_site_activities deve essere creata nel database e i types devono essere rigenerati
+ * prima di usare questa funzione.
+ * 
+ * @param client - Il client Supabase (anonimo ok per views pubbliche)
+ * @returns Promise con i dati delle attività
+ * @throws Error se la query fallisce
+ */
+export async function getPublicActivities(client: SupabaseClient<Database>) {
+  const { data, error } = await fromPublic(client, 'public_site_activities')
+    .select('*');
+
+  if (error) {
+    throw new Error(`Failed to fetch public activities: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Recupera gli operatori attivi dal database.
+ * Questa funzione accede alla view public_site_operators.
+ * 
+ * NOTA: La view public_site_operators deve essere creata nel database e i types devono essere rigenerati
+ * prima di usare questa funzione.
+ * 
+ * @param client - Il client Supabase (anonimo ok per views pubbliche)
+ * @returns Promise con i dati degli operatori
+ * @throws Error se la query fallisce
+ */
+export async function getPublicOperators(client: SupabaseClient<Database>) {
+  const { data, error } = await fromPublic(client, 'public_site_operators')
+    .select('*');
+
+  if (error) {
+    throw new Error(`Failed to fetch public operators: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Parametri opzionali per filtrare gli eventi pubblici per date
+ */
+export type GetPublicEventsParams = {
+  from?: string;
+  to?: string;
+};
+
+/**
+ * Recupera gli eventi pubblici dal database.
+ * Questa funzione accede alla view public_site_events e applica filtri opzionali per date.
+ * 
+ * NOTA: La view public_site_events deve essere creata nel database e i types devono essere rigenerati
+ * prima di usare questa funzione.
+ * 
+ * @param client - Il client Supabase (anonimo ok per views pubbliche)
+ * @param params - Parametri opzionali per filtrare per date
+ * @returns Promise con i dati degli eventi
+ * @throws Error se la query fallisce
+ */
+export async function getPublicEvents(
+  client: SupabaseClient<Database>,
+  params?: GetPublicEventsParams
+) {
+  let query = fromPublic(client, 'public_site_events').select('*');
+
+  if (params?.from) {
+    query = query.gte('starts_at', params.from);
+  }
+  if (params?.to) {
+    query = query.lte('starts_at', params.to);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(`Failed to fetch public events: ${error.message}`);
+  }
+
+  return data;
+}
+

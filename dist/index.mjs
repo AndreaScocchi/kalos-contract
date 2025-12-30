@@ -123,7 +123,35 @@ async function getPublicPricing(client) {
   }
   return data;
 }
+async function getPublicActivities(client) {
+  const { data, error } = await fromPublic(client, "public_site_activities").select("*");
+  if (error) {
+    throw new Error(`Failed to fetch public activities: ${error.message}`);
+  }
+  return data;
+}
+async function getPublicOperators(client) {
+  const { data, error } = await fromPublic(client, "public_site_operators").select("*");
+  if (error) {
+    throw new Error(`Failed to fetch public operators: ${error.message}`);
+  }
+  return data;
+}
+async function getPublicEvents(client, params) {
+  let query = fromPublic(client, "public_site_events").select("*");
+  if (params == null ? void 0 : params.from) {
+    query = query.gte("starts_at", params.from);
+  }
+  if (params == null ? void 0 : params.to) {
+    query = query.lte("starts_at", params.to);
+  }
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(`Failed to fetch public events: ${error.message}`);
+  }
+  return data;
+}
 
-export { assertSupabaseConfig, bookLesson, cancelBooking, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getPublicPricing, getPublicSchedule };
+export { assertSupabaseConfig, bookLesson, cancelBooking, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

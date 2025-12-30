@@ -4021,5 +4021,589 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     lesson_id: string;
     user_id: string;
 } | {})[]>;
+/**
+ * Recupera le attività pubbliche dal database.
+ * Questa funzione accede alla view public_site_activities.
+ *
+ * NOTA: La view public_site_activities deve essere creata nel database e i types devono essere rigenerati
+ * prima di usare questa funzione.
+ *
+ * @param client - Il client Supabase (anonimo ok per views pubbliche)
+ * @returns Promise con i dati delle attività
+ * @throws Error se la query fallisce
+ */
+declare function getPublicActivities(client: SupabaseClient<Database>): Promise<({
+    color: string | null;
+    created_at: string | null;
+    deleted_at: string | null;
+    description: string | null;
+    discipline: string;
+    id: string;
+    name: string;
+} | {
+    client_id: string | null;
+    created_at: string | null;
+    id: string;
+    lesson_id: string;
+    status: Database["public"]["Enums"]["booking_status"];
+    subscription_id: string | null;
+    user_id: string | null;
+} | {
+    created_at: string;
+    deleted_at: string | null;
+    email: string | null;
+    full_name: string;
+    id: string;
+    is_active: boolean;
+    notes: string | null;
+    phone: string | null;
+    profile_id: string | null;
+    updated_at: string;
+} | {
+    created_at: string | null;
+    event_id: string;
+    id: string;
+    status: Database["public"]["Enums"]["booking_status"];
+    user_id: string;
+} | {
+    capacity: number | null;
+    created_at: string;
+    currency: string | null;
+    deleted_at: string | null;
+    description: string | null;
+    ends_at: string | null;
+    id: string;
+    image_url: string | null;
+    is_active: boolean;
+    link: string;
+    location: string | null;
+    name: string;
+    price_cents: number | null;
+    starts_at: string;
+    updated_at: string;
+} | {
+    activity_id: string | null;
+    amount_cents: number;
+    category: string;
+    created_at: string;
+    created_by: string | null;
+    event_id: string | null;
+    expense_date: string;
+    id: string;
+    is_fixed: boolean;
+    lesson_id: string | null;
+    notes: string | null;
+    operator_id: string | null;
+    updated_at: string;
+    vendor: string | null;
+} | {
+    activity_id: string;
+    assigned_client_id: string | null;
+    booking_deadline_minutes: number | null;
+    cancel_deadline_minutes: number | null;
+    capacity: number;
+    deleted_at: string | null;
+    ends_at: string;
+    id: string;
+    is_individual: boolean;
+    notes: string | null;
+    operator_id: string | null;
+    recurring_series_id: string | null;
+    starts_at: string;
+} | {
+    bio: string | null;
+    created_at: string | null;
+    deleted_at: string | null;
+    disciplines: string[] | null;
+    id: string;
+    is_active: boolean;
+    is_admin: boolean | null;
+    name: string;
+    profile_id: string | null;
+    role: string;
+} | {
+    cash_reserve_pct: number;
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    marketing_pct: number;
+    month: string;
+    notes: string | null;
+    team_pct: number;
+    updated_at: string;
+} | {
+    amount_cents: number;
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    month: string;
+    notes: string | null;
+    operator_id: string | null;
+    paid_at: string | null;
+    reason: string | null;
+    status: string;
+    updated_at: string;
+} | {
+    activity_id: string;
+    created_at: string | null;
+    plan_id: string;
+} | {
+    created_at: string | null;
+    currency: string | null;
+    deleted_at: string | null;
+    description: string | null;
+    discipline: string | null;
+    discount_percent: number | null;
+    entries: number | null;
+    id: string;
+    is_active: boolean | null;
+    name: string;
+    price_cents: number;
+    validity_days: number;
+} | {
+    accepted_privacy_at: string | null;
+    accepted_terms_at: string | null;
+    avatar_url: string | null;
+    created_at: string | null;
+    deleted_at: string | null;
+    email: string | null;
+    full_name: string | null;
+    id: string;
+    notes: string | null;
+    phone: string | null;
+    role: Database["public"]["Enums"]["user_role"];
+} | {
+    created_at: string;
+    deleted_at: string | null;
+    description: string | null;
+    discount_percent: number | null;
+    ends_at: string | null;
+    id: string;
+    image_url: string | null;
+    is_active: boolean;
+    link: string;
+    name: string;
+    plan_id: string | null;
+    starts_at: string;
+    updated_at: string;
+} | {
+    booking_id: string | null;
+    created_at: string | null;
+    delta: number;
+    id: string;
+    reason: string | null;
+    subscription_id: string;
+} | {
+    client_id: string | null;
+    created_at: string | null;
+    custom_entries: number | null;
+    custom_name: string | null;
+    custom_price_cents: number | null;
+    custom_validity_days: number | null;
+    expires_at: string;
+    id: string;
+    metadata: Json | null;
+    plan_id: string;
+    started_at: string;
+    status: Database["public"]["Enums"]["subscription_status"];
+    user_id: string | null;
+} | {
+    created_at: string | null;
+    id: string;
+    lesson_id: string;
+    user_id: string;
+} | {})[]>;
+/**
+ * Recupera gli operatori attivi dal database.
+ * Questa funzione accede alla view public_site_operators.
+ *
+ * NOTA: La view public_site_operators deve essere creata nel database e i types devono essere rigenerati
+ * prima di usare questa funzione.
+ *
+ * @param client - Il client Supabase (anonimo ok per views pubbliche)
+ * @returns Promise con i dati degli operatori
+ * @throws Error se la query fallisce
+ */
+declare function getPublicOperators(client: SupabaseClient<Database>): Promise<({
+    color: string | null;
+    created_at: string | null;
+    deleted_at: string | null;
+    description: string | null;
+    discipline: string;
+    id: string;
+    name: string;
+} | {
+    client_id: string | null;
+    created_at: string | null;
+    id: string;
+    lesson_id: string;
+    status: Database["public"]["Enums"]["booking_status"];
+    subscription_id: string | null;
+    user_id: string | null;
+} | {
+    created_at: string;
+    deleted_at: string | null;
+    email: string | null;
+    full_name: string;
+    id: string;
+    is_active: boolean;
+    notes: string | null;
+    phone: string | null;
+    profile_id: string | null;
+    updated_at: string;
+} | {
+    created_at: string | null;
+    event_id: string;
+    id: string;
+    status: Database["public"]["Enums"]["booking_status"];
+    user_id: string;
+} | {
+    capacity: number | null;
+    created_at: string;
+    currency: string | null;
+    deleted_at: string | null;
+    description: string | null;
+    ends_at: string | null;
+    id: string;
+    image_url: string | null;
+    is_active: boolean;
+    link: string;
+    location: string | null;
+    name: string;
+    price_cents: number | null;
+    starts_at: string;
+    updated_at: string;
+} | {
+    activity_id: string | null;
+    amount_cents: number;
+    category: string;
+    created_at: string;
+    created_by: string | null;
+    event_id: string | null;
+    expense_date: string;
+    id: string;
+    is_fixed: boolean;
+    lesson_id: string | null;
+    notes: string | null;
+    operator_id: string | null;
+    updated_at: string;
+    vendor: string | null;
+} | {
+    activity_id: string;
+    assigned_client_id: string | null;
+    booking_deadline_minutes: number | null;
+    cancel_deadline_minutes: number | null;
+    capacity: number;
+    deleted_at: string | null;
+    ends_at: string;
+    id: string;
+    is_individual: boolean;
+    notes: string | null;
+    operator_id: string | null;
+    recurring_series_id: string | null;
+    starts_at: string;
+} | {
+    bio: string | null;
+    created_at: string | null;
+    deleted_at: string | null;
+    disciplines: string[] | null;
+    id: string;
+    is_active: boolean;
+    is_admin: boolean | null;
+    name: string;
+    profile_id: string | null;
+    role: string;
+} | {
+    cash_reserve_pct: number;
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    marketing_pct: number;
+    month: string;
+    notes: string | null;
+    team_pct: number;
+    updated_at: string;
+} | {
+    amount_cents: number;
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    month: string;
+    notes: string | null;
+    operator_id: string | null;
+    paid_at: string | null;
+    reason: string | null;
+    status: string;
+    updated_at: string;
+} | {
+    activity_id: string;
+    created_at: string | null;
+    plan_id: string;
+} | {
+    created_at: string | null;
+    currency: string | null;
+    deleted_at: string | null;
+    description: string | null;
+    discipline: string | null;
+    discount_percent: number | null;
+    entries: number | null;
+    id: string;
+    is_active: boolean | null;
+    name: string;
+    price_cents: number;
+    validity_days: number;
+} | {
+    accepted_privacy_at: string | null;
+    accepted_terms_at: string | null;
+    avatar_url: string | null;
+    created_at: string | null;
+    deleted_at: string | null;
+    email: string | null;
+    full_name: string | null;
+    id: string;
+    notes: string | null;
+    phone: string | null;
+    role: Database["public"]["Enums"]["user_role"];
+} | {
+    created_at: string;
+    deleted_at: string | null;
+    description: string | null;
+    discount_percent: number | null;
+    ends_at: string | null;
+    id: string;
+    image_url: string | null;
+    is_active: boolean;
+    link: string;
+    name: string;
+    plan_id: string | null;
+    starts_at: string;
+    updated_at: string;
+} | {
+    booking_id: string | null;
+    created_at: string | null;
+    delta: number;
+    id: string;
+    reason: string | null;
+    subscription_id: string;
+} | {
+    client_id: string | null;
+    created_at: string | null;
+    custom_entries: number | null;
+    custom_name: string | null;
+    custom_price_cents: number | null;
+    custom_validity_days: number | null;
+    expires_at: string;
+    id: string;
+    metadata: Json | null;
+    plan_id: string;
+    started_at: string;
+    status: Database["public"]["Enums"]["subscription_status"];
+    user_id: string | null;
+} | {
+    created_at: string | null;
+    id: string;
+    lesson_id: string;
+    user_id: string;
+} | {})[]>;
+/**
+ * Parametri opzionali per filtrare gli eventi pubblici per date
+ */
+type GetPublicEventsParams = {
+    from?: string;
+    to?: string;
+};
+/**
+ * Recupera gli eventi pubblici dal database.
+ * Questa funzione accede alla view public_site_events e applica filtri opzionali per date.
+ *
+ * NOTA: La view public_site_events deve essere creata nel database e i types devono essere rigenerati
+ * prima di usare questa funzione.
+ *
+ * @param client - Il client Supabase (anonimo ok per views pubbliche)
+ * @param params - Parametri opzionali per filtrare per date
+ * @returns Promise con i dati degli eventi
+ * @throws Error se la query fallisce
+ */
+declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetPublicEventsParams): Promise<({
+    color: string | null;
+    created_at: string | null;
+    deleted_at: string | null;
+    description: string | null;
+    discipline: string;
+    id: string;
+    name: string;
+} | {
+    client_id: string | null;
+    created_at: string | null;
+    id: string;
+    lesson_id: string;
+    status: Database["public"]["Enums"]["booking_status"];
+    subscription_id: string | null;
+    user_id: string | null;
+} | {
+    created_at: string;
+    deleted_at: string | null;
+    email: string | null;
+    full_name: string;
+    id: string;
+    is_active: boolean;
+    notes: string | null;
+    phone: string | null;
+    profile_id: string | null;
+    updated_at: string;
+} | {
+    created_at: string | null;
+    event_id: string;
+    id: string;
+    status: Database["public"]["Enums"]["booking_status"];
+    user_id: string;
+} | {
+    capacity: number | null;
+    created_at: string;
+    currency: string | null;
+    deleted_at: string | null;
+    description: string | null;
+    ends_at: string | null;
+    id: string;
+    image_url: string | null;
+    is_active: boolean;
+    link: string;
+    location: string | null;
+    name: string;
+    price_cents: number | null;
+    starts_at: string;
+    updated_at: string;
+} | {
+    activity_id: string | null;
+    amount_cents: number;
+    category: string;
+    created_at: string;
+    created_by: string | null;
+    event_id: string | null;
+    expense_date: string;
+    id: string;
+    is_fixed: boolean;
+    lesson_id: string | null;
+    notes: string | null;
+    operator_id: string | null;
+    updated_at: string;
+    vendor: string | null;
+} | {
+    activity_id: string;
+    assigned_client_id: string | null;
+    booking_deadline_minutes: number | null;
+    cancel_deadline_minutes: number | null;
+    capacity: number;
+    deleted_at: string | null;
+    ends_at: string;
+    id: string;
+    is_individual: boolean;
+    notes: string | null;
+    operator_id: string | null;
+    recurring_series_id: string | null;
+    starts_at: string;
+} | {
+    bio: string | null;
+    created_at: string | null;
+    deleted_at: string | null;
+    disciplines: string[] | null;
+    id: string;
+    is_active: boolean;
+    is_admin: boolean | null;
+    name: string;
+    profile_id: string | null;
+    role: string;
+} | {
+    cash_reserve_pct: number;
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    marketing_pct: number;
+    month: string;
+    notes: string | null;
+    team_pct: number;
+    updated_at: string;
+} | {
+    amount_cents: number;
+    created_at: string;
+    created_by: string | null;
+    id: string;
+    month: string;
+    notes: string | null;
+    operator_id: string | null;
+    paid_at: string | null;
+    reason: string | null;
+    status: string;
+    updated_at: string;
+} | {
+    activity_id: string;
+    created_at: string | null;
+    plan_id: string;
+} | {
+    created_at: string | null;
+    currency: string | null;
+    deleted_at: string | null;
+    description: string | null;
+    discipline: string | null;
+    discount_percent: number | null;
+    entries: number | null;
+    id: string;
+    is_active: boolean | null;
+    name: string;
+    price_cents: number;
+    validity_days: number;
+} | {
+    accepted_privacy_at: string | null;
+    accepted_terms_at: string | null;
+    avatar_url: string | null;
+    created_at: string | null;
+    deleted_at: string | null;
+    email: string | null;
+    full_name: string | null;
+    id: string;
+    notes: string | null;
+    phone: string | null;
+    role: Database["public"]["Enums"]["user_role"];
+} | {
+    created_at: string;
+    deleted_at: string | null;
+    description: string | null;
+    discount_percent: number | null;
+    ends_at: string | null;
+    id: string;
+    image_url: string | null;
+    is_active: boolean;
+    link: string;
+    name: string;
+    plan_id: string | null;
+    starts_at: string;
+    updated_at: string;
+} | {
+    booking_id: string | null;
+    created_at: string | null;
+    delta: number;
+    id: string;
+    reason: string | null;
+    subscription_id: string;
+} | {
+    client_id: string | null;
+    created_at: string | null;
+    custom_entries: number | null;
+    custom_name: string | null;
+    custom_price_cents: number | null;
+    custom_validity_days: number | null;
+    expires_at: string;
+    id: string;
+    metadata: Json | null;
+    plan_id: string;
+    started_at: string;
+    status: Database["public"]["Enums"]["subscription_status"];
+    user_id: string | null;
+} | {
+    created_at: string | null;
+    id: string;
+    lesson_id: string;
+    user_id: string;
+} | {})[]>;
 
-export { type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type Database, type Enums, type GetPublicScheduleParams, type PublicViewName, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, type Tables, type TablesInsert, type TablesUpdate, type Views, assertSupabaseConfig, bookLesson, cancelBooking, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getPublicPricing, getPublicSchedule };
+export { type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type Database, type Enums, type GetPublicEventsParams, type GetPublicScheduleParams, type PublicViewName, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, type Tables, type TablesInsert, type TablesUpdate, type Views, assertSupabaseConfig, bookLesson, cancelBooking, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule };

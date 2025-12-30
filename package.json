@@ -37,7 +37,9 @@
     "db:init:migrations": "node scripts/init-migrations-from-remote.mjs",
     "db:dump:schema": "node scripts/dump-remote-schema.mjs",
     "db:fill:migrations": "node scripts/fill-migrations-from-dump.mjs",
-    "db:repair:history": "node scripts/repair-migration-history.mjs"
+    "db:repair:history": "node scripts/repair-migration-history.mjs",
+    "verify": "npm run typecheck && npm run build",
+    "verify:migrations": "node scripts/verify-migrations.mjs"
   },
   "keywords": [
     "supabase",
@@ -54,7 +56,13 @@
     "typescript": "^5.3.3",
     "tsup": "^8.0.1"
   },
-  "peerDependencies": {},
-  "peerDependenciesMeta": {}
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "peerDependenciesMeta": {
+    "@supabase/supabase-js": {
+      "optional": false
+    }
+  }
 }
 

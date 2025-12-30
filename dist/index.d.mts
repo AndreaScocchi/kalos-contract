@@ -91,6 +91,13 @@ type Database = {
                         referencedColumns: ["id"];
                     },
                     {
+                        foreignKeyName: "bookings_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["id"];
+                    },
+                    {
                         foreignKeyName: "bookings_subscription_id_fkey";
                         columns: ["subscription_id"];
                         isOneToOne: false;
@@ -311,6 +318,13 @@ type Database = {
                         referencedColumns: ["id"];
                     },
                     {
+                        foreignKeyName: "expenses_activity_id_fkey";
+                        columns: ["activity_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["activity_id"];
+                    },
+                    {
                         foreignKeyName: "expenses_created_by_fkey";
                         columns: ["created_by"];
                         isOneToOne: false;
@@ -339,11 +353,25 @@ type Database = {
                         referencedColumns: ["id"];
                     },
                     {
+                        foreignKeyName: "expenses_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["id"];
+                    },
+                    {
                         foreignKeyName: "expenses_operator_id_fkey";
                         columns: ["operator_id"];
                         isOneToOne: false;
                         referencedRelation: "operators";
                         referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "expenses_operator_id_fkey";
+                        columns: ["operator_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["operator_id"];
                     }
                 ];
             };
@@ -402,6 +430,13 @@ type Database = {
                         referencedColumns: ["id"];
                     },
                     {
+                        foreignKeyName: "lessons_activity_id_fkey";
+                        columns: ["activity_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["activity_id"];
+                    },
+                    {
                         foreignKeyName: "lessons_assigned_client_id_fkey";
                         columns: ["assigned_client_id"];
                         isOneToOne: false;
@@ -414,6 +449,13 @@ type Database = {
                         isOneToOne: false;
                         referencedRelation: "operators";
                         referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "lessons_operator_id_fkey";
+                        columns: ["operator_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["operator_id"];
                     }
                 ];
             };
@@ -562,6 +604,13 @@ type Database = {
                         isOneToOne: false;
                         referencedRelation: "operators";
                         referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "payouts_operator_id_fkey";
+                        columns: ["operator_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["operator_id"];
                     }
                 ];
             };
@@ -590,10 +639,24 @@ type Database = {
                         referencedColumns: ["id"];
                     },
                     {
+                        foreignKeyName: "plan_activities_activity_id_fkey";
+                        columns: ["activity_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["activity_id"];
+                    },
+                    {
                         foreignKeyName: "plan_activities_plan_id_fkey";
                         columns: ["plan_id"];
                         isOneToOne: false;
                         referencedRelation: "plans";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "plan_activities_plan_id_fkey";
+                        columns: ["plan_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_pricing";
                         referencedColumns: ["id"];
                     }
                 ];
@@ -738,6 +801,13 @@ type Database = {
                         isOneToOne: false;
                         referencedRelation: "plans";
                         referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "promotions_plan_id_fkey";
+                        columns: ["plan_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_pricing";
+                        referencedColumns: ["id"];
                     }
                 ];
             };
@@ -845,6 +915,13 @@ type Database = {
                         referencedColumns: ["id"];
                     },
                     {
+                        foreignKeyName: "subscriptions_plan_id_fkey";
+                        columns: ["plan_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_pricing";
+                        referencedColumns: ["id"];
+                    },
+                    {
                         foreignKeyName: "subscriptions_user_id_fkey";
                         columns: ["user_id"];
                         isOneToOne: false;
@@ -888,6 +965,13 @@ type Database = {
                         referencedColumns: ["id"];
                     },
                     {
+                        foreignKeyName: "waitlist_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["id"];
+                    },
+                    {
                         foreignKeyName: "waitlist_user_id_fkey";
                         columns: ["user_id"];
                         isOneToOne: false;
@@ -915,6 +999,40 @@ type Database = {
                     capacity: number | null;
                     free_spots: number | null;
                     lesson_id: string | null;
+                };
+                Relationships: [];
+            };
+            public_site_pricing: {
+                Row: {
+                    activities: Json | null;
+                    currency: string | null;
+                    description: string | null;
+                    discipline: string | null;
+                    discount_percent: number | null;
+                    entries: number | null;
+                    id: string | null;
+                    name: string | null;
+                    price_cents: number | null;
+                    validity_days: number | null;
+                };
+                Relationships: [];
+            };
+            public_site_schedule: {
+                Row: {
+                    activity_color: string | null;
+                    activity_id: string | null;
+                    activity_name: string | null;
+                    booked_count: number | null;
+                    booking_deadline_minutes: number | null;
+                    cancel_deadline_minutes: number | null;
+                    capacity: number | null;
+                    discipline: string | null;
+                    ends_at: string | null;
+                    free_spots: number | null;
+                    id: string | null;
+                    operator_id: string | null;
+                    operator_name: string | null;
+                    starts_at: string | null;
                 };
                 Relationships: [];
             };
@@ -949,6 +1067,13 @@ type Database = {
                         columns: ["plan_id"];
                         isOneToOne: false;
                         referencedRelation: "plans";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "subscriptions_plan_id_fkey";
+                        columns: ["plan_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_pricing";
                         referencedColumns: ["id"];
                     },
                     {
@@ -1299,6 +1424,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedRelation: "lessons";
                 referencedColumns: ["id"];
             }, {
+                foreignKeyName: "bookings_lesson_id_fkey";
+                columns: ["lesson_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_schedule";
+                referencedColumns: ["id"];
+            }, {
                 foreignKeyName: "bookings_subscription_id_fkey";
                 columns: ["subscription_id"];
                 isOneToOne: false;
@@ -1509,6 +1640,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedRelation: "activities";
                 referencedColumns: ["id"];
             }, {
+                foreignKeyName: "expenses_activity_id_fkey";
+                columns: ["activity_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_schedule";
+                referencedColumns: ["activity_id"];
+            }, {
                 foreignKeyName: "expenses_created_by_fkey";
                 columns: ["created_by"];
                 isOneToOne: false;
@@ -1533,11 +1670,23 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedRelation: "lessons";
                 referencedColumns: ["id"];
             }, {
+                foreignKeyName: "expenses_lesson_id_fkey";
+                columns: ["lesson_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_schedule";
+                referencedColumns: ["id"];
+            }, {
                 foreignKeyName: "expenses_operator_id_fkey";
                 columns: ["operator_id"];
                 isOneToOne: false;
                 referencedRelation: "operators";
                 referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "expenses_operator_id_fkey";
+                columns: ["operator_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_schedule";
+                referencedColumns: ["operator_id"];
             }];
         };
         lessons: {
@@ -1593,6 +1742,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedRelation: "activities";
                 referencedColumns: ["id"];
             }, {
+                foreignKeyName: "lessons_activity_id_fkey";
+                columns: ["activity_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_schedule";
+                referencedColumns: ["activity_id"];
+            }, {
                 foreignKeyName: "lessons_assigned_client_id_fkey";
                 columns: ["assigned_client_id"];
                 isOneToOne: false;
@@ -1604,6 +1759,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 isOneToOne: false;
                 referencedRelation: "operators";
                 referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "lessons_operator_id_fkey";
+                columns: ["operator_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_schedule";
+                referencedColumns: ["operator_id"];
             }];
         };
         operators: {
@@ -1745,6 +1906,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 isOneToOne: false;
                 referencedRelation: "operators";
                 referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "payouts_operator_id_fkey";
+                columns: ["operator_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_schedule";
+                referencedColumns: ["operator_id"];
             }];
         };
         plan_activities: {
@@ -1770,10 +1937,22 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedRelation: "activities";
                 referencedColumns: ["id"];
             }, {
+                foreignKeyName: "plan_activities_activity_id_fkey";
+                columns: ["activity_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_schedule";
+                referencedColumns: ["activity_id"];
+            }, {
                 foreignKeyName: "plan_activities_plan_id_fkey";
                 columns: ["plan_id"];
                 isOneToOne: false;
                 referencedRelation: "plans";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "plan_activities_plan_id_fkey";
+                columns: ["plan_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_pricing";
                 referencedColumns: ["id"];
             }];
         };
@@ -1916,6 +2095,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 isOneToOne: false;
                 referencedRelation: "plans";
                 referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "promotions_plan_id_fkey";
+                columns: ["plan_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_pricing";
+                referencedColumns: ["id"];
             }];
         };
         subscription_usages: {
@@ -2016,6 +2201,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedRelation: "plans";
                 referencedColumns: ["id"];
             }, {
+                foreignKeyName: "subscriptions_plan_id_fkey";
+                columns: ["plan_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_pricing";
+                referencedColumns: ["id"];
+            }, {
                 foreignKeyName: "subscriptions_user_id_fkey";
                 columns: ["user_id"];
                 isOneToOne: false;
@@ -2055,6 +2246,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedRelation: "lessons";
                 referencedColumns: ["id"];
             }, {
+                foreignKeyName: "waitlist_lesson_id_fkey";
+                columns: ["lesson_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_schedule";
+                referencedColumns: ["id"];
+            }, {
                 foreignKeyName: "waitlist_user_id_fkey";
                 columns: ["user_id"];
                 isOneToOne: false;
@@ -2081,6 +2278,40 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 capacity: number | null;
                 free_spots: number | null;
                 lesson_id: string | null;
+            };
+            Relationships: [];
+        };
+        public_site_pricing: {
+            Row: {
+                activities: Json | null;
+                currency: string | null;
+                description: string | null;
+                discipline: string | null;
+                discount_percent: number | null;
+                entries: number | null;
+                id: string | null;
+                name: string | null;
+                price_cents: number | null;
+                validity_days: number | null;
+            };
+            Relationships: [];
+        };
+        public_site_schedule: {
+            Row: {
+                activity_color: string | null;
+                activity_id: string | null;
+                activity_name: string | null;
+                booked_count: number | null;
+                booking_deadline_minutes: number | null;
+                cancel_deadline_minutes: number | null;
+                capacity: number | null;
+                discipline: string | null;
+                ends_at: string | null;
+                free_spots: number | null;
+                id: string | null;
+                operator_id: string | null;
+                operator_name: string | null;
+                starts_at: string | null;
             };
             Relationships: [];
         };
@@ -2113,6 +2344,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["plan_id"];
                 isOneToOne: false;
                 referencedRelation: "plans";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "subscriptions_plan_id_fkey";
+                columns: ["plan_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_pricing";
                 referencedColumns: ["id"];
             }, {
                 foreignKeyName: "subscriptions_user_id_fkey";
@@ -2300,6 +2537,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["lesson_id"];
         isOneToOne: false;
         referencedRelation: "lessons";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "bookings_lesson_id_fkey";
+        columns: ["lesson_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_schedule";
         referencedColumns: ["id"];
     }, {
         foreignKeyName: "bookings_subscription_id_fkey";
@@ -2508,6 +2751,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "activities";
         referencedColumns: ["id"];
     }, {
+        foreignKeyName: "expenses_activity_id_fkey";
+        columns: ["activity_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_schedule";
+        referencedColumns: ["activity_id"];
+    }, {
         foreignKeyName: "expenses_created_by_fkey";
         columns: ["created_by"];
         isOneToOne: false;
@@ -2532,11 +2781,23 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "lessons";
         referencedColumns: ["id"];
     }, {
+        foreignKeyName: "expenses_lesson_id_fkey";
+        columns: ["lesson_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_schedule";
+        referencedColumns: ["id"];
+    }, {
         foreignKeyName: "expenses_operator_id_fkey";
         columns: ["operator_id"];
         isOneToOne: false;
         referencedRelation: "operators";
         referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "expenses_operator_id_fkey";
+        columns: ["operator_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_schedule";
+        referencedColumns: ["operator_id"];
     }];
 } | {
     Row: {
@@ -2591,6 +2852,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "activities";
         referencedColumns: ["id"];
     }, {
+        foreignKeyName: "lessons_activity_id_fkey";
+        columns: ["activity_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_schedule";
+        referencedColumns: ["activity_id"];
+    }, {
         foreignKeyName: "lessons_assigned_client_id_fkey";
         columns: ["assigned_client_id"];
         isOneToOne: false;
@@ -2602,6 +2869,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         isOneToOne: false;
         referencedRelation: "operators";
         referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "lessons_operator_id_fkey";
+        columns: ["operator_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_schedule";
+        referencedColumns: ["operator_id"];
     }];
 } | {
     Row: {
@@ -2740,6 +3013,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         isOneToOne: false;
         referencedRelation: "operators";
         referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "payouts_operator_id_fkey";
+        columns: ["operator_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_schedule";
+        referencedColumns: ["operator_id"];
     }];
 } | {
     Row: {
@@ -2764,10 +3043,22 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "activities";
         referencedColumns: ["id"];
     }, {
+        foreignKeyName: "plan_activities_activity_id_fkey";
+        columns: ["activity_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_schedule";
+        referencedColumns: ["activity_id"];
+    }, {
         foreignKeyName: "plan_activities_plan_id_fkey";
         columns: ["plan_id"];
         isOneToOne: false;
         referencedRelation: "plans";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "plan_activities_plan_id_fkey";
+        columns: ["plan_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_pricing";
         referencedColumns: ["id"];
     }];
 } | {
@@ -2907,6 +3198,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         isOneToOne: false;
         referencedRelation: "plans";
         referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "promotions_plan_id_fkey";
+        columns: ["plan_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_pricing";
+        referencedColumns: ["id"];
     }];
 } | {
     Row: {
@@ -3005,6 +3302,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "plans";
         referencedColumns: ["id"];
     }, {
+        foreignKeyName: "subscriptions_plan_id_fkey";
+        columns: ["plan_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_pricing";
+        referencedColumns: ["id"];
+    }, {
         foreignKeyName: "subscriptions_user_id_fkey";
         columns: ["user_id"];
         isOneToOne: false;
@@ -3043,6 +3346,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "lessons";
         referencedColumns: ["id"];
     }, {
+        foreignKeyName: "waitlist_lesson_id_fkey";
+        columns: ["lesson_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_schedule";
+        referencedColumns: ["id"];
+    }, {
         foreignKeyName: "waitlist_user_id_fkey";
         columns: ["user_id"];
         isOneToOne: false;
@@ -3066,6 +3375,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["lesson_id"];
     isOneToOne: false;
     referencedRelation: "lessons";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "bookings_lesson_id_fkey";
+    columns: ["lesson_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_schedule";
     referencedColumns: ["id"];
 }, {
     foreignKeyName: "bookings_subscription_id_fkey";
@@ -3110,6 +3425,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     referencedRelation: "activities";
     referencedColumns: ["id"];
 }, {
+    foreignKeyName: "expenses_activity_id_fkey";
+    columns: ["activity_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_schedule";
+    referencedColumns: ["activity_id"];
+}, {
     foreignKeyName: "expenses_created_by_fkey";
     columns: ["created_by"];
     isOneToOne: false;
@@ -3134,17 +3455,35 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     referencedRelation: "lessons";
     referencedColumns: ["id"];
 }, {
+    foreignKeyName: "expenses_lesson_id_fkey";
+    columns: ["lesson_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_schedule";
+    referencedColumns: ["id"];
+}, {
     foreignKeyName: "expenses_operator_id_fkey";
     columns: ["operator_id"];
     isOneToOne: false;
     referencedRelation: "operators";
     referencedColumns: ["id"];
+}, {
+    foreignKeyName: "expenses_operator_id_fkey";
+    columns: ["operator_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_schedule";
+    referencedColumns: ["operator_id"];
 }] | [{
     foreignKeyName: "lessons_activity_id_fkey";
     columns: ["activity_id"];
     isOneToOne: false;
     referencedRelation: "activities";
     referencedColumns: ["id"];
+}, {
+    foreignKeyName: "lessons_activity_id_fkey";
+    columns: ["activity_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_schedule";
+    referencedColumns: ["activity_id"];
 }, {
     foreignKeyName: "lessons_assigned_client_id_fkey";
     columns: ["assigned_client_id"];
@@ -3157,6 +3496,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     isOneToOne: false;
     referencedRelation: "operators";
     referencedColumns: ["id"];
+}, {
+    foreignKeyName: "lessons_operator_id_fkey";
+    columns: ["operator_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_schedule";
+    referencedColumns: ["operator_id"];
 }] | [{
     foreignKeyName: "operators_profile_id_fkey";
     columns: ["profile_id"];
@@ -3181,6 +3526,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     isOneToOne: false;
     referencedRelation: "operators";
     referencedColumns: ["id"];
+}, {
+    foreignKeyName: "payouts_operator_id_fkey";
+    columns: ["operator_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_schedule";
+    referencedColumns: ["operator_id"];
 }] | [{
     foreignKeyName: "plan_activities_activity_id_fkey";
     columns: ["activity_id"];
@@ -3188,16 +3539,34 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     referencedRelation: "activities";
     referencedColumns: ["id"];
 }, {
+    foreignKeyName: "plan_activities_activity_id_fkey";
+    columns: ["activity_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_schedule";
+    referencedColumns: ["activity_id"];
+}, {
     foreignKeyName: "plan_activities_plan_id_fkey";
     columns: ["plan_id"];
     isOneToOne: false;
     referencedRelation: "plans";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "plan_activities_plan_id_fkey";
+    columns: ["plan_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_pricing";
     referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "promotions_plan_id_fkey";
     columns: ["plan_id"];
     isOneToOne: false;
     referencedRelation: "plans";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "promotions_plan_id_fkey";
+    columns: ["plan_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_pricing";
     referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "subscription_usages_subscription_id_fkey";
@@ -3224,6 +3593,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     referencedRelation: "plans";
     referencedColumns: ["id"];
 }, {
+    foreignKeyName: "subscriptions_plan_id_fkey";
+    columns: ["plan_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_pricing";
+    referencedColumns: ["id"];
+}, {
     foreignKeyName: "subscriptions_user_id_fkey";
     columns: ["user_id"];
     isOneToOne: false;
@@ -3240,6 +3615,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["lesson_id"];
     isOneToOne: false;
     referencedRelation: "lessons";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "waitlist_lesson_id_fkey";
+    columns: ["lesson_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_schedule";
     referencedColumns: ["id"];
 }, {
     foreignKeyName: "waitlist_user_id_fkey";

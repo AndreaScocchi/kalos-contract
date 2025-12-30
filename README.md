@@ -195,9 +195,27 @@ Quando lo schema del database cambia, segui questi passi:
    ```
    Poi esegui `npm install` (o yarn/pnpm equivalent).
 
+## Supported Supabase JS Version
+
+Questa libreria è compatibile con `@supabase/supabase-js` versione **^2.39.0** o superiore.
+
+La libreria esporta `@supabase/supabase-js` come `peerDependency`, quindi i consumer devono installare la versione corretta:
+
+```json
+{
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}
+```
+
+**Nota**: La libreria non forza una versione specifica per evitare conflitti con i consumer. Verifica sempre la compatibilità quando aggiorni `@supabase/supabase-js` nei consumer.
+
 ## Database Workflow
 
 Questo repository è la **source of truth** per il database Supabase. Contiene migrations, functions, seed data e configurazione.
+
+**📖 Vedi [DATABASE_WORKFLOW.md](./DATABASE_WORKFLOW.md) per la documentazione completa del workflow migrations.**
 
 ### Struttura Supabase
 
@@ -213,49 +231,39 @@ supabase/
   └── _remote/            # Migration list remota (gitignored)
 ```
 
-### Workflow Migrations
+### Workflow Migrations (Sintesi)
 
-1. **Crea una nuova migration**:
+**⚠️ IMPORTANTE**: Vedi [DATABASE_WORKFLOW.md](./DATABASE_WORKFLOW.md) per la documentazione completa.
+
+**Workflow rapido**:
+
+1. **Crea migration**:
    ```bash
-   # Crea migration da modifiche locali
-   npm run db:diff
-   
-   # Oppure crea manualmente in supabase/migrations/
-   # Formato: YYYYMMDDHHMMSS_description.sql
+   npm run db:diff  # oppure crea manualmente
    ```
 
-2. **Test locale** (opzionale):
+2. **Verifica** (OBBLIGATORIO prima di commit):
    ```bash
-   # Avvia Supabase locale
+   npm run verify
+   ```
+
+3. **Test locale**:
+   ```bash
    npm run db:start
-   
-   # Applica migrations localmente
-   npm run db:push --local
-   
-   # Oppure reset completo
    supabase db reset
    ```
 
-3. **Applica a produzione** (solo quando sei sicuro):
+4. **Applica a produzione**:
    ```bash
-   # Assicurati di essere collegato al progetto remoto
    npm run db:link
-   
-   # Applica migrations a produzione
    npm run db:push
    ```
 
-4. **Rigenera types** e bump versione:
+5. **Rigenera types e release**:
    ```bash
-   # Rigenera types dal database
-   supabase gen types typescript --project-id <project-id> > src/types/database.ts
-   
-   # Verifica che compili
-   npm run typecheck
-   npm run build
-   
-   # Bump versione, commit e tag
-   # (vedi sezione "Aggiornare il Contract")
+   supabase gen types typescript --project-id <id> > src/types/database.ts
+   npm run verify
+   # Bump versione, commit, tag
    ```
 
 ### Scripts Database
@@ -349,9 +357,21 @@ npm run clean
 
 # Prepublish (clean + build + typecheck)
 npm run prepublishOnly
+
+# Verifica completa (types + build + migrations)
+npm run verify
 ```
 
-Vedi sezione "Database Workflow" per gli script relativi a Supabase.
+### Database (Supabase)
+
+Vedi sezione "Database Workflow" e [DATABASE_WORKFLOW.md](./DATABASE_WORKFLOW.md) per dettagli completi.
+
+```bash
+# Verifica migrations e contract
+npm run verify:migrations
+
+# Altri script database (vedi sezione Database Workflow)
+```
 
 ## Struttura
 

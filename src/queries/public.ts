@@ -147,12 +147,13 @@ export type GetPublicEventsParams = {
  * Recupera gli eventi pubblici dal database.
  * Questa funzione accede alla view public_site_events e applica filtri opzionali per date.
  * 
- * NOTA: La view public_site_events deve essere creata nel database e i types devono essere rigenerati
- * prima di usare questa funzione.
+ * NOTA: Ogni evento è un record separato con una singola data/orario (starts_at/ends_at).
+ * Se un evento ha più date/orari, vengono creati record separati nel database.
+ * Per raggruppare eventi con lo stesso nome, farlo lato client.
  * 
  * @param client - Il client Supabase (anonimo ok per views pubbliche)
  * @param params - Parametri opzionali per filtrare per date
- * @returns Promise con i dati degli eventi
+ * @returns Promise con i dati degli eventi (ogni evento ha una singola data/orario)
  * @throws Error se la query fallisce
  */
 export async function getPublicEvents(
@@ -161,11 +162,12 @@ export async function getPublicEvents(
 ) {
   let query = fromPublic(client, 'public_site_events').select('*');
 
+  // NOTA: La view public_site_events espone start_date (non starts_at)
   if (params?.from) {
-    query = query.gte('starts_at', params.from);
+    query = query.gte('start_date', params.from);
   }
   if (params?.to) {
-    query = query.lte('starts_at', params.to);
+    query = query.lte('start_date', params.to);
   }
 
   const { data, error } = await query;

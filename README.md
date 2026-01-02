@@ -156,9 +156,9 @@ Il contract fornisce views pubbliche (`public_site_*`) per il sito pubblico (kal
 #### `public_site_activities`
 - **Descrizione**: Attività pubbliche/attive
 - **Filtri**: Solo attività non soft-deleted (`deleted_at IS NULL`)
-- **Colonne**: `id`, `name`, `description`, `discipline`, `color`, `created_at`
+- **Colonne**: `id`, `name`, `slug`, `description`, `discipline`, `color`, `duration_minutes`, `created_at`
 - **Helper**: `getPublicActivities(client)`
-- **Nota**: `slug` e `image_url` non sono disponibili nella tabella `activities` attualmente. Se necessari, aggiungere colonne nella tabella e aggiornare la view.
+- **Nota**: `slug` viene generato automaticamente dalla colonna `discipline` ed è utilizzato per matchare i file JSON `activity.{slug}.json` nel sito web. `duration_minutes` indica la durata consigliata delle lezioni in minuti (modificabile dal gestionale). `image_url` non è disponibile nella tabella `activities` attualmente.
 
 #### `public_site_operators`
 - **Descrizione**: Operatori attivi

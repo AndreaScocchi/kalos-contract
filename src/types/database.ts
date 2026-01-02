@@ -21,6 +21,7 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           discipline: string
+          duration_minutes: number | null
           id: string
           name: string
         }
@@ -30,6 +31,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           discipline: string
+          duration_minutes?: number | null
           id?: string
           name: string
         }
@@ -39,6 +41,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           discipline?: string
+          duration_minutes?: number | null
           id?: string
           name?: string
         }
@@ -202,6 +205,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_bookings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_bookings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -325,6 +335,13 @@ export type Database = {
             foreignKeyName: "expenses_activity_id_fkey"
             columns: ["activity_id"]
             isOneToOne: false
+            referencedRelation: "public_site_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
             referencedRelation: "public_site_schedule"
             referencedColumns: ["activity_id"]
           },
@@ -340,6 +357,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_events"
             referencedColumns: ["id"]
           },
           {
@@ -368,6 +392,13 @@ export type Database = {
             columns: ["operator_id"]
             isOneToOne: false
             referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_operators"
             referencedColumns: ["id"]
           },
           {
@@ -437,6 +468,13 @@ export type Database = {
             foreignKeyName: "lessons_activity_id_fkey"
             columns: ["activity_id"]
             isOneToOne: false
+            referencedRelation: "public_site_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lessons_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
             referencedRelation: "public_site_schedule"
             referencedColumns: ["activity_id"]
           },
@@ -452,6 +490,13 @@ export type Database = {
             columns: ["operator_id"]
             isOneToOne: false
             referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lessons_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_operators"
             referencedColumns: ["id"]
           },
           {
@@ -613,6 +658,13 @@ export type Database = {
             foreignKeyName: "payouts_operator_id_fkey"
             columns: ["operator_id"]
             isOneToOne: false
+            referencedRelation: "public_site_operators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
             referencedRelation: "public_site_schedule"
             referencedColumns: ["operator_id"]
           },
@@ -640,6 +692,13 @@ export type Database = {
             columns: ["activity_id"]
             isOneToOne: false
             referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_activities_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_activities"
             referencedColumns: ["id"]
           },
           {
@@ -1003,6 +1062,108 @@ export type Database = {
           capacity: number | null
           free_spots: number | null
           lesson_id: string | null
+        }
+        Relationships: []
+      }
+      public_site_activities: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          discipline: string | null
+          duration_minutes: number | null
+          id: string | null
+          name: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          discipline?: string | null
+          duration_minutes?: number | null
+          id?: string | null
+          name?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          discipline?: string | null
+          duration_minutes?: number | null
+          id?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
+      public_site_events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string | null
+          image_url: string | null
+          link_url: string | null
+          registration_url: string | null
+          start_date: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string | null
+          image_url?: string | null
+          link_url?: string | null
+          registration_url?: string | null
+          start_date?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string | null
+          image_url?: string | null
+          link_url?: string | null
+          registration_url?: string | null
+          start_date?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      public_site_operators: {
+        Row: {
+          bio: string | null
+          display_order: number | null
+          id: string | null
+          image_alt: string | null
+          image_url: string | null
+          is_active: boolean | null
+          name: string | null
+          role: string | null
+        }
+        Insert: {
+          bio?: string | null
+          display_order?: never
+          id?: string | null
+          image_alt?: never
+          image_url?: never
+          is_active?: boolean | null
+          name?: string | null
+          role?: string | null
+        }
+        Update: {
+          bio?: string | null
+          display_order?: never
+          id?: string | null
+          image_alt?: never
+          image_url?: never
+          is_active?: boolean | null
+          name?: string | null
+          role?: string | null
         }
         Relationships: []
       }

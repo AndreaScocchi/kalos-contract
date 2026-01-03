@@ -23,7 +23,17 @@ export type Database = {
           discipline: string
           duration_minutes: number | null
           id: string
+          image_url: string | null
+          is_active: boolean | null
           name: string
+          updated_at: string | null
+          active_months: Json | null
+          journey_structure: Json | null
+          landing_subtitle: string | null
+          landing_title: string | null
+          program_objectives: Json | null
+          target_audience: Json | null
+          why_participate: Json | null
         }
         Insert: {
           color?: string | null
@@ -33,7 +43,17 @@ export type Database = {
           discipline: string
           duration_minutes?: number | null
           id?: string
+          image_url?: string | null
+          is_active?: boolean | null
           name: string
+          updated_at?: string | null
+          active_months?: Json | null
+          journey_structure?: Json | null
+          landing_subtitle?: string | null
+          landing_title?: string | null
+          program_objectives?: Json | null
+          target_audience?: Json | null
+          why_participate?: Json | null
         }
         Update: {
           color?: string | null
@@ -43,7 +63,17 @@ export type Database = {
           discipline?: string
           duration_minutes?: number | null
           id?: string
+          image_url?: string | null
+          is_active?: boolean | null
           name?: string
+          updated_at?: string | null
+          active_months?: Json | null
+          journey_structure?: Json | null
+          landing_subtitle?: string | null
+          landing_title?: string | null
+          program_objectives?: Json | null
+          target_audience?: Json | null
+          why_participate?: Json | null
         }
         Relationships: []
       }

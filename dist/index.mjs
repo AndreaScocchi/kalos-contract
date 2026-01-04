@@ -140,10 +140,10 @@ async function getPublicOperators(client) {
 async function getPublicEvents(client, params) {
   let query = fromPublic(client, "public_site_events").select("*");
   if (params == null ? void 0 : params.from) {
-    query = query.gte("starts_at", params.from);
+    query = query.gte("start_date", params.from);
   }
   if (params == null ? void 0 : params.to) {
-    query = query.lte("starts_at", params.to);
+    query = query.lte("start_date", params.to);
   }
   const { data, error } = await query;
   if (error) {

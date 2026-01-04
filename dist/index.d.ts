@@ -17,8 +17,19 @@ type Database = {
                     deleted_at: string | null;
                     description: string | null;
                     discipline: string;
+                    duration_minutes: number | null;
                     id: string;
+                    image_url: string | null;
+                    is_active: boolean | null;
                     name: string;
+                    updated_at: string | null;
+                    active_months: Json | null;
+                    journey_structure: Json | null;
+                    landing_subtitle: string | null;
+                    landing_title: string | null;
+                    program_objectives: Json | null;
+                    target_audience: Json | null;
+                    why_participate: Json | null;
                 };
                 Insert: {
                     color?: string | null;
@@ -26,8 +37,19 @@ type Database = {
                     deleted_at?: string | null;
                     description?: string | null;
                     discipline: string;
+                    duration_minutes?: number | null;
                     id?: string;
+                    image_url?: string | null;
+                    is_active?: boolean | null;
                     name: string;
+                    updated_at?: string | null;
+                    active_months?: Json | null;
+                    journey_structure?: Json | null;
+                    landing_subtitle?: string | null;
+                    landing_title?: string | null;
+                    program_objectives?: Json | null;
+                    target_audience?: Json | null;
+                    why_participate?: Json | null;
                 };
                 Update: {
                     color?: string | null;
@@ -35,8 +57,19 @@ type Database = {
                     deleted_at?: string | null;
                     description?: string | null;
                     discipline?: string;
+                    duration_minutes?: number | null;
                     id?: string;
+                    image_url?: string | null;
+                    is_active?: boolean | null;
                     name?: string;
+                    updated_at?: string | null;
+                    active_months?: Json | null;
+                    journey_structure?: Json | null;
+                    landing_subtitle?: string | null;
+                    landing_title?: string | null;
+                    program_objectives?: Json | null;
+                    target_audience?: Json | null;
+                    why_participate?: Json | null;
                 };
                 Relationships: [];
             };
@@ -198,6 +231,13 @@ type Database = {
                         referencedColumns: ["id"];
                     },
                     {
+                        foreignKeyName: "event_bookings_event_id_fkey";
+                        columns: ["event_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_events";
+                        referencedColumns: ["id"];
+                    },
+                    {
                         foreignKeyName: "event_bookings_user_id_fkey";
                         columns: ["user_id"];
                         isOneToOne: false;
@@ -321,6 +361,13 @@ type Database = {
                         foreignKeyName: "expenses_activity_id_fkey";
                         columns: ["activity_id"];
                         isOneToOne: false;
+                        referencedRelation: "public_site_activities";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "expenses_activity_id_fkey";
+                        columns: ["activity_id"];
+                        isOneToOne: false;
                         referencedRelation: "public_site_schedule";
                         referencedColumns: ["activity_id"];
                     },
@@ -336,6 +383,13 @@ type Database = {
                         columns: ["event_id"];
                         isOneToOne: false;
                         referencedRelation: "events";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "expenses_event_id_fkey";
+                        columns: ["event_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_events";
                         referencedColumns: ["id"];
                     },
                     {
@@ -364,6 +418,13 @@ type Database = {
                         columns: ["operator_id"];
                         isOneToOne: false;
                         referencedRelation: "operators";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "expenses_operator_id_fkey";
+                        columns: ["operator_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_operators";
                         referencedColumns: ["id"];
                     },
                     {
@@ -433,6 +494,13 @@ type Database = {
                         foreignKeyName: "lessons_activity_id_fkey";
                         columns: ["activity_id"];
                         isOneToOne: false;
+                        referencedRelation: "public_site_activities";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "lessons_activity_id_fkey";
+                        columns: ["activity_id"];
+                        isOneToOne: false;
                         referencedRelation: "public_site_schedule";
                         referencedColumns: ["activity_id"];
                     },
@@ -448,6 +516,13 @@ type Database = {
                         columns: ["operator_id"];
                         isOneToOne: false;
                         referencedRelation: "operators";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "lessons_operator_id_fkey";
+                        columns: ["operator_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_operators";
                         referencedColumns: ["id"];
                     },
                     {
@@ -609,6 +684,13 @@ type Database = {
                         foreignKeyName: "payouts_operator_id_fkey";
                         columns: ["operator_id"];
                         isOneToOne: false;
+                        referencedRelation: "public_site_operators";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "payouts_operator_id_fkey";
+                        columns: ["operator_id"];
+                        isOneToOne: false;
                         referencedRelation: "public_site_schedule";
                         referencedColumns: ["operator_id"];
                     }
@@ -636,6 +718,13 @@ type Database = {
                         columns: ["activity_id"];
                         isOneToOne: false;
                         referencedRelation: "activities";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "plan_activities_activity_id_fkey";
+                        columns: ["activity_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_activities";
                         referencedColumns: ["id"];
                     },
                     {
@@ -1002,6 +1091,108 @@ type Database = {
                 };
                 Relationships: [];
             };
+            public_site_activities: {
+                Row: {
+                    color: string | null;
+                    created_at: string | null;
+                    description: string | null;
+                    discipline: string | null;
+                    duration_minutes: number | null;
+                    id: string | null;
+                    name: string | null;
+                };
+                Insert: {
+                    color?: string | null;
+                    created_at?: string | null;
+                    description?: string | null;
+                    discipline?: string | null;
+                    duration_minutes?: number | null;
+                    id?: string | null;
+                    name?: string | null;
+                };
+                Update: {
+                    color?: string | null;
+                    created_at?: string | null;
+                    description?: string | null;
+                    discipline?: string | null;
+                    duration_minutes?: number | null;
+                    id?: string | null;
+                    name?: string | null;
+                };
+                Relationships: [];
+            };
+            public_site_events: {
+                Row: {
+                    created_at: string | null;
+                    description: string | null;
+                    end_date: string | null;
+                    id: string | null;
+                    image_url: string | null;
+                    link_url: string | null;
+                    registration_url: string | null;
+                    start_date: string | null;
+                    title: string | null;
+                    updated_at: string | null;
+                };
+                Insert: {
+                    created_at?: string | null;
+                    description?: string | null;
+                    end_date?: string | null;
+                    id?: string | null;
+                    image_url?: string | null;
+                    link_url?: string | null;
+                    registration_url?: string | null;
+                    start_date?: string | null;
+                    title?: string | null;
+                    updated_at?: string | null;
+                };
+                Update: {
+                    created_at?: string | null;
+                    description?: string | null;
+                    end_date?: string | null;
+                    id?: string | null;
+                    image_url?: string | null;
+                    link_url?: string | null;
+                    registration_url?: string | null;
+                    start_date?: string | null;
+                    title?: string | null;
+                    updated_at?: string | null;
+                };
+                Relationships: [];
+            };
+            public_site_operators: {
+                Row: {
+                    bio: string | null;
+                    display_order: number | null;
+                    id: string | null;
+                    image_alt: string | null;
+                    image_url: string | null;
+                    is_active: boolean | null;
+                    name: string | null;
+                    role: string | null;
+                };
+                Insert: {
+                    bio?: string | null;
+                    display_order?: never;
+                    id?: string | null;
+                    image_alt?: never;
+                    image_url?: never;
+                    is_active?: boolean | null;
+                    name?: string | null;
+                    role?: string | null;
+                };
+                Update: {
+                    bio?: string | null;
+                    display_order?: never;
+                    id?: string | null;
+                    image_alt?: never;
+                    image_url?: never;
+                    is_active?: boolean | null;
+                    name?: string | null;
+                    role?: string | null;
+                };
+                Relationships: [];
+            };
             public_site_pricing: {
                 Row: {
                     activities: Json | null;
@@ -1354,8 +1545,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 deleted_at: string | null;
                 description: string | null;
                 discipline: string;
+                duration_minutes: number | null;
                 id: string;
+                image_url: string | null;
+                is_active: boolean | null;
                 name: string;
+                updated_at: string | null;
+                active_months: Json | null;
+                journey_structure: Json | null;
+                landing_subtitle: string | null;
+                landing_title: string | null;
+                program_objectives: Json | null;
+                target_audience: Json | null;
+                why_participate: Json | null;
             };
             Insert: {
                 color?: string | null;
@@ -1363,8 +1565,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 deleted_at?: string | null;
                 description?: string | null;
                 discipline: string;
+                duration_minutes?: number | null;
                 id?: string;
+                image_url?: string | null;
+                is_active?: boolean | null;
                 name: string;
+                updated_at?: string | null;
+                active_months?: Json | null;
+                journey_structure?: Json | null;
+                landing_subtitle?: string | null;
+                landing_title?: string | null;
+                program_objectives?: Json | null;
+                target_audience?: Json | null;
+                why_participate?: Json | null;
             };
             Update: {
                 color?: string | null;
@@ -1372,8 +1585,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 deleted_at?: string | null;
                 description?: string | null;
                 discipline?: string;
+                duration_minutes?: number | null;
                 id?: string;
+                image_url?: string | null;
+                is_active?: boolean | null;
                 name?: string;
+                updated_at?: string | null;
+                active_months?: Json | null;
+                journey_structure?: Json | null;
+                landing_subtitle?: string | null;
+                landing_title?: string | null;
+                program_objectives?: Json | null;
+                target_audience?: Json | null;
+                why_participate?: Json | null;
             };
             Relationships: [];
         };
@@ -1523,6 +1747,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedRelation: "events";
                 referencedColumns: ["id"];
             }, {
+                foreignKeyName: "event_bookings_event_id_fkey";
+                columns: ["event_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_events";
+                referencedColumns: ["id"];
+            }, {
                 foreignKeyName: "event_bookings_user_id_fkey";
                 columns: ["user_id"];
                 isOneToOne: false;
@@ -1643,6 +1873,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 foreignKeyName: "expenses_activity_id_fkey";
                 columns: ["activity_id"];
                 isOneToOne: false;
+                referencedRelation: "public_site_activities";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "expenses_activity_id_fkey";
+                columns: ["activity_id"];
+                isOneToOne: false;
                 referencedRelation: "public_site_schedule";
                 referencedColumns: ["activity_id"];
             }, {
@@ -1656,6 +1892,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["event_id"];
                 isOneToOne: false;
                 referencedRelation: "events";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "expenses_event_id_fkey";
+                columns: ["event_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_events";
                 referencedColumns: ["id"];
             }, {
                 foreignKeyName: "expenses_lesson_id_fkey";
@@ -1680,6 +1922,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["operator_id"];
                 isOneToOne: false;
                 referencedRelation: "operators";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "expenses_operator_id_fkey";
+                columns: ["operator_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_operators";
                 referencedColumns: ["id"];
             }, {
                 foreignKeyName: "expenses_operator_id_fkey";
@@ -1745,6 +1993,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 foreignKeyName: "lessons_activity_id_fkey";
                 columns: ["activity_id"];
                 isOneToOne: false;
+                referencedRelation: "public_site_activities";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "lessons_activity_id_fkey";
+                columns: ["activity_id"];
+                isOneToOne: false;
                 referencedRelation: "public_site_schedule";
                 referencedColumns: ["activity_id"];
             }, {
@@ -1758,6 +2012,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["operator_id"];
                 isOneToOne: false;
                 referencedRelation: "operators";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "lessons_operator_id_fkey";
+                columns: ["operator_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_operators";
                 referencedColumns: ["id"];
             }, {
                 foreignKeyName: "lessons_operator_id_fkey";
@@ -1910,6 +2170,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 foreignKeyName: "payouts_operator_id_fkey";
                 columns: ["operator_id"];
                 isOneToOne: false;
+                referencedRelation: "public_site_operators";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "payouts_operator_id_fkey";
+                columns: ["operator_id"];
+                isOneToOne: false;
                 referencedRelation: "public_site_schedule";
                 referencedColumns: ["operator_id"];
             }];
@@ -1935,6 +2201,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["activity_id"];
                 isOneToOne: false;
                 referencedRelation: "activities";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "plan_activities_activity_id_fkey";
+                columns: ["activity_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_activities";
                 referencedColumns: ["id"];
             }, {
                 foreignKeyName: "plan_activities_activity_id_fkey";
@@ -2281,6 +2553,108 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             };
             Relationships: [];
         };
+        public_site_activities: {
+            Row: {
+                color: string | null;
+                created_at: string | null;
+                description: string | null;
+                discipline: string | null;
+                duration_minutes: number | null;
+                id: string | null;
+                name: string | null;
+            };
+            Insert: {
+                color?: string | null;
+                created_at?: string | null;
+                description?: string | null;
+                discipline?: string | null;
+                duration_minutes?: number | null;
+                id?: string | null;
+                name?: string | null;
+            };
+            Update: {
+                color?: string | null;
+                created_at?: string | null;
+                description?: string | null;
+                discipline?: string | null;
+                duration_minutes?: number | null;
+                id?: string | null;
+                name?: string | null;
+            };
+            Relationships: [];
+        };
+        public_site_events: {
+            Row: {
+                created_at: string | null;
+                description: string | null;
+                end_date: string | null;
+                id: string | null;
+                image_url: string | null;
+                link_url: string | null;
+                registration_url: string | null;
+                start_date: string | null;
+                title: string | null;
+                updated_at: string | null;
+            };
+            Insert: {
+                created_at?: string | null;
+                description?: string | null;
+                end_date?: string | null;
+                id?: string | null;
+                image_url?: string | null;
+                link_url?: string | null;
+                registration_url?: string | null;
+                start_date?: string | null;
+                title?: string | null;
+                updated_at?: string | null;
+            };
+            Update: {
+                created_at?: string | null;
+                description?: string | null;
+                end_date?: string | null;
+                id?: string | null;
+                image_url?: string | null;
+                link_url?: string | null;
+                registration_url?: string | null;
+                start_date?: string | null;
+                title?: string | null;
+                updated_at?: string | null;
+            };
+            Relationships: [];
+        };
+        public_site_operators: {
+            Row: {
+                bio: string | null;
+                display_order: number | null;
+                id: string | null;
+                image_alt: string | null;
+                image_url: string | null;
+                is_active: boolean | null;
+                name: string | null;
+                role: string | null;
+            };
+            Insert: {
+                bio?: string | null;
+                display_order?: never;
+                id?: string | null;
+                image_alt?: never;
+                image_url?: never;
+                is_active?: boolean | null;
+                name?: string | null;
+                role?: string | null;
+            };
+            Update: {
+                bio?: string | null;
+                display_order?: never;
+                id?: string | null;
+                image_alt?: never;
+                image_url?: never;
+                is_active?: boolean | null;
+                name?: string | null;
+                role?: string | null;
+            };
+            Relationships: [];
+        };
         public_site_pricing: {
             Row: {
                 activities: Json | null;
@@ -2470,8 +2844,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         deleted_at: string | null;
         description: string | null;
         discipline: string;
+        duration_minutes: number | null;
         id: string;
+        image_url: string | null;
+        is_active: boolean | null;
         name: string;
+        updated_at: string | null;
+        active_months: Json | null;
+        journey_structure: Json | null;
+        landing_subtitle: string | null;
+        landing_title: string | null;
+        program_objectives: Json | null;
+        target_audience: Json | null;
+        why_participate: Json | null;
     };
     Insert: {
         color?: string | null;
@@ -2479,8 +2864,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         deleted_at?: string | null;
         description?: string | null;
         discipline: string;
+        duration_minutes?: number | null;
         id?: string;
+        image_url?: string | null;
+        is_active?: boolean | null;
         name: string;
+        updated_at?: string | null;
+        active_months?: Json | null;
+        journey_structure?: Json | null;
+        landing_subtitle?: string | null;
+        landing_title?: string | null;
+        program_objectives?: Json | null;
+        target_audience?: Json | null;
+        why_participate?: Json | null;
     };
     Update: {
         color?: string | null;
@@ -2488,8 +2884,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         deleted_at?: string | null;
         description?: string | null;
         discipline?: string;
+        duration_minutes?: number | null;
         id?: string;
+        image_url?: string | null;
+        is_active?: boolean | null;
         name?: string;
+        updated_at?: string | null;
+        active_months?: Json | null;
+        journey_structure?: Json | null;
+        landing_subtitle?: string | null;
+        landing_title?: string | null;
+        program_objectives?: Json | null;
+        target_audience?: Json | null;
+        why_participate?: Json | null;
     };
     Relationships: [];
 } | {
@@ -2636,6 +3043,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "events";
         referencedColumns: ["id"];
     }, {
+        foreignKeyName: "event_bookings_event_id_fkey";
+        columns: ["event_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_events";
+        referencedColumns: ["id"];
+    }, {
         foreignKeyName: "event_bookings_user_id_fkey";
         columns: ["user_id"];
         isOneToOne: false;
@@ -2754,6 +3167,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         foreignKeyName: "expenses_activity_id_fkey";
         columns: ["activity_id"];
         isOneToOne: false;
+        referencedRelation: "public_site_activities";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "expenses_activity_id_fkey";
+        columns: ["activity_id"];
+        isOneToOne: false;
         referencedRelation: "public_site_schedule";
         referencedColumns: ["activity_id"];
     }, {
@@ -2767,6 +3186,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["event_id"];
         isOneToOne: false;
         referencedRelation: "events";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "expenses_event_id_fkey";
+        columns: ["event_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_events";
         referencedColumns: ["id"];
     }, {
         foreignKeyName: "expenses_lesson_id_fkey";
@@ -2791,6 +3216,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["operator_id"];
         isOneToOne: false;
         referencedRelation: "operators";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "expenses_operator_id_fkey";
+        columns: ["operator_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_operators";
         referencedColumns: ["id"];
     }, {
         foreignKeyName: "expenses_operator_id_fkey";
@@ -2855,6 +3286,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         foreignKeyName: "lessons_activity_id_fkey";
         columns: ["activity_id"];
         isOneToOne: false;
+        referencedRelation: "public_site_activities";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "lessons_activity_id_fkey";
+        columns: ["activity_id"];
+        isOneToOne: false;
         referencedRelation: "public_site_schedule";
         referencedColumns: ["activity_id"];
     }, {
@@ -2868,6 +3305,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["operator_id"];
         isOneToOne: false;
         referencedRelation: "operators";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "lessons_operator_id_fkey";
+        columns: ["operator_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_operators";
         referencedColumns: ["id"];
     }, {
         foreignKeyName: "lessons_operator_id_fkey";
@@ -3017,6 +3460,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         foreignKeyName: "payouts_operator_id_fkey";
         columns: ["operator_id"];
         isOneToOne: false;
+        referencedRelation: "public_site_operators";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "payouts_operator_id_fkey";
+        columns: ["operator_id"];
+        isOneToOne: false;
         referencedRelation: "public_site_schedule";
         referencedColumns: ["operator_id"];
     }];
@@ -3041,6 +3490,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["activity_id"];
         isOneToOne: false;
         referencedRelation: "activities";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "plan_activities_activity_id_fkey";
+        columns: ["activity_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_activities";
         referencedColumns: ["id"];
     }, {
         foreignKeyName: "plan_activities_activity_id_fkey";
@@ -3413,6 +3868,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     referencedRelation: "events";
     referencedColumns: ["id"];
 }, {
+    foreignKeyName: "event_bookings_event_id_fkey";
+    columns: ["event_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_events";
+    referencedColumns: ["id"];
+}, {
     foreignKeyName: "event_bookings_user_id_fkey";
     columns: ["user_id"];
     isOneToOne: false;
@@ -3423,6 +3884,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["activity_id"];
     isOneToOne: false;
     referencedRelation: "activities";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "expenses_activity_id_fkey";
+    columns: ["activity_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_activities";
     referencedColumns: ["id"];
 }, {
     foreignKeyName: "expenses_activity_id_fkey";
@@ -3441,6 +3908,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["event_id"];
     isOneToOne: false;
     referencedRelation: "events";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "expenses_event_id_fkey";
+    columns: ["event_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_events";
     referencedColumns: ["id"];
 }, {
     foreignKeyName: "expenses_lesson_id_fkey";
@@ -3470,6 +3943,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     foreignKeyName: "expenses_operator_id_fkey";
     columns: ["operator_id"];
     isOneToOne: false;
+    referencedRelation: "public_site_operators";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "expenses_operator_id_fkey";
+    columns: ["operator_id"];
+    isOneToOne: false;
     referencedRelation: "public_site_schedule";
     referencedColumns: ["operator_id"];
 }] | [{
@@ -3477,6 +3956,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["activity_id"];
     isOneToOne: false;
     referencedRelation: "activities";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "lessons_activity_id_fkey";
+    columns: ["activity_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_activities";
     referencedColumns: ["id"];
 }, {
     foreignKeyName: "lessons_activity_id_fkey";
@@ -3495,6 +3980,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["operator_id"];
     isOneToOne: false;
     referencedRelation: "operators";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "lessons_operator_id_fkey";
+    columns: ["operator_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_operators";
     referencedColumns: ["id"];
 }, {
     foreignKeyName: "lessons_operator_id_fkey";
@@ -3530,6 +4021,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     foreignKeyName: "payouts_operator_id_fkey";
     columns: ["operator_id"];
     isOneToOne: false;
+    referencedRelation: "public_site_operators";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "payouts_operator_id_fkey";
+    columns: ["operator_id"];
+    isOneToOne: false;
     referencedRelation: "public_site_schedule";
     referencedColumns: ["operator_id"];
 }] | [{
@@ -3537,6 +4034,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["activity_id"];
     isOneToOne: false;
     referencedRelation: "activities";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "plan_activities_activity_id_fkey";
+    columns: ["activity_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_activities";
     referencedColumns: ["id"];
 }, {
     foreignKeyName: "plan_activities_activity_id_fkey";
@@ -3654,8 +4157,19 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     deleted_at: string | null;
     description: string | null;
     discipline: string;
+    duration_minutes: number | null;
     id: string;
+    image_url: string | null;
+    is_active: boolean | null;
     name: string;
+    updated_at: string | null;
+    active_months: Json | null;
+    journey_structure: Json | null;
+    landing_subtitle: string | null;
+    landing_title: string | null;
+    program_objectives: Json | null;
+    target_audience: Json | null;
+    why_participate: Json | null;
 } | {
     client_id: string | null;
     created_at: string | null;
@@ -3846,8 +4360,19 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     deleted_at: string | null;
     description: string | null;
     discipline: string;
+    duration_minutes: number | null;
     id: string;
+    image_url: string | null;
+    is_active: boolean | null;
     name: string;
+    updated_at: string | null;
+    active_months: Json | null;
+    journey_structure: Json | null;
+    landing_subtitle: string | null;
+    landing_title: string | null;
+    program_objectives: Json | null;
+    target_audience: Json | null;
+    why_participate: Json | null;
 } | {
     client_id: string | null;
     created_at: string | null;
@@ -4038,8 +4563,19 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     deleted_at: string | null;
     description: string | null;
     discipline: string;
+    duration_minutes: number | null;
     id: string;
+    image_url: string | null;
+    is_active: boolean | null;
     name: string;
+    updated_at: string | null;
+    active_months: Json | null;
+    journey_structure: Json | null;
+    landing_subtitle: string | null;
+    landing_title: string | null;
+    program_objectives: Json | null;
+    target_audience: Json | null;
+    why_participate: Json | null;
 } | {
     client_id: string | null;
     created_at: string | null;
@@ -4230,8 +4766,19 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     deleted_at: string | null;
     description: string | null;
     discipline: string;
+    duration_minutes: number | null;
     id: string;
+    image_url: string | null;
+    is_active: boolean | null;
     name: string;
+    updated_at: string | null;
+    active_months: Json | null;
+    journey_structure: Json | null;
+    landing_subtitle: string | null;
+    landing_title: string | null;
+    program_objectives: Json | null;
+    target_audience: Json | null;
+    why_participate: Json | null;
 } | {
     client_id: string | null;
     created_at: string | null;
@@ -4416,12 +4963,13 @@ type GetPublicEventsParams = {
  * Recupera gli eventi pubblici dal database.
  * Questa funzione accede alla view public_site_events e applica filtri opzionali per date.
  *
- * NOTA: La view public_site_events deve essere creata nel database e i types devono essere rigenerati
- * prima di usare questa funzione.
+ * NOTA: Ogni evento è un record separato con una singola data/orario (starts_at/ends_at).
+ * Se un evento ha più date/orari, vengono creati record separati nel database.
+ * Per raggruppare eventi con lo stesso nome, farlo lato client.
  *
  * @param client - Il client Supabase (anonimo ok per views pubbliche)
  * @param params - Parametri opzionali per filtrare per date
- * @returns Promise con i dati degli eventi
+ * @returns Promise con i dati degli eventi (ogni evento ha una singola data/orario)
  * @throws Error se la query fallisce
  */
 declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetPublicEventsParams): Promise<({
@@ -4430,8 +4978,19 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     deleted_at: string | null;
     description: string | null;
     discipline: string;
+    duration_minutes: number | null;
     id: string;
+    image_url: string | null;
+    is_active: boolean | null;
     name: string;
+    updated_at: string | null;
+    active_months: Json | null;
+    journey_structure: Json | null;
+    landing_subtitle: string | null;
+    landing_title: string | null;
+    program_objectives: Json | null;
+    target_audience: Json | null;
+    why_participate: Json | null;
 } | {
     client_id: string | null;
     created_at: string | null;

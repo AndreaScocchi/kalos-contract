@@ -58,7 +58,7 @@ export async function bookLesson(
 ): Promise<BookLessonResult> {
   const { lessonId, subscriptionId } = params;
 
-  const { data, error } = await (client.rpc as any)('book_lesson', {
+  const { data, error } = await client.rpc('book_lesson', {
     p_lesson_id: lessonId,
     p_subscription_id: subscriptionId,
   });
@@ -87,7 +87,7 @@ export async function cancelBooking(
 ): Promise<CancelBookingResult> {
   const { bookingId } = params;
 
-  const { data, error } = await (client.rpc as any)('cancel_booking', {
+  const { data, error } = await client.rpc('cancel_booking', {
     p_booking_id: bookingId,
   });
 

@@ -40,7 +40,13 @@ function handleRpcError(error: any, rpcName: string): never {
   if (error?.message) {
     throw new Error(`RPC ${rpcName} failed: ${error.message}`);
   }
-  throw new Error(`RPC ${rpcName} failed with unknown error`);
+  if (error?.details) {
+    throw new Error(`RPC ${rpcName} failed: ${error.details}`);
+  }
+  if (error?.hint) {
+    throw new Error(`RPC ${rpcName} failed: ${error.hint}`);
+  }
+  throw new Error(`RPC ${rpcName} failed with unknown error: ${JSON.stringify(error)}`);
 }
 
 /**
@@ -87,9 +93,15 @@ export async function cancelBooking(
 ): Promise<CancelBookingResult> {
   const { bookingId } = params;
 
+  // Validazione: assicuriamoci che bookingId sia una stringa non vuota
+  if (!bookingId || typeof bookingId !== 'string') {
+    throw new Error('cancelBooking: bookingId must be a non-empty string');
+  }
+
+  // Chiamata RPC con tipo esplicito dal Database
   const { data, error } = await client.rpc('cancel_booking', {
     p_booking_id: bookingId,
-  });
+  } as Database['public']['Functions']['cancel_booking']['Args']);
 
   if (error) {
     handleRpcError(error, 'cancel_booking');

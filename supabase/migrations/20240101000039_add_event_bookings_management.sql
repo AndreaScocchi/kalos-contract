@@ -28,6 +28,26 @@ COMMENT ON COLUMN public.events.link IS
 ALTER TABLE public.event_bookings 
   ADD COLUMN IF NOT EXISTS client_id uuid;
 
+-- Rendere user_id nullable per supportare prenotazioni con solo client_id
+-- IMPORTANTE: Questo deve essere fatto PRIMA di aggiungere il constraint XOR
+-- e PRIMA di aggiungere la foreign key per client_id
+-- La foreign key esistente su user_id permette già NULL, quindi non serve modificarla
+DO $$
+BEGIN
+  -- Verifica se user_id è ancora NOT NULL e rendilo nullable
+  IF EXISTS (
+    SELECT 1 
+    FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+      AND table_name = 'event_bookings' 
+      AND column_name = 'user_id' 
+      AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE public.event_bookings 
+      ALTER COLUMN user_id DROP NOT NULL;
+  END IF;
+END $$;
+
 -- Aggiungi foreign key verso clients
 ALTER TABLE public.event_bookings 
   ADD CONSTRAINT event_bookings_client_id_fkey 

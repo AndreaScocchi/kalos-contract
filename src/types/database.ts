@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       activities: {
         Row: {
+          active_months: Json | null
           color: string | null
           created_at: string | null
           deleted_at: string | null
@@ -25,17 +26,18 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
-          name: string
-          updated_at: string | null
-          active_months: Json | null
           journey_structure: Json | null
           landing_subtitle: string | null
           landing_title: string | null
+          name: string
           program_objectives: Json | null
+          slug: string | null
           target_audience: Json | null
+          updated_at: string | null
           why_participate: Json | null
         }
         Insert: {
+          active_months?: Json | null
           color?: string | null
           created_at?: string | null
           deleted_at?: string | null
@@ -45,17 +47,18 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
-          name: string
-          updated_at?: string | null
-          active_months?: Json | null
           journey_structure?: Json | null
           landing_subtitle?: string | null
           landing_title?: string | null
+          name: string
           program_objectives?: Json | null
+          slug?: string | null
           target_audience?: Json | null
+          updated_at?: string | null
           why_participate?: Json | null
         }
         Update: {
+          active_months?: Json | null
           color?: string | null
           created_at?: string | null
           deleted_at?: string | null
@@ -65,14 +68,14 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
-          name?: string
-          updated_at?: string | null
-          active_months?: Json | null
           journey_structure?: Json | null
           landing_subtitle?: string | null
           landing_title?: string | null
+          name?: string
           program_objectives?: Json | null
+          slug?: string | null
           target_audience?: Json | null
+          updated_at?: string | null
           why_participate?: Json | null
         }
         Relationships: []
@@ -85,7 +88,6 @@ export type Database = {
           lesson_id: string
           status: Database["public"]["Enums"]["booking_status"]
           subscription_id: string | null
-          user_id: string | null
         }
         Insert: {
           client_id?: string | null
@@ -94,7 +96,6 @@ export type Database = {
           lesson_id: string
           status?: Database["public"]["Enums"]["booking_status"]
           subscription_id?: string | null
-          user_id?: string | null
         }
         Update: {
           client_id?: string | null
@@ -103,7 +104,6 @@ export type Database = {
           lesson_id?: string
           status?: Database["public"]["Enums"]["booking_status"]
           subscription_id?: string | null
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -146,13 +146,6 @@ export type Database = {
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "subscriptions_with_remaining"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bookings_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -206,6 +199,7 @@ export type Database = {
       }
       event_bookings: {
         Row: {
+          client_id: string | null
           created_at: string | null
           event_id: string
           id: string
@@ -213,6 +207,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string | null
           event_id: string
           id?: string
@@ -220,6 +215,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string | null
           event_id?: string
           id?: string
@@ -227,6 +223,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "event_bookings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "event_bookings_event_id_fkey"
             columns: ["event_id"]
@@ -261,11 +264,12 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
-          link: string
+          link: string | null
           location: string | null
           name: string
           price_cents: number | null
           starts_at: string
+          time_slots: Json | null
           updated_at: string
         }
         Insert: {
@@ -278,11 +282,12 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
-          link: string
+          link?: string | null
           location?: string | null
           name: string
           price_cents?: number | null
           starts_at: string
+          time_slots?: Json | null
           updated_at?: string
         }
         Update: {
@@ -295,11 +300,12 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
-          link?: string
+          link?: string | null
           location?: string | null
           name?: string
           price_cents?: number | null
           starts_at?: string
+          time_slots?: Json | null
           updated_at?: string
         }
         Relationships: []
@@ -444,6 +450,7 @@ export type Database = {
         Row: {
           activity_id: string
           assigned_client_id: string | null
+          assigned_subscription_id: string | null
           booking_deadline_minutes: number | null
           cancel_deadline_minutes: number | null
           capacity: number
@@ -459,6 +466,7 @@ export type Database = {
         Insert: {
           activity_id: string
           assigned_client_id?: string | null
+          assigned_subscription_id?: string | null
           booking_deadline_minutes?: number | null
           cancel_deadline_minutes?: number | null
           capacity: number
@@ -474,6 +482,7 @@ export type Database = {
         Update: {
           activity_id?: string
           assigned_client_id?: string | null
+          assigned_subscription_id?: string | null
           booking_deadline_minutes?: number | null
           cancel_deadline_minutes?: number | null
           capacity?: number
@@ -513,6 +522,20 @@ export type Database = {
             columns: ["assigned_client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lessons_assigned_subscription_id_fkey"
+            columns: ["assigned_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lessons_assigned_subscription_id_fkey"
+            columns: ["assigned_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions_with_remaining"
             referencedColumns: ["id"]
           },
           {
@@ -954,13 +977,13 @@ export type Database = {
           custom_name: string | null
           custom_price_cents: number | null
           custom_validity_days: number | null
+          deleted_at: string | null
           expires_at: string
           id: string
           metadata: Json | null
           plan_id: string
           started_at: string
           status: Database["public"]["Enums"]["subscription_status"]
-          user_id: string | null
         }
         Insert: {
           client_id?: string | null
@@ -969,13 +992,13 @@ export type Database = {
           custom_name?: string | null
           custom_price_cents?: number | null
           custom_validity_days?: number | null
+          deleted_at?: string | null
           expires_at: string
           id?: string
           metadata?: Json | null
           plan_id: string
           started_at?: string
           status?: Database["public"]["Enums"]["subscription_status"]
-          user_id?: string | null
         }
         Update: {
           client_id?: string | null
@@ -984,13 +1007,13 @@ export type Database = {
           custom_name?: string | null
           custom_price_cents?: number | null
           custom_validity_days?: number | null
+          deleted_at?: string | null
           expires_at?: string
           id?: string
           metadata?: Json | null
           plan_id?: string
           started_at?: string
           status?: Database["public"]["Enums"]["subscription_status"]
-          user_id?: string | null
         }
         Relationships: [
           {
@@ -1012,13 +1035,6 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "public_site_pricing"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subscriptions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1097,31 +1113,64 @@ export type Database = {
       }
       public_site_activities: {
         Row: {
+          active_months: Json | null
           color: string | null
           created_at: string | null
           description: string | null
           discipline: string | null
           duration_minutes: number | null
           id: string | null
+          image_url: string | null
+          is_active: boolean | null
+          journey_structure: Json | null
+          landing_subtitle: string | null
+          landing_title: string | null
           name: string | null
+          program_objectives: Json | null
+          slug: string | null
+          target_audience: Json | null
+          updated_at: string | null
+          why_participate: Json | null
         }
         Insert: {
+          active_months?: Json | null
           color?: string | null
           created_at?: string | null
           description?: string | null
           discipline?: string | null
           duration_minutes?: number | null
           id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          journey_structure?: Json | null
+          landing_subtitle?: string | null
+          landing_title?: string | null
           name?: string | null
+          program_objectives?: Json | null
+          slug?: string | null
+          target_audience?: Json | null
+          updated_at?: string | null
+          why_participate?: Json | null
         }
         Update: {
+          active_months?: Json | null
           color?: string | null
           created_at?: string | null
           description?: string | null
           discipline?: string | null
           duration_minutes?: number | null
           id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          journey_structure?: Json | null
+          landing_subtitle?: string | null
+          landing_title?: string | null
           name?: string | null
+          program_objectives?: Json | null
+          slug?: string | null
+          target_audience?: Json | null
+          updated_at?: string | null
+          why_participate?: Json | null
         }
         Relationships: []
       }
@@ -1247,7 +1296,6 @@ export type Database = {
           remaining_entries: number | null
           started_at: string | null
           status: Database["public"]["Enums"]["subscription_status"] | null
-          user_id: string | null
         }
         Relationships: [
           {
@@ -1271,23 +1319,18 @@ export type Database = {
             referencedRelation: "public_site_pricing"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "subscriptions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
     }
     Functions: {
+      book_event: { Args: { p_event_id: string }; Returns: Json }
       book_lesson: {
         Args: { p_lesson_id: string; p_subscription_id?: string }
         Returns: Json
       }
       can_access_finance: { Args: never; Returns: boolean }
       cancel_booking: { Args: { p_booking_id: string }; Returns: Json }
+      cancel_event_booking: { Args: { p_booking_id: string }; Returns: Json }
       create_user_profile: {
         Args: {
           full_name: string
@@ -1315,6 +1358,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      fix_missing_cancel_restore_entries: {
+        Args: never
+        Returns: {
+          booking_id: string
+          restored: boolean
+          subscription_id: string
+        }[]
+      }
+      generate_slug_from_discipline: {
+        Args: { discipline_text: string }
+        Returns: string
+      }
       get_financial_kpis: {
         Args: { p_month_end?: string; p_month_start?: string }
         Returns: Json
@@ -1327,6 +1382,10 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_finance: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      staff_book_event: {
+        Args: { p_client_id: string; p_event_id: string }
+        Returns: Json
+      }
       staff_book_lesson: {
         Args: {
           p_client_id: string
@@ -1336,6 +1395,10 @@ export type Database = {
         Returns: Json
       }
       staff_cancel_booking: { Args: { p_booking_id: string }; Returns: Json }
+      staff_cancel_event_booking: {
+        Args: { p_booking_id: string }
+        Returns: Json
+      }
       staff_update_booking_status: {
         Args: {
           p_booking_id: string

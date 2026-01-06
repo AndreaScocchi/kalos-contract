@@ -108,6 +108,53 @@ async function cancelBooking(client, params) {
   }
   return data;
 }
+async function bookEvent(client, params) {
+  const { eventId } = params;
+  const { data, error } = await client.rpc("book_event", {
+    p_event_id: eventId
+  });
+  if (error) {
+    handleRpcError(error, "book_event");
+  }
+  return data;
+}
+async function cancelEventBooking(client, params) {
+  const { bookingId } = params;
+  if (!bookingId || typeof bookingId !== "string") {
+    throw new Error("cancelEventBooking: bookingId must be a non-empty string");
+  }
+  const { data, error } = await client.rpc("cancel_event_booking", {
+    p_booking_id: bookingId
+  });
+  if (error) {
+    handleRpcError(error, "cancel_event_booking");
+  }
+  return data;
+}
+async function staffBookEvent(client, params) {
+  const { eventId, clientId } = params;
+  const { data, error } = await client.rpc("staff_book_event", {
+    p_event_id: eventId,
+    p_client_id: clientId
+  });
+  if (error) {
+    handleRpcError(error, "staff_book_event");
+  }
+  return data;
+}
+async function staffCancelEventBooking(client, params) {
+  const { bookingId } = params;
+  if (!bookingId || typeof bookingId !== "string") {
+    throw new Error("staffCancelEventBooking: bookingId must be a non-empty string");
+  }
+  const { data, error } = await client.rpc("staff_cancel_event_booking", {
+    p_booking_id: bookingId
+  });
+  if (error) {
+    handleRpcError(error, "staff_cancel_event_booking");
+  }
+  return data;
+}
 
 // src/queries/public.ts
 function fromPublic(client, view) {
@@ -162,17 +209,83 @@ async function getPublicEvents(client, params) {
   }
   return data;
 }
+async function getEventsWithAvailability(client, params) {
+  let query = client.from("events").select(`
+      id,
+      name,
+      description,
+      image_url,
+      link,
+      starts_at,
+      ends_at,
+      is_active,
+      created_at,
+      updated_at,
+      deleted_at,
+      capacity,
+      location,
+      price_cents,
+      currency
+    `).eq("is_active", true).is("deleted_at", null);
+  if (params == null ? void 0 : params.from) {
+    query = query.gte("starts_at", params.from);
+  }
+  if (params == null ? void 0 : params.to) {
+    query = query.lte("starts_at", params.to);
+  }
+  const { data: events, error: eventsError } = await query;
+  if (eventsError) {
+    throw new Error(`Failed to fetch events: ${eventsError.message}`);
+  }
+  if (!events || events.length === 0) {
+    return [];
+  }
+  const eventIds = events.map((e) => e.id);
+  const { data: bookingsCount, error: bookingsError } = await client.from("event_bookings").select("event_id").in("event_id", eventIds).in("status", ["booked", "attended", "no_show"]);
+  if (bookingsError) {
+    throw new Error(`Failed to fetch bookings count: ${bookingsError.message}`);
+  }
+  const bookingsCountMap = /* @__PURE__ */ new Map();
+  if (bookingsCount) {
+    for (const booking of bookingsCount) {
+      const count = bookingsCountMap.get(booking.event_id) || 0;
+      bookingsCountMap.set(booking.event_id, count + 1);
+    }
+  }
+  const result = events.map((event) => {
+    const bookedCount = bookingsCountMap.get(event.id) || 0;
+    const availableSpots = event.capacity !== null ? Math.max(0, event.capacity - bookedCount) : null;
+    const isFull = event.capacity !== null && availableSpots === 0;
+    return {
+      ...event,
+      booked_count: bookedCount,
+      available_spots: availableSpots,
+      is_full: isFull
+    };
+  }).filter((event) => {
+    if (params == null ? void 0 : params.onlyAvailable) {
+      return !event.is_full;
+    }
+    return true;
+  });
+  return result;
+}
 
 exports.assertSupabaseConfig = assertSupabaseConfig;
+exports.bookEvent = bookEvent;
 exports.bookLesson = bookLesson;
 exports.cancelBooking = cancelBooking;
+exports.cancelEventBooking = cancelEventBooking;
 exports.createSupabaseBrowserClient = createSupabaseBrowserClient;
 exports.createSupabaseExpoClient = createSupabaseExpoClient;
 exports.fromPublic = fromPublic;
+exports.getEventsWithAvailability = getEventsWithAvailability;
 exports.getPublicActivities = getPublicActivities;
 exports.getPublicEvents = getPublicEvents;
 exports.getPublicOperators = getPublicOperators;
 exports.getPublicPricing = getPublicPricing;
 exports.getPublicSchedule = getPublicSchedule;
+exports.staffBookEvent = staffBookEvent;
+exports.staffCancelEventBooking = staffCancelEventBooking;
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

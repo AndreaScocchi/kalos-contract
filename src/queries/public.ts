@@ -179,3 +179,138 @@ export async function getPublicEvents(
   return data;
 }
 
+/**
+ * Tipo per evento con conteggio posti disponibili
+ */
+export type EventWithAvailability = {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  link: string | null;
+  starts_at: string;
+  ends_at: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  capacity: number | null;
+  location: string | null;
+  price_cents: number | null;
+  currency: string | null;
+  booked_count: number;
+  available_spots: number | null; // null se capacity è null (illimitato)
+  is_full: boolean;
+};
+
+/**
+ * Parametri opzionali per filtrare gli eventi con disponibilità
+ */
+export type GetEventsWithAvailabilityParams = {
+  from?: string;
+  to?: string;
+  onlyAvailable?: boolean; // Se true, mostra solo eventi con posti disponibili
+};
+
+/**
+ * Recupera gli eventi con conteggio posti disponibili.
+ * Questa funzione è utile per mostrare all'utente quanti posti sono ancora disponibili.
+ * 
+ * @param client - Il client Supabase autenticato
+ * @param params - Parametri opzionali per filtrare
+ * @returns Promise con gli eventi arricchiti con disponibilità
+ * @throws Error se la query fallisce
+ */
+export async function getEventsWithAvailability(
+  client: SupabaseClient<Database>,
+  params?: GetEventsWithAvailabilityParams
+): Promise<EventWithAvailability[]> {
+  // Query base per eventi attivi e non soft-deleted
+  let query = client
+    .from('events')
+    .select(`
+      id,
+      name,
+      description,
+      image_url,
+      link,
+      starts_at,
+      ends_at,
+      is_active,
+      created_at,
+      updated_at,
+      deleted_at,
+      capacity,
+      location,
+      price_cents,
+      currency
+    `)
+    .eq('is_active', true)
+    .is('deleted_at', null);
+
+  // Filtri per data
+  if (params?.from) {
+    query = query.gte('starts_at', params.from);
+  }
+  if (params?.to) {
+    query = query.lte('starts_at', params.to);
+  }
+
+  const { data: events, error: eventsError } = await query;
+
+  if (eventsError) {
+    throw new Error(`Failed to fetch events: ${eventsError.message}`);
+  }
+
+  if (!events || events.length === 0) {
+    return [];
+  }
+
+  // Recupera conteggio prenotazioni per ogni evento
+  const eventIds = events.map((e) => e.id);
+
+  const { data: bookingsCount, error: bookingsError } = await client
+    .from('event_bookings')
+    .select('event_id')
+    .in('event_id', eventIds)
+    .in('status', ['booked', 'attended', 'no_show']);
+
+  if (bookingsError) {
+    throw new Error(`Failed to fetch bookings count: ${bookingsError.message}`);
+  }
+
+  // Calcola conteggio per evento
+  const bookingsCountMap = new Map<string, number>();
+  if (bookingsCount) {
+    for (const booking of bookingsCount) {
+      const count = bookingsCountMap.get(booking.event_id) || 0;
+      bookingsCountMap.set(booking.event_id, count + 1);
+    }
+  }
+
+  // Costruisci risultato con disponibilità
+  const result: EventWithAvailability[] = events
+    .map((event) => {
+      const bookedCount = bookingsCountMap.get(event.id) || 0;
+      const availableSpots =
+        event.capacity !== null ? Math.max(0, event.capacity - bookedCount) : null;
+      const isFull = event.capacity !== null && availableSpots === 0;
+
+      return {
+        ...event,
+        booked_count: bookedCount,
+        available_spots: availableSpots,
+        is_full: isFull,
+      };
+    })
+    .filter((event) => {
+      // Filtra solo disponibili se richiesto
+      if (params?.onlyAvailable) {
+        return !event.is_full;
+      }
+      return true;
+    });
+
+  return result;
+}
+

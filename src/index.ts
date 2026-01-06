@@ -30,12 +30,22 @@ export type {
 export {
   bookLesson,
   cancelBooking,
+  bookEvent,
+  cancelEventBooking,
+  staffBookEvent,
+  staffCancelEventBooking,
 } from './rpc';
 export type {
   BookLessonResult,
   CancelBookingResult,
   BookLessonParams,
   CancelBookingParams,
+  BookEventResult,
+  CancelEventBookingResult,
+  BookEventParams,
+  CancelEventBookingParams,
+  StaffBookEventParams,
+  StaffCancelEventBookingParams,
 } from './rpc';
 
 // Public queries
@@ -46,10 +56,13 @@ export {
   getPublicActivities,
   getPublicOperators,
   getPublicEvents,
+  getEventsWithAvailability,
 } from './queries/public';
 export type {
   PublicViewName,
   GetPublicScheduleParams,
   GetPublicEventsParams,
+  EventWithAvailability,
+  GetEventsWithAvailabilityParams,
 } from './queries/public';
 

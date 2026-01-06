@@ -76,7 +76,13 @@ function handleRpcError(error, rpcName) {
   if (error == null ? void 0 : error.message) {
     throw new Error(`RPC ${rpcName} failed: ${error.message}`);
   }
-  throw new Error(`RPC ${rpcName} failed with unknown error`);
+  if (error == null ? void 0 : error.details) {
+    throw new Error(`RPC ${rpcName} failed: ${error.details}`);
+  }
+  if (error == null ? void 0 : error.hint) {
+    throw new Error(`RPC ${rpcName} failed: ${error.hint}`);
+  }
+  throw new Error(`RPC ${rpcName} failed with unknown error: ${JSON.stringify(error)}`);
 }
 async function bookLesson(client, params) {
   const { lessonId, subscriptionId } = params;
@@ -91,6 +97,9 @@ async function bookLesson(client, params) {
 }
 async function cancelBooking(client, params) {
   const { bookingId } = params;
+  if (!bookingId || typeof bookingId !== "string") {
+    throw new Error("cancelBooking: bookingId must be a non-empty string");
+  }
   const { data, error } = await client.rpc("cancel_booking", {
     p_booking_id: bookingId
   });

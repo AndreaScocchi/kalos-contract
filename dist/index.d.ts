@@ -12,6 +12,7 @@ type Database = {
         Tables: {
             activities: {
                 Row: {
+                    active_months: Json | null;
                     color: string | null;
                     created_at: string | null;
                     deleted_at: string | null;
@@ -21,17 +22,18 @@ type Database = {
                     id: string;
                     image_url: string | null;
                     is_active: boolean | null;
-                    name: string;
-                    updated_at: string | null;
-                    active_months: Json | null;
                     journey_structure: Json | null;
                     landing_subtitle: string | null;
                     landing_title: string | null;
+                    name: string;
                     program_objectives: Json | null;
+                    slug: string | null;
                     target_audience: Json | null;
+                    updated_at: string | null;
                     why_participate: Json | null;
                 };
                 Insert: {
+                    active_months?: Json | null;
                     color?: string | null;
                     created_at?: string | null;
                     deleted_at?: string | null;
@@ -41,17 +43,18 @@ type Database = {
                     id?: string;
                     image_url?: string | null;
                     is_active?: boolean | null;
-                    name: string;
-                    updated_at?: string | null;
-                    active_months?: Json | null;
                     journey_structure?: Json | null;
                     landing_subtitle?: string | null;
                     landing_title?: string | null;
+                    name: string;
                     program_objectives?: Json | null;
+                    slug?: string | null;
                     target_audience?: Json | null;
+                    updated_at?: string | null;
                     why_participate?: Json | null;
                 };
                 Update: {
+                    active_months?: Json | null;
                     color?: string | null;
                     created_at?: string | null;
                     deleted_at?: string | null;
@@ -61,14 +64,14 @@ type Database = {
                     id?: string;
                     image_url?: string | null;
                     is_active?: boolean | null;
-                    name?: string;
-                    updated_at?: string | null;
-                    active_months?: Json | null;
                     journey_structure?: Json | null;
                     landing_subtitle?: string | null;
                     landing_title?: string | null;
+                    name?: string;
                     program_objectives?: Json | null;
+                    slug?: string | null;
                     target_audience?: Json | null;
+                    updated_at?: string | null;
                     why_participate?: Json | null;
                 };
                 Relationships: [];
@@ -81,7 +84,6 @@ type Database = {
                     lesson_id: string;
                     status: Database["public"]["Enums"]["booking_status"];
                     subscription_id: string | null;
-                    user_id: string | null;
                 };
                 Insert: {
                     client_id?: string | null;
@@ -90,7 +92,6 @@ type Database = {
                     lesson_id: string;
                     status?: Database["public"]["Enums"]["booking_status"];
                     subscription_id?: string | null;
-                    user_id?: string | null;
                 };
                 Update: {
                     client_id?: string | null;
@@ -99,7 +100,6 @@ type Database = {
                     lesson_id?: string;
                     status?: Database["public"]["Enums"]["booking_status"];
                     subscription_id?: string | null;
-                    user_id?: string | null;
                 };
                 Relationships: [
                     {
@@ -142,13 +142,6 @@ type Database = {
                         columns: ["subscription_id"];
                         isOneToOne: false;
                         referencedRelation: "subscriptions_with_remaining";
-                        referencedColumns: ["id"];
-                    },
-                    {
-                        foreignKeyName: "bookings_user_id_fkey";
-                        columns: ["user_id"];
-                        isOneToOne: false;
-                        referencedRelation: "profiles";
                         referencedColumns: ["id"];
                     }
                 ];
@@ -202,6 +195,7 @@ type Database = {
             };
             event_bookings: {
                 Row: {
+                    client_id: string | null;
                     created_at: string | null;
                     event_id: string;
                     id: string;
@@ -209,6 +203,7 @@ type Database = {
                     user_id: string;
                 };
                 Insert: {
+                    client_id?: string | null;
                     created_at?: string | null;
                     event_id: string;
                     id?: string;
@@ -216,6 +211,7 @@ type Database = {
                     user_id: string;
                 };
                 Update: {
+                    client_id?: string | null;
                     created_at?: string | null;
                     event_id?: string;
                     id?: string;
@@ -223,6 +219,13 @@ type Database = {
                     user_id?: string;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: "event_bookings_client_id_fkey";
+                        columns: ["client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
+                        referencedColumns: ["id"];
+                    },
                     {
                         foreignKeyName: "event_bookings_event_id_fkey";
                         columns: ["event_id"];
@@ -257,11 +260,12 @@ type Database = {
                     id: string;
                     image_url: string | null;
                     is_active: boolean;
-                    link: string;
+                    link: string | null;
                     location: string | null;
                     name: string;
                     price_cents: number | null;
                     starts_at: string;
+                    time_slots: Json | null;
                     updated_at: string;
                 };
                 Insert: {
@@ -274,11 +278,12 @@ type Database = {
                     id?: string;
                     image_url?: string | null;
                     is_active?: boolean;
-                    link: string;
+                    link?: string | null;
                     location?: string | null;
                     name: string;
                     price_cents?: number | null;
                     starts_at: string;
+                    time_slots?: Json | null;
                     updated_at?: string;
                 };
                 Update: {
@@ -291,11 +296,12 @@ type Database = {
                     id?: string;
                     image_url?: string | null;
                     is_active?: boolean;
-                    link?: string;
+                    link?: string | null;
                     location?: string | null;
                     name?: string;
                     price_cents?: number | null;
                     starts_at?: string;
+                    time_slots?: Json | null;
                     updated_at?: string;
                 };
                 Relationships: [];
@@ -440,6 +446,7 @@ type Database = {
                 Row: {
                     activity_id: string;
                     assigned_client_id: string | null;
+                    assigned_subscription_id: string | null;
                     booking_deadline_minutes: number | null;
                     cancel_deadline_minutes: number | null;
                     capacity: number;
@@ -455,6 +462,7 @@ type Database = {
                 Insert: {
                     activity_id: string;
                     assigned_client_id?: string | null;
+                    assigned_subscription_id?: string | null;
                     booking_deadline_minutes?: number | null;
                     cancel_deadline_minutes?: number | null;
                     capacity: number;
@@ -470,6 +478,7 @@ type Database = {
                 Update: {
                     activity_id?: string;
                     assigned_client_id?: string | null;
+                    assigned_subscription_id?: string | null;
                     booking_deadline_minutes?: number | null;
                     cancel_deadline_minutes?: number | null;
                     capacity?: number;
@@ -509,6 +518,20 @@ type Database = {
                         columns: ["assigned_client_id"];
                         isOneToOne: false;
                         referencedRelation: "clients";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "lessons_assigned_subscription_id_fkey";
+                        columns: ["assigned_subscription_id"];
+                        isOneToOne: false;
+                        referencedRelation: "subscriptions";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "lessons_assigned_subscription_id_fkey";
+                        columns: ["assigned_subscription_id"];
+                        isOneToOne: false;
+                        referencedRelation: "subscriptions_with_remaining";
                         referencedColumns: ["id"];
                     },
                     {
@@ -950,13 +973,13 @@ type Database = {
                     custom_name: string | null;
                     custom_price_cents: number | null;
                     custom_validity_days: number | null;
+                    deleted_at: string | null;
                     expires_at: string;
                     id: string;
                     metadata: Json | null;
                     plan_id: string;
                     started_at: string;
                     status: Database["public"]["Enums"]["subscription_status"];
-                    user_id: string | null;
                 };
                 Insert: {
                     client_id?: string | null;
@@ -965,13 +988,13 @@ type Database = {
                     custom_name?: string | null;
                     custom_price_cents?: number | null;
                     custom_validity_days?: number | null;
+                    deleted_at?: string | null;
                     expires_at: string;
                     id?: string;
                     metadata?: Json | null;
                     plan_id: string;
                     started_at?: string;
                     status?: Database["public"]["Enums"]["subscription_status"];
-                    user_id?: string | null;
                 };
                 Update: {
                     client_id?: string | null;
@@ -980,13 +1003,13 @@ type Database = {
                     custom_name?: string | null;
                     custom_price_cents?: number | null;
                     custom_validity_days?: number | null;
+                    deleted_at?: string | null;
                     expires_at?: string;
                     id?: string;
                     metadata?: Json | null;
                     plan_id?: string;
                     started_at?: string;
                     status?: Database["public"]["Enums"]["subscription_status"];
-                    user_id?: string | null;
                 };
                 Relationships: [
                     {
@@ -1008,13 +1031,6 @@ type Database = {
                         columns: ["plan_id"];
                         isOneToOne: false;
                         referencedRelation: "public_site_pricing";
-                        referencedColumns: ["id"];
-                    },
-                    {
-                        foreignKeyName: "subscriptions_user_id_fkey";
-                        columns: ["user_id"];
-                        isOneToOne: false;
-                        referencedRelation: "profiles";
                         referencedColumns: ["id"];
                     }
                 ];
@@ -1093,31 +1109,64 @@ type Database = {
             };
             public_site_activities: {
                 Row: {
+                    active_months: Json | null;
                     color: string | null;
                     created_at: string | null;
                     description: string | null;
                     discipline: string | null;
                     duration_minutes: number | null;
                     id: string | null;
+                    image_url: string | null;
+                    is_active: boolean | null;
+                    journey_structure: Json | null;
+                    landing_subtitle: string | null;
+                    landing_title: string | null;
                     name: string | null;
+                    program_objectives: Json | null;
+                    slug: string | null;
+                    target_audience: Json | null;
+                    updated_at: string | null;
+                    why_participate: Json | null;
                 };
                 Insert: {
+                    active_months?: Json | null;
                     color?: string | null;
                     created_at?: string | null;
                     description?: string | null;
                     discipline?: string | null;
                     duration_minutes?: number | null;
                     id?: string | null;
+                    image_url?: string | null;
+                    is_active?: boolean | null;
+                    journey_structure?: Json | null;
+                    landing_subtitle?: string | null;
+                    landing_title?: string | null;
                     name?: string | null;
+                    program_objectives?: Json | null;
+                    slug?: string | null;
+                    target_audience?: Json | null;
+                    updated_at?: string | null;
+                    why_participate?: Json | null;
                 };
                 Update: {
+                    active_months?: Json | null;
                     color?: string | null;
                     created_at?: string | null;
                     description?: string | null;
                     discipline?: string | null;
                     duration_minutes?: number | null;
                     id?: string | null;
+                    image_url?: string | null;
+                    is_active?: boolean | null;
+                    journey_structure?: Json | null;
+                    landing_subtitle?: string | null;
+                    landing_title?: string | null;
                     name?: string | null;
+                    program_objectives?: Json | null;
+                    slug?: string | null;
+                    target_audience?: Json | null;
+                    updated_at?: string | null;
+                    why_participate?: Json | null;
                 };
                 Relationships: [];
             };
@@ -1243,7 +1292,6 @@ type Database = {
                     remaining_entries: number | null;
                     started_at: string | null;
                     status: Database["public"]["Enums"]["subscription_status"] | null;
-                    user_id: string | null;
                 };
                 Relationships: [
                     {
@@ -1266,18 +1314,17 @@ type Database = {
                         isOneToOne: false;
                         referencedRelation: "public_site_pricing";
                         referencedColumns: ["id"];
-                    },
-                    {
-                        foreignKeyName: "subscriptions_user_id_fkey";
-                        columns: ["user_id"];
-                        isOneToOne: false;
-                        referencedRelation: "profiles";
-                        referencedColumns: ["id"];
                     }
                 ];
             };
         };
         Functions: {
+            book_event: {
+                Args: {
+                    p_event_id: string;
+                };
+                Returns: Json;
+            };
             book_lesson: {
                 Args: {
                     p_lesson_id: string;
@@ -1290,6 +1337,12 @@ type Database = {
                 Returns: boolean;
             };
             cancel_booking: {
+                Args: {
+                    p_booking_id: string;
+                };
+                Returns: Json;
+            };
+            cancel_event_booking: {
                 Args: {
                     p_booking_id: string;
                 };
@@ -1322,6 +1375,20 @@ type Database = {
                     isSetofReturn: false;
                 };
             };
+            fix_missing_cancel_restore_entries: {
+                Args: never;
+                Returns: {
+                    booking_id: string;
+                    restored: boolean;
+                    subscription_id: string;
+                }[];
+            };
+            generate_slug_from_discipline: {
+                Args: {
+                    discipline_text: string;
+                };
+                Returns: string;
+            };
             get_financial_kpis: {
                 Args: {
                     p_month_end?: string;
@@ -1352,6 +1419,13 @@ type Database = {
                 Args: never;
                 Returns: boolean;
             };
+            staff_book_event: {
+                Args: {
+                    p_client_id: string;
+                    p_event_id: string;
+                };
+                Returns: Json;
+            };
             staff_book_lesson: {
                 Args: {
                     p_client_id: string;
@@ -1361,6 +1435,12 @@ type Database = {
                 Returns: Json;
             };
             staff_cancel_booking: {
+                Args: {
+                    p_booking_id: string;
+                };
+                Returns: Json;
+            };
+            staff_cancel_event_booking: {
                 Args: {
                     p_booking_id: string;
                 };
@@ -1498,6 +1578,46 @@ type CancelBookingParams = {
     bookingId: string;
 };
 /**
+ * Risultato della chiamata RPC book_event
+ */
+type BookEventResult = {
+    ok: boolean;
+    reason?: string;
+    booking_id?: string | number;
+};
+/**
+ * Risultato della chiamata RPC cancel_event_booking
+ */
+type CancelEventBookingResult = {
+    ok: boolean;
+    reason?: string;
+};
+/**
+ * Parametri per bookEvent
+ */
+type BookEventParams = {
+    eventId: string;
+};
+/**
+ * Parametri per cancelEventBooking
+ */
+type CancelEventBookingParams = {
+    bookingId: string;
+};
+/**
+ * Parametri per staffBookEvent
+ */
+type StaffBookEventParams = {
+    eventId: string;
+    clientId: string;
+};
+/**
+ * Parametri per staffCancelEventBooking
+ */
+type StaffCancelEventBookingParams = {
+    bookingId: string;
+};
+/**
  * Wrapper tipizzato per la RPC book_lesson.
  * Prenota una lezione usando l'ID della lezione e opzionalmente l'ID della subscription.
  *
@@ -1517,6 +1637,46 @@ declare function bookLesson(client: SupabaseClient<Database>, params: BookLesson
  * @throws Error se la chiamata RPC fallisce
  */
 declare function cancelBooking(client: SupabaseClient<Database>, params: CancelBookingParams): Promise<CancelBookingResult>;
+/**
+ * Wrapper tipizzato per la RPC book_event.
+ * Prenota un evento usando l'ID dell'evento.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param params - Parametri per la prenotazione
+ * @returns Promise<BookEventResult> con ok, reason opzionale, e booking_id se successo
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function bookEvent(client: SupabaseClient<Database>, params: BookEventParams): Promise<BookEventResult>;
+/**
+ * Wrapper tipizzato per la RPC cancel_event_booking.
+ * Cancella una prenotazione evento usando l'ID della prenotazione.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param params - Parametri per la cancellazione
+ * @returns Promise<CancelEventBookingResult> con ok e reason opzionale
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function cancelEventBooking(client: SupabaseClient<Database>, params: CancelEventBookingParams): Promise<CancelEventBookingResult>;
+/**
+ * Wrapper tipizzato per la RPC staff_book_event.
+ * Prenota un evento per un cliente (staff only).
+ *
+ * @param client - Il client Supabase autenticato (deve essere staff)
+ * @param params - Parametri per la prenotazione
+ * @returns Promise<BookEventResult> con ok, reason opzionale, e booking_id se successo
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function staffBookEvent(client: SupabaseClient<Database>, params: StaffBookEventParams): Promise<BookEventResult>;
+/**
+ * Wrapper tipizzato per la RPC staff_cancel_event_booking.
+ * Cancella una prenotazione evento (staff only).
+ *
+ * @param client - Il client Supabase autenticato (deve essere staff)
+ * @param params - Parametri per la cancellazione
+ * @returns Promise<CancelEventBookingResult> con ok e reason opzionale
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function staffCancelEventBooking(client: SupabaseClient<Database>, params: StaffCancelEventBookingParams): Promise<CancelEventBookingResult>;
 
 /**
  * Tipo per i nomi delle views pubbliche del sito.
@@ -1540,6 +1700,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     Tables: {
         activities: {
             Row: {
+                active_months: Json | null;
                 color: string | null;
                 created_at: string | null;
                 deleted_at: string | null;
@@ -1549,17 +1710,18 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id: string;
                 image_url: string | null;
                 is_active: boolean | null;
-                name: string;
-                updated_at: string | null;
-                active_months: Json | null;
                 journey_structure: Json | null;
                 landing_subtitle: string | null;
                 landing_title: string | null;
+                name: string;
                 program_objectives: Json | null;
+                slug: string | null;
                 target_audience: Json | null;
+                updated_at: string | null;
                 why_participate: Json | null;
             };
             Insert: {
+                active_months?: Json | null;
                 color?: string | null;
                 created_at?: string | null;
                 deleted_at?: string | null;
@@ -1569,17 +1731,18 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id?: string;
                 image_url?: string | null;
                 is_active?: boolean | null;
-                name: string;
-                updated_at?: string | null;
-                active_months?: Json | null;
                 journey_structure?: Json | null;
                 landing_subtitle?: string | null;
                 landing_title?: string | null;
+                name: string;
                 program_objectives?: Json | null;
+                slug?: string | null;
                 target_audience?: Json | null;
+                updated_at?: string | null;
                 why_participate?: Json | null;
             };
             Update: {
+                active_months?: Json | null;
                 color?: string | null;
                 created_at?: string | null;
                 deleted_at?: string | null;
@@ -1589,14 +1752,14 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id?: string;
                 image_url?: string | null;
                 is_active?: boolean | null;
-                name?: string;
-                updated_at?: string | null;
-                active_months?: Json | null;
                 journey_structure?: Json | null;
                 landing_subtitle?: string | null;
                 landing_title?: string | null;
+                name?: string;
                 program_objectives?: Json | null;
+                slug?: string | null;
                 target_audience?: Json | null;
+                updated_at?: string | null;
                 why_participate?: Json | null;
             };
             Relationships: [];
@@ -1609,7 +1772,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 lesson_id: string;
                 status: Database["public"]["Enums"]["booking_status"];
                 subscription_id: string | null;
-                user_id: string | null;
             };
             Insert: {
                 client_id?: string | null;
@@ -1618,7 +1780,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 lesson_id: string;
                 status?: Database["public"]["Enums"]["booking_status"];
                 subscription_id?: string | null;
-                user_id?: string | null;
             };
             Update: {
                 client_id?: string | null;
@@ -1627,7 +1788,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 lesson_id?: string;
                 status?: Database["public"]["Enums"]["booking_status"];
                 subscription_id?: string | null;
-                user_id?: string | null;
             };
             Relationships: [{
                 foreignKeyName: "bookings_client_id_fkey";
@@ -1664,12 +1824,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["subscription_id"];
                 isOneToOne: false;
                 referencedRelation: "subscriptions_with_remaining";
-                referencedColumns: ["id"];
-            }, {
-                foreignKeyName: "bookings_user_id_fkey";
-                columns: ["user_id"];
-                isOneToOne: false;
-                referencedRelation: "profiles";
                 referencedColumns: ["id"];
             }];
         };
@@ -1720,13 +1874,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         };
         event_bookings: {
             Row: {
+                client_id: string | null;
                 created_at: string | null;
                 event_id: string;
                 id: string;
-                status: Database["public"]["Enums"]["booking_status"];
+                status: 
+                /**
+                 * Parametri opzionali per filtrare gli eventi con disponibilità
+                 */
+                Database["public"]["Enums"]["booking_status"];
                 user_id: string;
             };
             Insert: {
+                client_id?: string | null;
                 created_at?: string | null;
                 event_id: string;
                 id?: string;
@@ -1734,6 +1894,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 user_id: string;
             };
             Update: {
+                client_id?: string | null;
                 created_at?: string | null;
                 event_id?: string;
                 id?: string;
@@ -1741,6 +1902,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 user_id?: string;
             };
             Relationships: [{
+                foreignKeyName: "event_bookings_client_id_fkey";
+                columns: ["client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
+                referencedColumns: ["id"];
+            }, {
                 foreignKeyName: "event_bookings_event_id_fkey";
                 columns: ["event_id"];
                 isOneToOne: false;
@@ -1771,11 +1938,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id: string;
                 image_url: string | null;
                 is_active: boolean;
-                link: string;
+                link: string | null;
                 location: string | null;
                 name: string;
                 price_cents: number | null;
                 starts_at: string;
+                time_slots: Json | null;
                 updated_at: string;
             };
             Insert: {
@@ -1788,11 +1956,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id?: string;
                 image_url?: string | null;
                 is_active?: boolean;
-                link: string;
+                link?: string | null;
                 location?: string | null;
                 name: string;
                 price_cents?: number | null;
                 starts_at: string;
+                time_slots?: Json | null;
                 updated_at?: string;
             };
             Update: {
@@ -1805,11 +1974,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id?: string;
                 image_url?: string | null;
                 is_active?: boolean;
-                link?: string;
+                link?: string | null;
                 location?: string | null;
                 name?: string;
                 price_cents?: number | null;
                 starts_at?: string;
+                time_slots?: Json | null;
                 updated_at?: string;
             };
             Relationships: [];
@@ -1941,6 +2111,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Row: {
                 activity_id: string;
                 assigned_client_id: string | null;
+                assigned_subscription_id: string | null;
                 booking_deadline_minutes: number | null;
                 cancel_deadline_minutes: number | null;
                 capacity: number;
@@ -1956,6 +2127,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Insert: {
                 activity_id: string;
                 assigned_client_id?: string | null;
+                assigned_subscription_id?: string | null;
                 booking_deadline_minutes?: number | null;
                 cancel_deadline_minutes?: number | null;
                 capacity: number;
@@ -1971,6 +2143,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Update: {
                 activity_id?: string;
                 assigned_client_id?: string | null;
+                assigned_subscription_id?: string | null;
                 booking_deadline_minutes?: number | null;
                 cancel_deadline_minutes?: number | null;
                 capacity?: number;
@@ -2006,6 +2179,18 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["assigned_client_id"];
                 isOneToOne: false;
                 referencedRelation: "clients";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "lessons_assigned_subscription_id_fkey";
+                columns: ["assigned_subscription_id"];
+                isOneToOne: false;
+                referencedRelation: "subscriptions";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "lessons_assigned_subscription_id_fkey";
+                columns: ["assigned_subscription_id"];
+                isOneToOne: false;
+                referencedRelation: "subscriptions_with_remaining";
                 referencedColumns: ["id"];
             }, {
                 foreignKeyName: "lessons_operator_id_fkey";
@@ -2422,13 +2607,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 custom_name: string | null;
                 custom_price_cents: number | null;
                 custom_validity_days: number | null;
+                deleted_at: string | null;
                 expires_at: string;
                 id: string;
                 metadata: Json | null;
                 plan_id: string;
                 started_at: string;
                 status: Database["public"]["Enums"]["subscription_status"];
-                user_id: string | null;
             };
             Insert: {
                 client_id?: string | null;
@@ -2437,13 +2622,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 custom_name?: string | null;
                 custom_price_cents?: number | null;
                 custom_validity_days?: number | null;
+                deleted_at?: string | null;
                 expires_at: string;
                 id?: string;
                 metadata?: Json | null;
                 plan_id: string;
                 started_at?: string;
                 status?: Database["public"]["Enums"]["subscription_status"];
-                user_id?: string | null;
             };
             Update: {
                 client_id?: string | null;
@@ -2452,13 +2637,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 custom_name?: string | null;
                 custom_price_cents?: number | null;
                 custom_validity_days?: number | null;
+                deleted_at?: string | null;
                 expires_at?: string;
                 id?: string;
                 metadata?: Json | null;
                 plan_id?: string;
                 started_at?: string;
                 status?: Database["public"]["Enums"]["subscription_status"];
-                user_id?: string | null;
             };
             Relationships: [{
                 foreignKeyName: "subscriptions_client_id_fkey";
@@ -2477,12 +2662,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["plan_id"];
                 isOneToOne: false;
                 referencedRelation: "public_site_pricing";
-                referencedColumns: ["id"];
-            }, {
-                foreignKeyName: "subscriptions_user_id_fkey";
-                columns: ["user_id"];
-                isOneToOne: false;
-                referencedRelation: "profiles";
                 referencedColumns: ["id"];
             }];
         };
@@ -2555,31 +2734,64 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         };
         public_site_activities: {
             Row: {
+                active_months: Json | null;
                 color: string | null;
                 created_at: string | null;
                 description: string | null;
                 discipline: string | null;
                 duration_minutes: number | null;
                 id: string | null;
+                image_url: string | null;
+                is_active: boolean | null;
+                journey_structure: Json | null;
+                landing_subtitle: string | null;
+                landing_title: string | null;
                 name: string | null;
+                program_objectives: Json | null;
+                slug: string | null;
+                target_audience: Json | null;
+                updated_at: string | null;
+                why_participate: Json | null;
             };
             Insert: {
+                active_months?: Json | null;
                 color?: string | null;
                 created_at?: string | null;
                 description?: string | null;
                 discipline?: string | null;
                 duration_minutes?: number | null;
                 id?: string | null;
+                image_url?: string | null;
+                is_active?: boolean | null;
+                journey_structure?: Json | null;
+                landing_subtitle?: string | null;
+                landing_title?: string | null;
                 name?: string | null;
+                program_objectives?: Json | null;
+                slug?: string | null;
+                target_audience?: Json | null;
+                updated_at?: string | null;
+                why_participate?: Json | null;
             };
             Update: {
+                active_months?: Json | null;
                 color?: string | null;
                 created_at?: string | null;
                 description?: string | null;
                 discipline?: string | null;
                 duration_minutes?: number | null;
                 id?: string | null;
+                image_url?: string | null;
+                is_active?: boolean | null;
+                journey_structure?: Json | null;
+                landing_subtitle?: string | null;
+                landing_title?: string | null;
                 name?: string | null;
+                program_objectives?: Json | null;
+                slug?: string | null;
+                target_audience?: Json | null;
+                updated_at?: string | null;
+                why_participate?: Json | null;
             };
             Relationships: [];
         };
@@ -2705,7 +2917,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 remaining_entries: number | null;
                 started_at: string | null;
                 status: Database["public"]["Enums"]["subscription_status"] | null;
-                user_id: string | null;
             };
             Relationships: [{
                 foreignKeyName: "subscriptions_client_id_fkey";
@@ -2725,16 +2936,16 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 isOneToOne: false;
                 referencedRelation: "public_site_pricing";
                 referencedColumns: ["id"];
-            }, {
-                foreignKeyName: "subscriptions_user_id_fkey";
-                columns: ["user_id"];
-                isOneToOne: false;
-                referencedRelation: "profiles";
-                referencedColumns: ["id"];
             }];
         };
     };
     Functions: {
+        book_event: {
+            Args: {
+                p_event_id: string;
+            };
+            Returns: Json;
+        };
         book_lesson: {
             Args: {
                 p_lesson_id: string;
@@ -2747,6 +2958,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Returns: boolean;
         };
         cancel_booking: {
+            Args: {
+                p_booking_id: string;
+            };
+            Returns: Json;
+        };
+        cancel_event_booking: {
             Args: {
                 p_booking_id: string;
             };
@@ -2779,6 +2996,20 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 isSetofReturn: false;
             };
         };
+        fix_missing_cancel_restore_entries: {
+            Args: never;
+            Returns: {
+                booking_id: string;
+                restored: boolean;
+                subscription_id: string;
+            }[];
+        };
+        generate_slug_from_discipline: {
+            Args: {
+                discipline_text: string;
+            };
+            Returns: string;
+        };
         get_financial_kpis: {
             Args: {
                 p_month_end?: string;
@@ -2809,6 +3040,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Args: never;
             Returns: boolean;
         };
+        staff_book_event: {
+            Args: {
+                p_client_id: string;
+                p_event_id: string;
+            };
+            Returns: Json;
+        };
         staff_book_lesson: {
             Args: {
                 p_client_id: string;
@@ -2818,6 +3056,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Returns: Json;
         };
         staff_cancel_booking: {
+            Args: {
+                p_booking_id: string;
+            };
+            Returns: Json;
+        };
+        staff_cancel_event_booking: {
             Args: {
                 p_booking_id: string;
             };
@@ -2839,6 +3083,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     CompositeTypes: { [_ in never]: never; };
 }, {
     Row: {
+        active_months: Json | null;
         color: string | null;
         created_at: string | null;
         deleted_at: string | null;
@@ -2848,17 +3093,18 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id: string;
         image_url: string | null;
         is_active: boolean | null;
-        name: string;
-        updated_at: string | null;
-        active_months: Json | null;
         journey_structure: Json | null;
         landing_subtitle: string | null;
         landing_title: string | null;
+        name: string;
         program_objectives: Json | null;
+        slug: string | null;
         target_audience: Json | null;
+        updated_at: string | null;
         why_participate: Json | null;
     };
     Insert: {
+        active_months?: Json | null;
         color?: string | null;
         created_at?: string | null;
         deleted_at?: string | null;
@@ -2868,17 +3114,18 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id?: string;
         image_url?: string | null;
         is_active?: boolean | null;
-        name: string;
-        updated_at?: string | null;
-        active_months?: Json | null;
         journey_structure?: Json | null;
         landing_subtitle?: string | null;
         landing_title?: string | null;
+        name: string;
         program_objectives?: Json | null;
+        slug?: string | null;
         target_audience?: Json | null;
+        updated_at?: string | null;
         why_participate?: Json | null;
     };
     Update: {
+        active_months?: Json | null;
         color?: string | null;
         created_at?: string | null;
         deleted_at?: string | null;
@@ -2888,14 +3135,14 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id?: string;
         image_url?: string | null;
         is_active?: boolean | null;
-        name?: string;
-        updated_at?: string | null;
-        active_months?: Json | null;
         journey_structure?: Json | null;
         landing_subtitle?: string | null;
         landing_title?: string | null;
+        name?: string;
         program_objectives?: Json | null;
+        slug?: string | null;
         target_audience?: Json | null;
+        updated_at?: string | null;
         why_participate?: Json | null;
     };
     Relationships: [];
@@ -2907,7 +3154,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         lesson_id: string;
         status: Database["public"]["Enums"]["booking_status"];
         subscription_id: string | null;
-        user_id: string | null;
     };
     Insert: {
         client_id?: string | null;
@@ -2916,7 +3162,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         lesson_id: string;
         status?: Database["public"]["Enums"]["booking_status"];
         subscription_id?: string | null;
-        user_id?: string | null;
     };
     Update: {
         client_id?: string | null;
@@ -2925,7 +3170,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         lesson_id?: string;
         status?: Database["public"]["Enums"]["booking_status"];
         subscription_id?: string | null;
-        user_id?: string | null;
     };
     Relationships: [{
         foreignKeyName: "bookings_client_id_fkey";
@@ -2962,12 +3206,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["subscription_id"];
         isOneToOne: false;
         referencedRelation: "subscriptions_with_remaining";
-        referencedColumns: ["id"];
-    }, {
-        foreignKeyName: "bookings_user_id_fkey";
-        columns: ["user_id"];
-        isOneToOne: false;
-        referencedRelation: "profiles";
         referencedColumns: ["id"];
     }];
 } | {
@@ -3016,13 +3254,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     }];
 } | {
     Row: {
+        client_id: string | null;
         created_at: string | null;
         event_id: string;
         id: string;
-        status: Database["public"]["Enums"]["booking_status"];
+        status: 
+        /**
+         * Parametri opzionali per filtrare gli eventi con disponibilità
+         */
+        Database["public"]["Enums"]["booking_status"];
         user_id: string;
     };
     Insert: {
+        client_id?: string | null;
         created_at?: string | null;
         event_id: string;
         id?: string;
@@ -3030,6 +3274,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         user_id: string;
     };
     Update: {
+        client_id?: string | null;
         created_at?: string | null;
         event_id?: string;
         id?: string;
@@ -3037,6 +3282,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         user_id?: string;
     };
     Relationships: [{
+        foreignKeyName: "event_bookings_client_id_fkey";
+        columns: ["client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
+        referencedColumns: ["id"];
+    }, {
         foreignKeyName: "event_bookings_event_id_fkey";
         columns: ["event_id"];
         isOneToOne: false;
@@ -3066,11 +3317,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id: string;
         image_url: string | null;
         is_active: boolean;
-        link: string;
+        link: string | null;
         location: string | null;
         name: string;
         price_cents: number | null;
         starts_at: string;
+        time_slots: Json | null;
         updated_at: string;
     };
     Insert: {
@@ -3083,11 +3335,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id?: string;
         image_url?: string | null;
         is_active?: boolean;
-        link: string;
+        link?: string | null;
         location?: string | null;
         name: string;
         price_cents?: number | null;
         starts_at: string;
+        time_slots?: Json | null;
         updated_at?: string;
     };
     Update: {
@@ -3100,11 +3353,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id?: string;
         image_url?: string | null;
         is_active?: boolean;
-        link?: string;
+        link?: string | null;
         location?: string | null;
         name?: string;
         price_cents?: number | null;
         starts_at?: string;
+        time_slots?: Json | null;
         updated_at?: string;
     };
     Relationships: [];
@@ -3234,6 +3488,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     Row: {
         activity_id: string;
         assigned_client_id: string | null;
+        assigned_subscription_id: string | null;
         booking_deadline_minutes: number | null;
         cancel_deadline_minutes: number | null;
         capacity: number;
@@ -3249,6 +3504,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     Insert: {
         activity_id: string;
         assigned_client_id?: string | null;
+        assigned_subscription_id?: string | null;
         booking_deadline_minutes?: number | null;
         cancel_deadline_minutes?: number | null;
         capacity: number;
@@ -3264,6 +3520,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     Update: {
         activity_id?: string;
         assigned_client_id?: string | null;
+        assigned_subscription_id?: string | null;
         booking_deadline_minutes?: number | null;
         cancel_deadline_minutes?: number | null;
         capacity?: number;
@@ -3299,6 +3556,18 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["assigned_client_id"];
         isOneToOne: false;
         referencedRelation: "clients";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "lessons_assigned_subscription_id_fkey";
+        columns: ["assigned_subscription_id"];
+        isOneToOne: false;
+        referencedRelation: "subscriptions";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "lessons_assigned_subscription_id_fkey";
+        columns: ["assigned_subscription_id"];
+        isOneToOne: false;
+        referencedRelation: "subscriptions_with_remaining";
         referencedColumns: ["id"];
     }, {
         foreignKeyName: "lessons_operator_id_fkey";
@@ -3706,13 +3975,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         custom_name: string | null;
         custom_price_cents: number | null;
         custom_validity_days: number | null;
+        deleted_at: string | null;
         expires_at: string;
         id: string;
         metadata: Json | null;
         plan_id: string;
         started_at: string;
         status: Database["public"]["Enums"]["subscription_status"];
-        user_id: string | null;
     };
     Insert: {
         client_id?: string | null;
@@ -3721,13 +3990,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         custom_name?: string | null;
         custom_price_cents?: number | null;
         custom_validity_days?: number | null;
+        deleted_at?: string | null;
         expires_at: string;
         id?: string;
         metadata?: Json | null;
         plan_id: string;
         started_at?: string;
         status?: Database["public"]["Enums"]["subscription_status"];
-        user_id?: string | null;
     };
     Update: {
         client_id?: string | null;
@@ -3736,13 +4005,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         custom_name?: string | null;
         custom_price_cents?: number | null;
         custom_validity_days?: number | null;
+        deleted_at?: string | null;
         expires_at?: string;
         id?: string;
         metadata?: Json | null;
         plan_id?: string;
         started_at?: string;
         status?: Database["public"]["Enums"]["subscription_status"];
-        user_id?: string | null;
     };
     Relationships: [{
         foreignKeyName: "subscriptions_client_id_fkey";
@@ -3761,12 +4030,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["plan_id"];
         isOneToOne: false;
         referencedRelation: "public_site_pricing";
-        referencedColumns: ["id"];
-    }, {
-        foreignKeyName: "subscriptions_user_id_fkey";
-        columns: ["user_id"];
-        isOneToOne: false;
-        referencedRelation: "profiles";
         referencedColumns: ["id"];
     }];
 } | {
@@ -3849,12 +4112,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     isOneToOne: false;
     referencedRelation: "subscriptions_with_remaining";
     referencedColumns: ["id"];
-}, {
-    foreignKeyName: "bookings_user_id_fkey";
-    columns: ["user_id"];
-    isOneToOne: false;
-    referencedRelation: "profiles";
-    referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "clients_profile_id_fkey";
     columns: ["profile_id"];
@@ -3862,6 +4119,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     referencedRelation: "profiles";
     referencedColumns: ["id"];
 }] | [{
+    foreignKeyName: "event_bookings_client_id_fkey";
+    columns: ["client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
+    referencedColumns: ["id"];
+}, {
     foreignKeyName: "event_bookings_event_id_fkey";
     columns: ["event_id"];
     isOneToOne: false;
@@ -3974,6 +4237,18 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["assigned_client_id"];
     isOneToOne: false;
     referencedRelation: "clients";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "lessons_assigned_subscription_id_fkey";
+    columns: ["assigned_subscription_id"];
+    isOneToOne: false;
+    referencedRelation: "subscriptions";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "lessons_assigned_subscription_id_fkey";
+    columns: ["assigned_subscription_id"];
+    isOneToOne: false;
+    referencedRelation: "subscriptions_with_remaining";
     referencedColumns: ["id"];
 }, {
     foreignKeyName: "lessons_operator_id_fkey";
@@ -4101,12 +4376,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     isOneToOne: false;
     referencedRelation: "public_site_pricing";
     referencedColumns: ["id"];
-}, {
-    foreignKeyName: "subscriptions_user_id_fkey";
-    columns: ["user_id"];
-    isOneToOne: false;
-    referencedRelation: "profiles";
-    referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "waitlist_lesson_id_fkey";
     columns: ["lesson_id"];
@@ -4152,6 +4421,7 @@ type GetPublicScheduleParams = {
  * @throws Error se la query fallisce
  */
 declare function getPublicSchedule(client: SupabaseClient<Database>, params?: GetPublicScheduleParams): Promise<({
+    active_months: Json | null;
     color: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -4161,14 +4431,14 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     id: string;
     image_url: string | null;
     is_active: boolean | null;
-    name: string;
-    updated_at: string | null;
-    active_months: Json | null;
     journey_structure: Json | null;
     landing_subtitle: string | null;
     landing_title: string | null;
+    name: string;
     program_objectives: Json | null;
+    slug: string | null;
     target_audience: Json | null;
+    updated_at: string | null;
     why_participate: Json | null;
 } | {
     client_id: string | null;
@@ -4177,7 +4447,6 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     lesson_id: string;
     status: Database["public"]["Enums"]["booking_status"];
     subscription_id: string | null;
-    user_id: string | null;
 } | {
     created_at: string;
     deleted_at: string | null;
@@ -4190,10 +4459,15 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     profile_id: string | null;
     updated_at: string;
 } | {
+    client_id: string | null;
     created_at: string | null;
     event_id: string;
     id: string;
-    status: Database["public"]["Enums"]["booking_status"];
+    status: 
+    /**
+     * Parametri opzionali per filtrare gli eventi con disponibilità
+     */
+    Database["public"]["Enums"]["booking_status"];
     user_id: string;
 } | {
     capacity: number | null;
@@ -4205,11 +4479,12 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     id: string;
     image_url: string | null;
     is_active: boolean;
-    link: string;
+    link: string | null;
     location: string | null;
     name: string;
     price_cents: number | null;
     starts_at: string;
+    time_slots: Json | null;
     updated_at: string;
 } | {
     activity_id: string | null;
@@ -4229,6 +4504,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
 } | {
     activity_id: string;
     assigned_client_id: string | null;
+    assigned_subscription_id: string | null;
     booking_deadline_minutes: number | null;
     cancel_deadline_minutes: number | null;
     capacity: number;
@@ -4330,13 +4606,13 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     custom_name: string | null;
     custom_price_cents: number | null;
     custom_validity_days: number | null;
+    deleted_at: string | null;
     expires_at: string;
     id: string;
     metadata: Json | null;
     plan_id: string;
     started_at: string;
     status: Database["public"]["Enums"]["subscription_status"];
-    user_id: string | null;
 } | {
     created_at: string | null;
     id: string;
@@ -4355,6 +4631,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
  * @throws Error se la query fallisce
  */
 declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
+    active_months: Json | null;
     color: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -4364,14 +4641,14 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     id: string;
     image_url: string | null;
     is_active: boolean | null;
-    name: string;
-    updated_at: string | null;
-    active_months: Json | null;
     journey_structure: Json | null;
     landing_subtitle: string | null;
     landing_title: string | null;
+    name: string;
     program_objectives: Json | null;
+    slug: string | null;
     target_audience: Json | null;
+    updated_at: string | null;
     why_participate: Json | null;
 } | {
     client_id: string | null;
@@ -4380,7 +4657,6 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     lesson_id: string;
     status: Database["public"]["Enums"]["booking_status"];
     subscription_id: string | null;
-    user_id: string | null;
 } | {
     created_at: string;
     deleted_at: string | null;
@@ -4393,10 +4669,15 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     profile_id: string | null;
     updated_at: string;
 } | {
+    client_id: string | null;
     created_at: string | null;
     event_id: string;
     id: string;
-    status: Database["public"]["Enums"]["booking_status"];
+    status: 
+    /**
+     * Parametri opzionali per filtrare gli eventi con disponibilità
+     */
+    Database["public"]["Enums"]["booking_status"];
     user_id: string;
 } | {
     capacity: number | null;
@@ -4408,11 +4689,12 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     id: string;
     image_url: string | null;
     is_active: boolean;
-    link: string;
+    link: string | null;
     location: string | null;
     name: string;
     price_cents: number | null;
     starts_at: string;
+    time_slots: Json | null;
     updated_at: string;
 } | {
     activity_id: string | null;
@@ -4432,6 +4714,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
 } | {
     activity_id: string;
     assigned_client_id: string | null;
+    assigned_subscription_id: string | null;
     booking_deadline_minutes: number | null;
     cancel_deadline_minutes: number | null;
     capacity: number;
@@ -4533,13 +4816,13 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     custom_name: string | null;
     custom_price_cents: number | null;
     custom_validity_days: number | null;
+    deleted_at: string | null;
     expires_at: string;
     id: string;
     metadata: Json | null;
     plan_id: string;
     started_at: string;
     status: Database["public"]["Enums"]["subscription_status"];
-    user_id: string | null;
 } | {
     created_at: string | null;
     id: string;
@@ -4558,6 +4841,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
  * @throws Error se la query fallisce
  */
 declare function getPublicActivities(client: SupabaseClient<Database>): Promise<({
+    active_months: Json | null;
     color: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -4567,14 +4851,14 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     id: string;
     image_url: string | null;
     is_active: boolean | null;
-    name: string;
-    updated_at: string | null;
-    active_months: Json | null;
     journey_structure: Json | null;
     landing_subtitle: string | null;
     landing_title: string | null;
+    name: string;
     program_objectives: Json | null;
+    slug: string | null;
     target_audience: Json | null;
+    updated_at: string | null;
     why_participate: Json | null;
 } | {
     client_id: string | null;
@@ -4583,7 +4867,6 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     lesson_id: string;
     status: Database["public"]["Enums"]["booking_status"];
     subscription_id: string | null;
-    user_id: string | null;
 } | {
     created_at: string;
     deleted_at: string | null;
@@ -4596,10 +4879,15 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     profile_id: string | null;
     updated_at: string;
 } | {
+    client_id: string | null;
     created_at: string | null;
     event_id: string;
     id: string;
-    status: Database["public"]["Enums"]["booking_status"];
+    status: 
+    /**
+     * Parametri opzionali per filtrare gli eventi con disponibilità
+     */
+    Database["public"]["Enums"]["booking_status"];
     user_id: string;
 } | {
     capacity: number | null;
@@ -4611,11 +4899,12 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     id: string;
     image_url: string | null;
     is_active: boolean;
-    link: string;
+    link: string | null;
     location: string | null;
     name: string;
     price_cents: number | null;
     starts_at: string;
+    time_slots: Json | null;
     updated_at: string;
 } | {
     activity_id: string | null;
@@ -4635,6 +4924,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
 } | {
     activity_id: string;
     assigned_client_id: string | null;
+    assigned_subscription_id: string | null;
     booking_deadline_minutes: number | null;
     cancel_deadline_minutes: number | null;
     capacity: number;
@@ -4736,13 +5026,13 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     custom_name: string | null;
     custom_price_cents: number | null;
     custom_validity_days: number | null;
+    deleted_at: string | null;
     expires_at: string;
     id: string;
     metadata: Json | null;
     plan_id: string;
     started_at: string;
     status: Database["public"]["Enums"]["subscription_status"];
-    user_id: string | null;
 } | {
     created_at: string | null;
     id: string;
@@ -4761,6 +5051,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
  * @throws Error se la query fallisce
  */
 declare function getPublicOperators(client: SupabaseClient<Database>): Promise<({
+    active_months: Json | null;
     color: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -4770,14 +5061,14 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     id: string;
     image_url: string | null;
     is_active: boolean | null;
-    name: string;
-    updated_at: string | null;
-    active_months: Json | null;
     journey_structure: Json | null;
     landing_subtitle: string | null;
     landing_title: string | null;
+    name: string;
     program_objectives: Json | null;
+    slug: string | null;
     target_audience: Json | null;
+    updated_at: string | null;
     why_participate: Json | null;
 } | {
     client_id: string | null;
@@ -4786,7 +5077,6 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     lesson_id: string;
     status: Database["public"]["Enums"]["booking_status"];
     subscription_id: string | null;
-    user_id: string | null;
 } | {
     created_at: string;
     deleted_at: string | null;
@@ -4799,10 +5089,15 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     profile_id: string | null;
     updated_at: string;
 } | {
+    client_id: string | null;
     created_at: string | null;
     event_id: string;
     id: string;
-    status: Database["public"]["Enums"]["booking_status"];
+    status: 
+    /**
+     * Parametri opzionali per filtrare gli eventi con disponibilità
+     */
+    Database["public"]["Enums"]["booking_status"];
     user_id: string;
 } | {
     capacity: number | null;
@@ -4814,11 +5109,12 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     id: string;
     image_url: string | null;
     is_active: boolean;
-    link: string;
+    link: string | null;
     location: string | null;
     name: string;
     price_cents: number | null;
     starts_at: string;
+    time_slots: Json | null;
     updated_at: string;
 } | {
     activity_id: string | null;
@@ -4838,6 +5134,7 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
 } | {
     activity_id: string;
     assigned_client_id: string | null;
+    assigned_subscription_id: string | null;
     booking_deadline_minutes: number | null;
     cancel_deadline_minutes: number | null;
     capacity: number;
@@ -4939,13 +5236,13 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     custom_name: string | null;
     custom_price_cents: number | null;
     custom_validity_days: number | null;
+    deleted_at: string | null;
     expires_at: string;
     id: string;
     metadata: Json | null;
     plan_id: string;
     started_at: string;
     status: Database["public"]["Enums"]["subscription_status"];
-    user_id: string | null;
 } | {
     created_at: string | null;
     id: string;
@@ -4973,6 +5270,7 @@ type GetPublicEventsParams = {
  * @throws Error se la query fallisce
  */
 declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetPublicEventsParams): Promise<({
+    active_months: Json | null;
     color: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -4982,14 +5280,14 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     id: string;
     image_url: string | null;
     is_active: boolean | null;
-    name: string;
-    updated_at: string | null;
-    active_months: Json | null;
     journey_structure: Json | null;
     landing_subtitle: string | null;
     landing_title: string | null;
+    name: string;
     program_objectives: Json | null;
+    slug: string | null;
     target_audience: Json | null;
+    updated_at: string | null;
     why_participate: Json | null;
 } | {
     client_id: string | null;
@@ -4998,7 +5296,6 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     lesson_id: string;
     status: Database["public"]["Enums"]["booking_status"];
     subscription_id: string | null;
-    user_id: string | null;
 } | {
     created_at: string;
     deleted_at: string | null;
@@ -5011,10 +5308,15 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     profile_id: string | null;
     updated_at: string;
 } | {
+    client_id: string | null;
     created_at: string | null;
     event_id: string;
     id: string;
-    status: Database["public"]["Enums"]["booking_status"];
+    status: 
+    /**
+     * Parametri opzionali per filtrare gli eventi con disponibilità
+     */
+    Database["public"]["Enums"]["booking_status"];
     user_id: string;
 } | {
     capacity: number | null;
@@ -5026,11 +5328,12 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     id: string;
     image_url: string | null;
     is_active: boolean;
-    link: string;
+    link: string | null;
     location: string | null;
     name: string;
     price_cents: number | null;
     starts_at: string;
+    time_slots: Json | null;
     updated_at: string;
 } | {
     activity_id: string | null;
@@ -5050,6 +5353,7 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
 } | {
     activity_id: string;
     assigned_client_id: string | null;
+    assigned_subscription_id: string | null;
     booking_deadline_minutes: number | null;
     cancel_deadline_minutes: number | null;
     capacity: number;
@@ -5151,18 +5455,59 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     custom_name: string | null;
     custom_price_cents: number | null;
     custom_validity_days: number | null;
+    deleted_at: string | null;
     expires_at: string;
     id: string;
     metadata: Json | null;
     plan_id: string;
     started_at: string;
     status: Database["public"]["Enums"]["subscription_status"];
-    user_id: string | null;
 } | {
     created_at: string | null;
     id: string;
     lesson_id: string;
     user_id: string;
 } | {})[]>;
+/**
+ * Tipo per evento con conteggio posti disponibili
+ */
+type EventWithAvailability = {
+    id: string;
+    name: string;
+    description: string | null;
+    image_url: string | null;
+    link: string | null;
+    starts_at: string;
+    ends_at: string | null;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+    capacity: number | null;
+    location: string | null;
+    price_cents: number | null;
+    currency: string | null;
+    booked_count: number;
+    available_spots: number | null;
+    is_full: boolean;
+};
+/**
+ * Parametri opzionali per filtrare gli eventi con disponibilità
+ */
+type GetEventsWithAvailabilityParams = {
+    from?: string;
+    to?: string;
+    onlyAvailable?: boolean;
+};
+/**
+ * Recupera gli eventi con conteggio posti disponibili.
+ * Questa funzione è utile per mostrare all'utente quanti posti sono ancora disponibili.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param params - Parametri opzionali per filtrare
+ * @returns Promise con gli eventi arricchiti con disponibilità
+ * @throws Error se la query fallisce
+ */
+declare function getEventsWithAvailability(client: SupabaseClient<Database>, params?: GetEventsWithAvailabilityParams): Promise<EventWithAvailability[]>;
 
-export { type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type Database, type Enums, type GetPublicEventsParams, type GetPublicScheduleParams, type PublicViewName, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, type Tables, type TablesInsert, type TablesUpdate, type Views, assertSupabaseConfig, bookLesson, cancelBooking, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule };
+export { type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, type Enums, type EventWithAvailability, type GetEventsWithAvailabilityParams, type GetPublicEventsParams, type GetPublicScheduleParams, type PublicViewName, type StaffBookEventParams, type StaffCancelEventBookingParams, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, type Tables, type TablesInsert, type TablesUpdate, type Views, assertSupabaseConfig, bookEvent, bookLesson, cancelBooking, cancelEventBooking, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, staffBookEvent, staffCancelEventBooking };

@@ -150,6 +150,60 @@ export type Database = {
           },
         ]
       }
+      bug_reports: {
+        Row: {
+          created_at: string
+          created_by_client_id: string | null
+          created_by_user_id: string | null
+          deleted_at: string | null
+          description: string
+          id: string
+          image_url: string | null
+          status: Database["public"]["Enums"]["bug_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_client_id?: string | null
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          description: string
+          id?: string
+          image_url?: string | null
+          status?: Database["public"]["Enums"]["bug_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_client_id?: string | null
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          image_url?: string | null
+          status?: Database["public"]["Enums"]["bug_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bug_reports_created_by_client_id_fkey"
+            columns: ["created_by_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bug_reports_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string
@@ -1409,6 +1463,7 @@ export type Database = {
     }
     Enums: {
       booking_status: "booked" | "canceled" | "attended" | "no_show"
+      bug_status: "open" | "in_progress" | "resolved" | "closed"
       subscription_status: "active" | "completed" | "expired" | "canceled"
       user_role: "user" | "operator" | "admin" | "finance"
     }
@@ -1539,6 +1594,7 @@ export const Constants = {
   public: {
     Enums: {
       booking_status: ["booked", "canceled", "attended", "no_show"],
+      bug_status: ["open", "in_progress", "resolved", "closed"],
       subscription_status: ["active", "completed", "expired", "canceled"],
       user_role: ["user", "operator", "admin", "finance"],
     },

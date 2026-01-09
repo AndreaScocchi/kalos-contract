@@ -39,7 +39,8 @@
     "db:fill:migrations": "node scripts/fill-migrations-from-dump.mjs",
     "db:repair:history": "node scripts/repair-migration-history.mjs",
     "verify": "npm run typecheck && npm run build",
-    "verify:migrations": "node scripts/verify-migrations.mjs"
+    "verify:migrations": "node scripts/verify-migrations.mjs",
+    "verify:subscriptions": "node scripts/verify-subscriptions-bookings-entries.mjs"
   },
   "keywords": [
     "supabase",

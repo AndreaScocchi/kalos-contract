@@ -23,6 +23,7 @@ export type Database = {
           description: string | null
           discipline: string
           duration_minutes: number | null
+          icon_name: string | null
           id: string
           image_url: string | null
           is_active: boolean | null
@@ -44,6 +45,7 @@ export type Database = {
           description?: string | null
           discipline: string
           duration_minutes?: number | null
+          icon_name?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -65,6 +67,7 @@ export type Database = {
           description?: string | null
           discipline?: string
           duration_minutes?: number | null
+          icon_name?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -258,7 +261,8 @@ export type Database = {
           event_id: string
           id: string
           status: Database["public"]["Enums"]["booking_status"]
-          user_id: string
+          updated_at: string
+          user_id: string | null
         }
         Insert: {
           client_id?: string | null
@@ -266,7 +270,8 @@ export type Database = {
           event_id: string
           id?: string
           status?: Database["public"]["Enums"]["booking_status"]
-          user_id: string
+          updated_at?: string
+          user_id?: string | null
         }
         Update: {
           client_id?: string | null
@@ -274,7 +279,8 @@ export type Database = {
           event_id?: string
           id?: string
           status?: Database["public"]["Enums"]["booking_status"]
-          user_id?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1173,6 +1179,7 @@ export type Database = {
           description: string | null
           discipline: string | null
           duration_minutes: number | null
+          icon_name: string | null
           id: string | null
           image_url: string | null
           is_active: boolean | null
@@ -1193,6 +1200,7 @@ export type Database = {
           description?: string | null
           discipline?: string | null
           duration_minutes?: number | null
+          icon_name?: string | null
           id?: string | null
           image_url?: string | null
           is_active?: boolean | null
@@ -1213,6 +1221,7 @@ export type Database = {
           description?: string | null
           discipline?: string | null
           duration_minutes?: number | null
+          icon_name?: string | null
           id?: string | null
           image_url?: string | null
           is_active?: boolean | null

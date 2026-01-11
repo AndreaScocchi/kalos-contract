@@ -51,7 +51,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.89.0"
   },
   "devDependencies": {
     "pg": "^8.16.3",
@@ -59,7 +59,7 @@
     "typescript": "^5.3.3"
   },
   "peerDependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.89.0"
   },
   "peerDependenciesMeta": {
     "@supabase/supabase-js": {

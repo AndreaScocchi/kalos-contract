@@ -1391,6 +1391,27 @@ export type Database = {
         Args: { p_lesson_id: string; p_subscription_id?: string }
         Returns: Json
       }
+      calculate_operator_compensation: {
+        Args: {
+          p_month_end: string
+          p_month_start: string
+          p_operator_id?: string
+        }
+        Returns: {
+          activity_name: string
+          alice_share_cents: number
+          generated_revenue_cents: number
+          lesson_date: string
+          lesson_duration_minutes: number
+          lesson_id: string
+          operator_id: string
+          operator_name: string
+          operator_payout_cents: number
+          revenue_per_hour_cents: number
+          room_rental_cents: number
+          studio_margin_cents: number
+        }[]
+      }
       can_access_finance: { Args: never; Returns: boolean }
       cancel_booking: { Args: { p_booking_id: string }; Returns: Json }
       cancel_event_booking: { Args: { p_booking_id: string }; Returns: Json }
@@ -1436,6 +1457,25 @@ export type Database = {
       get_financial_kpis: {
         Args: { p_month_end?: string; p_month_start?: string }
         Returns: Json
+      }
+      get_monthly_revenue_by_client: {
+        Args: { p_month_end: string; p_month_start: string }
+        Returns: {
+          client_email: string
+          client_id: string
+          client_name: string
+          subscription_count: number
+          total_revenue_cents: number
+        }[]
+      }
+      get_monthly_revenue_by_plan: {
+        Args: { p_month_end: string; p_month_start: string }
+        Returns: {
+          plan_id: string
+          plan_name: string
+          subscription_count: number
+          total_revenue_cents: number
+        }[]
       }
       get_my_client_id: { Args: never; Returns: string }
       get_revenue_breakdown: {

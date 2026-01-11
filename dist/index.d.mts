@@ -19,6 +19,7 @@ type Database = {
                     description: string | null;
                     discipline: string;
                     duration_minutes: number | null;
+                    icon_name: string | null;
                     id: string;
                     image_url: string | null;
                     is_active: boolean | null;
@@ -40,6 +41,7 @@ type Database = {
                     description?: string | null;
                     discipline: string;
                     duration_minutes?: number | null;
+                    icon_name?: string | null;
                     id?: string;
                     image_url?: string | null;
                     is_active?: boolean | null;
@@ -61,6 +63,7 @@ type Database = {
                     description?: string | null;
                     discipline?: string;
                     duration_minutes?: number | null;
+                    icon_name?: string | null;
                     id?: string;
                     image_url?: string | null;
                     is_active?: boolean | null;
@@ -146,6 +149,60 @@ type Database = {
                     }
                 ];
             };
+            bug_reports: {
+                Row: {
+                    created_at: string;
+                    created_by_client_id: string | null;
+                    created_by_user_id: string | null;
+                    deleted_at: string | null;
+                    description: string;
+                    id: string;
+                    image_url: string | null;
+                    status: Database["public"]["Enums"]["bug_status"];
+                    title: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    created_by_client_id?: string | null;
+                    created_by_user_id?: string | null;
+                    deleted_at?: string | null;
+                    description: string;
+                    id?: string;
+                    image_url?: string | null;
+                    status?: Database["public"]["Enums"]["bug_status"];
+                    title: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    created_at?: string;
+                    created_by_client_id?: string | null;
+                    created_by_user_id?: string | null;
+                    deleted_at?: string | null;
+                    description?: string;
+                    id?: string;
+                    image_url?: string | null;
+                    status?: Database["public"]["Enums"]["bug_status"];
+                    title?: string;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "bug_reports_created_by_client_id_fkey";
+                        columns: ["created_by_client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "bug_reports_created_by_user_id_fkey";
+                        columns: ["created_by_user_id"];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             clients: {
                 Row: {
                     created_at: string;
@@ -200,7 +257,8 @@ type Database = {
                     event_id: string;
                     id: string;
                     status: Database["public"]["Enums"]["booking_status"];
-                    user_id: string;
+                    updated_at: string;
+                    user_id: string | null;
                 };
                 Insert: {
                     client_id?: string | null;
@@ -208,7 +266,8 @@ type Database = {
                     event_id: string;
                     id?: string;
                     status?: Database["public"]["Enums"]["booking_status"];
-                    user_id: string;
+                    updated_at?: string;
+                    user_id?: string | null;
                 };
                 Update: {
                     client_id?: string | null;
@@ -216,7 +275,8 @@ type Database = {
                     event_id?: string;
                     id?: string;
                     status?: Database["public"]["Enums"]["booking_status"];
-                    user_id?: string;
+                    updated_at?: string;
+                    user_id?: string | null;
                 };
                 Relationships: [
                     {
@@ -1115,6 +1175,7 @@ type Database = {
                     description: string | null;
                     discipline: string | null;
                     duration_minutes: number | null;
+                    icon_name: string | null;
                     id: string | null;
                     image_url: string | null;
                     is_active: boolean | null;
@@ -1135,6 +1196,7 @@ type Database = {
                     description?: string | null;
                     discipline?: string | null;
                     duration_minutes?: number | null;
+                    icon_name?: string | null;
                     id?: string | null;
                     image_url?: string | null;
                     is_active?: boolean | null;
@@ -1155,6 +1217,7 @@ type Database = {
                     description?: string | null;
                     discipline?: string | null;
                     duration_minutes?: number | null;
+                    icon_name?: string | null;
                     id?: string | null;
                     image_url?: string | null;
                     is_active?: boolean | null;
@@ -1332,6 +1395,27 @@ type Database = {
                 };
                 Returns: Json;
             };
+            calculate_operator_compensation: {
+                Args: {
+                    p_month_end: string;
+                    p_month_start: string;
+                    p_operator_id?: string;
+                };
+                Returns: {
+                    activity_name: string;
+                    alice_share_cents: number;
+                    generated_revenue_cents: number;
+                    lesson_date: string;
+                    lesson_duration_minutes: number;
+                    lesson_id: string;
+                    operator_id: string;
+                    operator_name: string;
+                    operator_payout_cents: number;
+                    revenue_per_hour_cents: number;
+                    room_rental_cents: number;
+                    studio_margin_cents: number;
+                }[];
+            };
             can_access_finance: {
                 Args: never;
                 Returns: boolean;
@@ -1396,6 +1480,31 @@ type Database = {
                 };
                 Returns: Json;
             };
+            get_monthly_revenue_by_client: {
+                Args: {
+                    p_month_end: string;
+                    p_month_start: string;
+                };
+                Returns: {
+                    client_email: string;
+                    client_id: string;
+                    client_name: string;
+                    subscription_count: number;
+                    total_revenue_cents: number;
+                }[];
+            };
+            get_monthly_revenue_by_plan: {
+                Args: {
+                    p_month_end: string;
+                    p_month_start: string;
+                };
+                Returns: {
+                    plan_id: string;
+                    plan_name: string;
+                    subscription_count: number;
+                    total_revenue_cents: number;
+                }[];
+            };
             get_my_client_id: {
                 Args: never;
                 Returns: string;
@@ -1456,6 +1565,7 @@ type Database = {
         };
         Enums: {
             booking_status: "booked" | "canceled" | "attended" | "no_show";
+            bug_status: "open" | "in_progress" | "resolved" | "closed";
             subscription_status: "active" | "completed" | "expired" | "canceled";
             user_role: "user" | "operator" | "admin" | "finance";
         };
@@ -1707,6 +1817,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 description: string | null;
                 discipline: string;
                 duration_minutes: number | null;
+                icon_name: string | null;
                 id: string;
                 image_url: string | null;
                 is_active: boolean | null;
@@ -1728,6 +1839,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 description?: string | null;
                 discipline: string;
                 duration_minutes?: number | null;
+                icon_name?: string | null;
                 id?: string;
                 image_url?: string | null;
                 is_active?: boolean | null;
@@ -1749,6 +1861,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 description?: string | null;
                 discipline?: string;
                 duration_minutes?: number | null;
+                icon_name?: string | null;
                 id?: string;
                 image_url?: string | null;
                 is_active?: boolean | null;
@@ -1827,6 +1940,57 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedColumns: ["id"];
             }];
         };
+        bug_reports: {
+            Row: {
+                created_at: string;
+                created_by_client_id: string | null;
+                created_by_user_id: string | null;
+                deleted_at: string | null;
+                description: string;
+                id: string;
+                image_url: string | null;
+                status: Database["public"]["Enums"]["bug_status"];
+                title: string;
+                updated_at: string;
+            };
+            Insert: {
+                created_at?: string;
+                created_by_client_id?: string | null;
+                created_by_user_id?: string | null;
+                deleted_at?: string | null;
+                description: string;
+                id?: string;
+                image_url?: string | null;
+                status?: Database["public"]["Enums"]["bug_status"];
+                title: string;
+                updated_at?: string;
+            };
+            Update: {
+                created_at?: string;
+                created_by_client_id?: string | null;
+                created_by_user_id?: string | null;
+                deleted_at?: string | null;
+                description?: string;
+                id?: string;
+                image_url?: string | null;
+                status?: Database["public"]["Enums"]["bug_status"];
+                title?: string;
+                updated_at?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "bug_reports_created_by_client_id_fkey";
+                columns: ["created_by_client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "bug_reports_created_by_user_id_fkey";
+                columns: ["created_by_user_id"];
+                isOneToOne: false;
+                referencedRelation: "profiles";
+                referencedColumns: ["id"];
+            }];
+        };
         clients: {
             Row: {
                 created_at: string;
@@ -1878,12 +2042,9 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 created_at: string | null;
                 event_id: string;
                 id: string;
-                status: 
-                /**
-                 * Parametri opzionali per filtrare gli eventi con disponibilità
-                 */
-                Database["public"]["Enums"]["booking_status"];
-                user_id: string;
+                status: Database["public"]["Enums"]["booking_status"];
+                updated_at: string;
+                user_id: string | null;
             };
             Insert: {
                 client_id?: string | null;
@@ -1891,7 +2052,8 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 event_id: string;
                 id?: string;
                 status?: Database["public"]["Enums"]["booking_status"];
-                user_id: string;
+                updated_at?: string;
+                user_id?: string | null;
             };
             Update: {
                 client_id?: string | null;
@@ -1899,7 +2061,8 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 event_id?: string;
                 id?: string;
                 status?: Database["public"]["Enums"]["booking_status"];
-                user_id?: string;
+                updated_at?: string;
+                user_id?: string | null;
             };
             Relationships: [{
                 foreignKeyName: "event_bookings_client_id_fkey";
@@ -2740,6 +2903,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 description: string | null;
                 discipline: string | null;
                 duration_minutes: number | null;
+                icon_name: string | null;
                 id: string | null;
                 image_url: string | null;
                 is_active: boolean | null;
@@ -2760,6 +2924,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 description?: string | null;
                 discipline?: string | null;
                 duration_minutes?: number | null;
+                icon_name?: string | null;
                 id?: string | null;
                 image_url?: string | null;
                 is_active?: boolean | null;
@@ -2780,6 +2945,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 description?: string | null;
                 discipline?: string | null;
                 duration_minutes?: number | null;
+                icon_name?: string | null;
                 id?: string | null;
                 image_url?: string | null;
                 is_active?: boolean | null;
@@ -2953,6 +3119,27 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             };
             Returns: Json;
         };
+        calculate_operator_compensation: {
+            Args: {
+                p_month_end: string;
+                p_month_start: string;
+                p_operator_id?: string;
+            };
+            Returns: {
+                activity_name: string;
+                alice_share_cents: number;
+                generated_revenue_cents: number;
+                lesson_date: string;
+                lesson_duration_minutes: number;
+                lesson_id: string;
+                operator_id: string;
+                operator_name: string;
+                operator_payout_cents: number;
+                revenue_per_hour_cents: number;
+                room_rental_cents: number;
+                studio_margin_cents: number;
+            }[];
+        };
         can_access_finance: {
             Args: never;
             Returns: boolean;
@@ -3017,6 +3204,31 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             };
             Returns: Json;
         };
+        get_monthly_revenue_by_client: {
+            Args: {
+                p_month_end: string;
+                p_month_start: string;
+            };
+            Returns: {
+                client_email: string;
+                client_id: string;
+                client_name: string;
+                subscription_count: number;
+                total_revenue_cents: number;
+            }[];
+        };
+        get_monthly_revenue_by_plan: {
+            Args: {
+                p_month_end: string;
+                p_month_start: string;
+            };
+            Returns: {
+                plan_id: string;
+                plan_name: string;
+                subscription_count: number;
+                total_revenue_cents: number;
+            }[];
+        };
         get_my_client_id: {
             Args: never;
             Returns: string;
@@ -3077,6 +3289,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     };
     Enums: {
         booking_status: "booked" | "canceled" | "attended" | "no_show";
+        bug_status: "open" | "in_progress" | "resolved" | "closed";
         subscription_status: "active" | "completed" | "expired" | "canceled";
         user_role: "user" | "operator" | "admin" | "finance";
     };
@@ -3090,6 +3303,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         description: string | null;
         discipline: string;
         duration_minutes: number | null;
+        icon_name: string | null;
         id: string;
         image_url: string | null;
         is_active: boolean | null;
@@ -3111,6 +3325,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         description?: string | null;
         discipline: string;
         duration_minutes?: number | null;
+        icon_name?: string | null;
         id?: string;
         image_url?: string | null;
         is_active?: boolean | null;
@@ -3132,6 +3347,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         description?: string | null;
         discipline?: string;
         duration_minutes?: number | null;
+        icon_name?: string | null;
         id?: string;
         image_url?: string | null;
         is_active?: boolean | null;
@@ -3211,6 +3427,56 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
 } | {
     Row: {
         created_at: string;
+        created_by_client_id: string | null;
+        created_by_user_id: string | null;
+        deleted_at: string | null;
+        description: string;
+        id: string;
+        image_url: string | null;
+        status: Database["public"]["Enums"]["bug_status"];
+        title: string;
+        updated_at: string;
+    };
+    Insert: {
+        created_at?: string;
+        created_by_client_id?: string | null;
+        created_by_user_id?: string | null;
+        deleted_at?: string | null;
+        description: string;
+        id?: string;
+        image_url?: string | null;
+        status?: Database["public"]["Enums"]["bug_status"];
+        title: string;
+        updated_at?: string;
+    };
+    Update: {
+        created_at?: string;
+        created_by_client_id?: string | null;
+        created_by_user_id?: string | null;
+        deleted_at?: string | null;
+        description?: string;
+        id?: string;
+        image_url?: string | null;
+        status?: Database["public"]["Enums"]["bug_status"];
+        title?: string;
+        updated_at?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "bug_reports_created_by_client_id_fkey";
+        columns: ["created_by_client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "bug_reports_created_by_user_id_fkey";
+        columns: ["created_by_user_id"];
+        isOneToOne: false;
+        referencedRelation: "profiles";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
+        created_at: string;
         deleted_at: string | null;
         email: string | null;
         full_name: string;
@@ -3258,12 +3524,9 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         created_at: string | null;
         event_id: string;
         id: string;
-        status: 
-        /**
-         * Parametri opzionali per filtrare gli eventi con disponibilità
-         */
-        Database["public"]["Enums"]["booking_status"];
-        user_id: string;
+        status: Database["public"]["Enums"]["booking_status"];
+        updated_at: string;
+        user_id: string | null;
     };
     Insert: {
         client_id?: string | null;
@@ -3271,7 +3534,8 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         event_id: string;
         id?: string;
         status?: Database["public"]["Enums"]["booking_status"];
-        user_id: string;
+        updated_at?: string;
+        user_id?: string | null;
     };
     Update: {
         client_id?: string | null;
@@ -3279,7 +3543,8 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         event_id?: string;
         id?: string;
         status?: Database["public"]["Enums"]["booking_status"];
-        user_id?: string;
+        updated_at?: string;
+        user_id?: string | null;
     };
     Relationships: [{
         foreignKeyName: "event_bookings_client_id_fkey";
@@ -4076,7 +4341,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "profiles";
         referencedColumns: ["id"];
     }];
-}, "clients" | "lessons" | "subscriptions" | "profiles" | "events" | "activities" | "operators" | "plans" | "bookings" | "event_bookings" | "expenses" | "payout_rules" | "payouts" | "plan_activities" | "promotions" | "subscription_usages" | "waitlist", [] | [{
+}, "clients" | "lessons" | "subscriptions" | "profiles" | "events" | "activities" | "operators" | "plans" | "bookings" | "bug_reports" | "event_bookings" | "expenses" | "payout_rules" | "payouts" | "plan_activities" | "promotions" | "subscription_usages" | "waitlist", [] | [{
     foreignKeyName: "bookings_client_id_fkey";
     columns: ["client_id"];
     isOneToOne: false;
@@ -4111,6 +4376,18 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["subscription_id"];
     isOneToOne: false;
     referencedRelation: "subscriptions_with_remaining";
+    referencedColumns: ["id"];
+}] | [{
+    foreignKeyName: "bug_reports_created_by_client_id_fkey";
+    columns: ["created_by_client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "bug_reports_created_by_user_id_fkey";
+    columns: ["created_by_user_id"];
+    isOneToOne: false;
+    referencedRelation: "profiles";
     referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "clients_profile_id_fkey";
@@ -4428,6 +4705,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     description: string | null;
     discipline: string;
     duration_minutes: number | null;
+    icon_name: string | null;
     id: string;
     image_url: string | null;
     is_active: boolean | null;
@@ -4449,6 +4727,17 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     subscription_id: string | null;
 } | {
     created_at: string;
+    created_by_client_id: string | null;
+    created_by_user_id: string | null;
+    deleted_at: string | null;
+    description: string;
+    id: string;
+    image_url: string | null;
+    status: Database["public"]["Enums"]["bug_status"];
+    title: string;
+    updated_at: string;
+} | {
+    created_at: string;
     deleted_at: string | null;
     email: string | null;
     full_name: string;
@@ -4463,12 +4752,9 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     created_at: string | null;
     event_id: string;
     id: string;
-    status: 
-    /**
-     * Parametri opzionali per filtrare gli eventi con disponibilità
-     */
-    Database["public"]["Enums"]["booking_status"];
-    user_id: string;
+    status: Database["public"]["Enums"]["booking_status"];
+    updated_at: string;
+    user_id: string | null;
 } | {
     capacity: number | null;
     created_at: string;
@@ -4638,6 +4924,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     description: string | null;
     discipline: string;
     duration_minutes: number | null;
+    icon_name: string | null;
     id: string;
     image_url: string | null;
     is_active: boolean | null;
@@ -4659,6 +4946,17 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     subscription_id: string | null;
 } | {
     created_at: string;
+    created_by_client_id: string | null;
+    created_by_user_id: string | null;
+    deleted_at: string | null;
+    description: string;
+    id: string;
+    image_url: string | null;
+    status: Database["public"]["Enums"]["bug_status"];
+    title: string;
+    updated_at: string;
+} | {
+    created_at: string;
     deleted_at: string | null;
     email: string | null;
     full_name: string;
@@ -4673,12 +4971,9 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     created_at: string | null;
     event_id: string;
     id: string;
-    status: 
-    /**
-     * Parametri opzionali per filtrare gli eventi con disponibilità
-     */
-    Database["public"]["Enums"]["booking_status"];
-    user_id: string;
+    status: Database["public"]["Enums"]["booking_status"];
+    updated_at: string;
+    user_id: string | null;
 } | {
     capacity: number | null;
     created_at: string;
@@ -4848,6 +5143,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     description: string | null;
     discipline: string;
     duration_minutes: number | null;
+    icon_name: string | null;
     id: string;
     image_url: string | null;
     is_active: boolean | null;
@@ -4869,6 +5165,17 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     subscription_id: string | null;
 } | {
     created_at: string;
+    created_by_client_id: string | null;
+    created_by_user_id: string | null;
+    deleted_at: string | null;
+    description: string;
+    id: string;
+    image_url: string | null;
+    status: Database["public"]["Enums"]["bug_status"];
+    title: string;
+    updated_at: string;
+} | {
+    created_at: string;
     deleted_at: string | null;
     email: string | null;
     full_name: string;
@@ -4883,12 +5190,9 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     created_at: string | null;
     event_id: string;
     id: string;
-    status: 
-    /**
-     * Parametri opzionali per filtrare gli eventi con disponibilità
-     */
-    Database["public"]["Enums"]["booking_status"];
-    user_id: string;
+    status: Database["public"]["Enums"]["booking_status"];
+    updated_at: string;
+    user_id: string | null;
 } | {
     capacity: number | null;
     created_at: string;
@@ -5058,6 +5362,7 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     description: string | null;
     discipline: string;
     duration_minutes: number | null;
+    icon_name: string | null;
     id: string;
     image_url: string | null;
     is_active: boolean | null;
@@ -5079,6 +5384,17 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     subscription_id: string | null;
 } | {
     created_at: string;
+    created_by_client_id: string | null;
+    created_by_user_id: string | null;
+    deleted_at: string | null;
+    description: string;
+    id: string;
+    image_url: string | null;
+    status: Database["public"]["Enums"]["bug_status"];
+    title: string;
+    updated_at: string;
+} | {
+    created_at: string;
     deleted_at: string | null;
     email: string | null;
     full_name: string;
@@ -5093,12 +5409,9 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     created_at: string | null;
     event_id: string;
     id: string;
-    status: 
-    /**
-     * Parametri opzionali per filtrare gli eventi con disponibilità
-     */
-    Database["public"]["Enums"]["booking_status"];
-    user_id: string;
+    status: Database["public"]["Enums"]["booking_status"];
+    updated_at: string;
+    user_id: string | null;
 } | {
     capacity: number | null;
     created_at: string;
@@ -5277,6 +5590,7 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     description: string | null;
     discipline: string;
     duration_minutes: number | null;
+    icon_name: string | null;
     id: string;
     image_url: string | null;
     is_active: boolean | null;
@@ -5298,6 +5612,17 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     subscription_id: string | null;
 } | {
     created_at: string;
+    created_by_client_id: string | null;
+    created_by_user_id: string | null;
+    deleted_at: string | null;
+    description: string;
+    id: string;
+    image_url: string | null;
+    status: Database["public"]["Enums"]["bug_status"];
+    title: string;
+    updated_at: string;
+} | {
+    created_at: string;
     deleted_at: string | null;
     email: string | null;
     full_name: string;
@@ -5312,12 +5637,9 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     created_at: string | null;
     event_id: string;
     id: string;
-    status: 
-    /**
-     * Parametri opzionali per filtrare gli eventi con disponibilità
-     */
-    Database["public"]["Enums"]["booking_status"];
-    user_id: string;
+    status: Database["public"]["Enums"]["booking_status"];
+    updated_at: string;
+    user_id: string | null;
 } | {
     capacity: number | null;
     created_at: string;

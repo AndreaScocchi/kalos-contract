@@ -25,8 +25,17 @@ interface ResponseBody {
 const BATCH_SIZE = 10
 const BATCH_DELAY_MS = 1000
 
-// Simple HTML wrapper for plain text emails
-function wrapTextInHtml(text: string): string {
+// Generate unsubscribe token (must match unsubscribe-newsletter function)
+async function generateUnsubscribeToken(email: string): Promise<string> {
+  const secret = Deno.env.get('UNSUBSCRIBE_SECRET') || 'kalos-newsletter-2024'
+  const data = new TextEncoder().encode(email + secret)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// HTML email template with professional styling
+function wrapTextInHtml(text: string, unsubscribeUrl: string): string {
   // Escape HTML entities
   const escaped = text
     .replace(/&/g, '&amp;')
@@ -35,27 +44,97 @@ function wrapTextInHtml(text: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
 
-  // Convert newlines to <br> and wrap in basic HTML
+  // Convert newlines to <br>
   const htmlContent = escaped.replace(/\n/g, '<br>')
 
+  // Colors from Studio Kalòs brand
+  const primaryColor = '#0F2D3B' // Dark teal - text color
+  const accentColor = '#036257' // Teal accent
+  const accentOrange = '#F75C2C' // Orange accent
+  const backgroundColor = '#FDFBF7' // Warm white background
+  const cardBackground = '#FFFFFF'
+  const footerText = '#6B7280'
+
   return `<!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light only">
+  <title>Studio Kalòs</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
   <style>
-    body { font-family: "Jost", Arial, sans-serif; line-height: 1.6; color: #0F2D3B; margin: 0; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; }
-    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+    :root { color-scheme: light only; }
+    * { box-sizing: border-box; }
   </style>
 </head>
-<body>
-  <div class="container">
-    <p>${htmlContent}</p>
-    <div class="footer">
-      <p>Studio Kalos</p>
-    </div>
-  </div>
+<body style="margin: 0; padding: 0; background-color: ${backgroundColor}; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+  <!-- Wrapper table for full-width background -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: ${backgroundColor};">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <!-- Main content card -->
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; background-color: ${cardBackground}; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); overflow: hidden;">
+          <!-- Top accent line -->
+          <tr>
+            <td style="height: 1px; background-color: ${accentColor};"></td>
+          </tr>
+          <!-- Header with logo/brand -->
+          <tr>
+            <td style="padding: 32px 40px 0 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: ${primaryColor}; letter-spacing: 2px;">STUDIO KALÒS</h1>
+              <p style="margin: 8px 0 16px 0; font-size: 13px; color: ${accentColor}; text-transform: uppercase; letter-spacing: 1px;">Centro Olistico</p>
+              <div style="width: 40px; height: 1px; background-color: ${accentOrange}; margin: 0 auto 24px auto;"></div>
+            </td>
+          </tr>
+          <!-- Body content -->
+          <tr>
+            <td style="padding: 40px; color: ${primaryColor}; font-size: 16px; line-height: 1.7;">
+              ${htmlContent}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px 32px 40px; background-color: #F9FAFB; border-radius: 0 0 16px 16px; border-top: 1px solid #E5E7EB;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                <tr>
+                  <td style="text-align: center;">
+                    <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: ${primaryColor};">Studio Kalòs</p>
+                    <p style="margin: 0; font-size: 13px; color: ${footerText};">
+                      <a href="mailto:info.studiokalos@gmail.com" style="color: ${accentColor}; text-decoration: none;">info.studiokalos@gmail.com</a>
+                    </p>
+                    <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">Località Casello Ferroviario, 3 - 34079 Staranzano (GO)</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <!-- Unsubscribe note -->
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px;">
+          <tr>
+            <td style="padding: 24px 20px; text-align: center;">
+              <p style="margin: 0; font-size: 12px; color: ${footerText};">
+                Ricevi questa email perché sei iscritto alla newsletter di Studio Kalòs.
+              </p>
+              <p style="margin: 8px 0 0 0; font-size: 11px;">
+                <a href="${unsubscribeUrl}" style="color: ${footerText}; text-decoration: underline;">Annulla iscrizione</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`
 }
@@ -177,11 +256,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
           const personalizedText = replaceTemplateVariables(campaign.content, {
             nome: emailRecord.client_name,
             client_name: emailRecord.client_name, // Keep old variable for compatibility
-            studio_name: 'Studio Kalos',
+            studio_name: 'Studio Kalòs',
           })
 
+          // Generate unsubscribe URL
+          const token = await generateUnsubscribeToken(emailRecord.email_address)
+          const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+          const unsubscribeUrl = `${supabaseUrl}/functions/v1/unsubscribe-newsletter?email=${encodeURIComponent(emailRecord.email_address)}&token=${token}`
+
           // Convert plain text to HTML
-          const personalizedHtml = wrapTextInHtml(personalizedText)
+          const personalizedHtml = wrapTextInHtml(personalizedText, unsubscribeUrl)
 
           // Send email
           const { data, error } = await sendEmail({

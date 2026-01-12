@@ -12,7 +12,7 @@ Shared TypeScript library providing database types, RPC wrappers, and Supabase c
 ## Project Structure
 
 ```
-contract/
+kalos-contract/
 ├── src/
 │   ├── index.ts                # Main exports
 │   ├── types/

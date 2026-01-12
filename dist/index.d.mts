@@ -621,8 +621,7 @@ type Database = {
                 Row: {
                     bounced_count: number;
                     clicked_count: number;
-                    content_html: string;
-                    content_text: string | null;
+                    content: string;
                     created_at: string;
                     created_by: string | null;
                     deleted_at: string | null;
@@ -634,14 +633,12 @@ type Database = {
                     sent_at: string | null;
                     status: Database["public"]["Enums"]["newsletter_campaign_status"];
                     subject: string;
-                    template_id: string | null;
                     updated_at: string;
                 };
                 Insert: {
                     bounced_count?: number;
                     clicked_count?: number;
-                    content_html: string;
-                    content_text?: string | null;
+                    content: string;
                     created_at?: string;
                     created_by?: string | null;
                     deleted_at?: string | null;
@@ -653,14 +650,12 @@ type Database = {
                     sent_at?: string | null;
                     status?: Database["public"]["Enums"]["newsletter_campaign_status"];
                     subject: string;
-                    template_id?: string | null;
                     updated_at?: string;
                 };
                 Update: {
                     bounced_count?: number;
                     clicked_count?: number;
-                    content_html?: string;
-                    content_text?: string | null;
+                    content?: string;
                     created_at?: string;
                     created_by?: string | null;
                     deleted_at?: string | null;
@@ -672,7 +667,6 @@ type Database = {
                     sent_at?: string | null;
                     status?: Database["public"]["Enums"]["newsletter_campaign_status"];
                     subject?: string;
-                    template_id?: string | null;
                     updated_at?: string;
                 };
                 Relationships: [
@@ -682,13 +676,6 @@ type Database = {
                         isOneToOne: false;
                         referencedRelation: "profiles";
                         referencedColumns: ["id"];
-                    },
-                    {
-                        foreignKeyName: "newsletter_campaigns_template_id_fkey";
-                        columns: ["template_id"];
-                        isOneToOne: false;
-                        referencedRelation: "newsletter_templates";
-                        referencedColumns: ["id"];
                     }
                 ];
             };
@@ -697,7 +684,7 @@ type Database = {
                     bounced_at: string | null;
                     campaign_id: string;
                     clicked_at: string | null;
-                    client_id: string;
+                    client_id: string | null;
                     client_name: string;
                     created_at: string;
                     delivered_at: string | null;
@@ -713,7 +700,7 @@ type Database = {
                     bounced_at?: string | null;
                     campaign_id: string;
                     clicked_at?: string | null;
-                    client_id: string;
+                    client_id?: string | null;
                     client_name: string;
                     created_at?: string;
                     delivered_at?: string | null;
@@ -729,7 +716,7 @@ type Database = {
                     bounced_at?: string | null;
                     campaign_id?: string;
                     clicked_at?: string | null;
-                    client_id?: string;
+                    client_id?: string | null;
                     client_name?: string;
                     created_at?: string;
                     delivered_at?: string | null;
@@ -757,39 +744,6 @@ type Database = {
                         referencedColumns: ["id"];
                     }
                 ];
-            };
-            newsletter_templates: {
-                Row: {
-                    content_html_template: string;
-                    content_text_template: string | null;
-                    created_at: string;
-                    description: string | null;
-                    id: string;
-                    name: string;
-                    subject_template: string;
-                    updated_at: string;
-                };
-                Insert: {
-                    content_html_template: string;
-                    content_text_template?: string | null;
-                    created_at?: string;
-                    description?: string | null;
-                    id: string;
-                    name: string;
-                    subject_template: string;
-                    updated_at?: string;
-                };
-                Update: {
-                    content_html_template?: string;
-                    content_text_template?: string | null;
-                    created_at?: string;
-                    description?: string | null;
-                    id?: string;
-                    name?: string;
-                    subject_template?: string;
-                    updated_at?: string;
-                };
-                Relationships: [];
             };
             newsletter_tracking_events: {
                 Row: {
@@ -2597,8 +2551,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Row: {
                 bounced_count: number;
                 clicked_count: number;
-                content_html: string;
-                content_text: string | null;
+                content: string;
                 created_at: string;
                 created_by: string | null;
                 deleted_at: string | null;
@@ -2610,14 +2563,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 sent_at: string | null;
                 status: Database["public"]["Enums"]["newsletter_campaign_status"];
                 subject: string;
-                template_id: string | null;
                 updated_at: string;
             };
             Insert: {
                 bounced_count?: number;
                 clicked_count?: number;
-                content_html: string;
-                content_text?: string | null;
+                content: string;
                 created_at?: string;
                 created_by?: string | null;
                 deleted_at?: string | null;
@@ -2629,14 +2580,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 sent_at?: string | null;
                 status?: Database["public"]["Enums"]["newsletter_campaign_status"];
                 subject: string;
-                template_id?: string | null;
                 updated_at?: string;
             };
             Update: {
                 bounced_count?: number;
                 clicked_count?: number;
-                content_html?: string;
-                content_text?: string | null;
+                content?: string;
                 created_at?: string;
                 created_by?: string | null;
                 deleted_at?: string | null;
@@ -2648,7 +2597,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 sent_at?: string | null;
                 status?: Database["public"]["Enums"]["newsletter_campaign_status"];
                 subject?: string;
-                template_id?: string | null;
                 updated_at?: string;
             };
             Relationships: [{
@@ -2657,12 +2605,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 isOneToOne: false;
                 referencedRelation: "profiles";
                 referencedColumns: ["id"];
-            }, {
-                foreignKeyName: "newsletter_campaigns_template_id_fkey";
-                columns: ["template_id"];
-                isOneToOne: false;
-                referencedRelation: "newsletter_templates";
-                referencedColumns: ["id"];
             }];
         };
         newsletter_emails: {
@@ -2670,7 +2612,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 bounced_at: string | null;
                 campaign_id: string;
                 clicked_at: string | null;
-                client_id: string;
+                client_id: string | null;
                 client_name: string;
                 created_at: string;
                 delivered_at: string | null;
@@ -2686,7 +2628,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 bounced_at?: string | null;
                 campaign_id: string;
                 clicked_at?: string | null;
-                client_id: string;
+                client_id?: string | null;
                 client_name: string;
                 created_at?: string;
                 delivered_at?: string | null;
@@ -2702,7 +2644,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 bounced_at?: string | null;
                 campaign_id?: string;
                 clicked_at?: string | null;
-                client_id?: string;
+                client_id?: string | null;
                 client_name?: string;
                 created_at?: string;
                 delivered_at?: string | null;
@@ -2727,39 +2669,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedRelation: "clients";
                 referencedColumns: ["id"];
             }];
-        };
-        newsletter_templates: {
-            Row: {
-                content_html_template: string;
-                content_text_template: string | null;
-                created_at: string;
-                description: string | null;
-                id: string;
-                name: string;
-                subject_template: string;
-                updated_at: string;
-            };
-            Insert: {
-                content_html_template: string;
-                content_text_template?: string | null;
-                created_at?: string;
-                description?: string | null;
-                id: string;
-                name: string;
-                subject_template: string;
-                updated_at?: string;
-            };
-            Update: {
-                content_html_template?: string;
-                content_text_template?: string | null;
-                created_at?: string;
-                description?: string | null;
-                id?: string;
-                name?: string;
-                subject_template?: string;
-                updated_at?: string;
-            };
-            Relationships: [];
         };
         newsletter_tracking_events: {
             Row: {
@@ -4285,8 +4194,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     Row: {
         bounced_count: number;
         clicked_count: number;
-        content_html: string;
-        content_text: string | null;
+        content: string;
         created_at: string;
         created_by: string | null;
         deleted_at: string | null;
@@ -4298,14 +4206,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         sent_at: string | null;
         status: Database["public"]["Enums"]["newsletter_campaign_status"];
         subject: string;
-        template_id: string | null;
         updated_at: string;
     };
     Insert: {
         bounced_count?: number;
         clicked_count?: number;
-        content_html: string;
-        content_text?: string | null;
+        content: string;
         created_at?: string;
         created_by?: string | null;
         deleted_at?: string | null;
@@ -4317,14 +4223,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         sent_at?: string | null;
         status?: Database["public"]["Enums"]["newsletter_campaign_status"];
         subject: string;
-        template_id?: string | null;
         updated_at?: string;
     };
     Update: {
         bounced_count?: number;
         clicked_count?: number;
-        content_html?: string;
-        content_text?: string | null;
+        content?: string;
         created_at?: string;
         created_by?: string | null;
         deleted_at?: string | null;
@@ -4336,7 +4240,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         sent_at?: string | null;
         status?: Database["public"]["Enums"]["newsletter_campaign_status"];
         subject?: string;
-        template_id?: string | null;
         updated_at?: string;
     };
     Relationships: [{
@@ -4345,19 +4248,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         isOneToOne: false;
         referencedRelation: "profiles";
         referencedColumns: ["id"];
-    }, {
-        foreignKeyName: "newsletter_campaigns_template_id_fkey";
-        columns: ["template_id"];
-        isOneToOne: false;
-        referencedRelation: "newsletter_templates";
-        referencedColumns: ["id"];
     }];
 } | {
     Row: {
         bounced_at: string | null;
         campaign_id: string;
         clicked_at: string | null;
-        client_id: string;
+        client_id: string | null;
         client_name: string;
         created_at: string;
         delivered_at: string | null;
@@ -4373,7 +4270,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         bounced_at?: string | null;
         campaign_id: string;
         clicked_at?: string | null;
-        client_id: string;
+        client_id?: string | null;
         client_name: string;
         created_at?: string;
         delivered_at?: string | null;
@@ -4389,7 +4286,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         bounced_at?: string | null;
         campaign_id?: string;
         clicked_at?: string | null;
-        client_id?: string;
+        client_id?: string | null;
         client_name?: string;
         created_at?: string;
         delivered_at?: string | null;
@@ -4414,38 +4311,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "clients";
         referencedColumns: ["id"];
     }];
-} | {
-    Row: {
-        content_html_template: string;
-        content_text_template: string | null;
-        created_at: string;
-        description: string | null;
-        id: string;
-        name: string;
-        subject_template: string;
-        updated_at: string;
-    };
-    Insert: {
-        content_html_template: string;
-        content_text_template?: string | null;
-        created_at?: string;
-        description?: string | null;
-        id: string;
-        name: string;
-        subject_template: string;
-        updated_at?: string;
-    };
-    Update: {
-        content_html_template?: string;
-        content_text_template?: string | null;
-        created_at?: string;
-        description?: string | null;
-        id?: string;
-        name?: string;
-        subject_template?: string;
-        updated_at?: string;
-    };
-    Relationships: [];
 } | {
     Row: {
         created_at: string;
@@ -4966,7 +4831,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "profiles";
         referencedColumns: ["id"];
     }];
-}, "clients" | "lessons" | "subscriptions" | "profiles" | "events" | "activities" | "operators" | "newsletter_templates" | "newsletter_campaigns" | "newsletter_emails" | "plans" | "bookings" | "bug_reports" | "event_bookings" | "expenses" | "newsletter_tracking_events" | "payout_rules" | "payouts" | "plan_activities" | "promotions" | "subscription_usages" | "waitlist", [] | [{
+}, "clients" | "lessons" | "subscriptions" | "profiles" | "events" | "activities" | "operators" | "newsletter_campaigns" | "newsletter_emails" | "plans" | "bookings" | "bug_reports" | "event_bookings" | "expenses" | "newsletter_tracking_events" | "payout_rules" | "payouts" | "plan_activities" | "promotions" | "subscription_usages" | "waitlist", [] | [{
     foreignKeyName: "bookings_client_id_fkey";
     columns: ["client_id"];
     isOneToOne: false;
@@ -5175,12 +5040,6 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["created_by"];
     isOneToOne: false;
     referencedRelation: "profiles";
-    referencedColumns: ["id"];
-}, {
-    foreignKeyName: "newsletter_campaigns_template_id_fkey";
-    columns: ["template_id"];
-    isOneToOne: false;
-    referencedRelation: "newsletter_templates";
     referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "newsletter_emails_campaign_id_fkey";
@@ -5460,8 +5319,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
 } | {
     bounced_count: number;
     clicked_count: number;
-    content_html: string;
-    content_text: string | null;
+    content: string;
     created_at: string;
     created_by: string | null;
     deleted_at: string | null;
@@ -5473,13 +5331,12 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_campaign_status"];
     subject: string;
-    template_id: string | null;
     updated_at: string;
 } | {
     bounced_at: string | null;
     campaign_id: string;
     clicked_at: string | null;
-    client_id: string;
+    client_id: string | null;
     client_name: string;
     created_at: string;
     delivered_at: string | null;
@@ -5490,15 +5347,6 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     resend_id: string | null;
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_email_status"];
-} | {
-    content_html_template: string;
-    content_text_template: string | null;
-    created_at: string;
-    description: string | null;
-    id: string;
-    name: string;
-    subject_template: string;
-    updated_at: string;
 } | {
     created_at: string;
     email_id: string;
@@ -5728,8 +5576,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
 } | {
     bounced_count: number;
     clicked_count: number;
-    content_html: string;
-    content_text: string | null;
+    content: string;
     created_at: string;
     created_by: string | null;
     deleted_at: string | null;
@@ -5741,13 +5588,12 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_campaign_status"];
     subject: string;
-    template_id: string | null;
     updated_at: string;
 } | {
     bounced_at: string | null;
     campaign_id: string;
     clicked_at: string | null;
-    client_id: string;
+    client_id: string | null;
     client_name: string;
     created_at: string;
     delivered_at: string | null;
@@ -5758,15 +5604,6 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     resend_id: string | null;
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_email_status"];
-} | {
-    content_html_template: string;
-    content_text_template: string | null;
-    created_at: string;
-    description: string | null;
-    id: string;
-    name: string;
-    subject_template: string;
-    updated_at: string;
 } | {
     created_at: string;
     email_id: string;
@@ -5996,8 +5833,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
 } | {
     bounced_count: number;
     clicked_count: number;
-    content_html: string;
-    content_text: string | null;
+    content: string;
     created_at: string;
     created_by: string | null;
     deleted_at: string | null;
@@ -6009,13 +5845,12 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_campaign_status"];
     subject: string;
-    template_id: string | null;
     updated_at: string;
 } | {
     bounced_at: string | null;
     campaign_id: string;
     clicked_at: string | null;
-    client_id: string;
+    client_id: string | null;
     client_name: string;
     created_at: string;
     delivered_at: string | null;
@@ -6026,15 +5861,6 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     resend_id: string | null;
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_email_status"];
-} | {
-    content_html_template: string;
-    content_text_template: string | null;
-    created_at: string;
-    description: string | null;
-    id: string;
-    name: string;
-    subject_template: string;
-    updated_at: string;
 } | {
     created_at: string;
     email_id: string;
@@ -6264,8 +6090,7 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
 } | {
     bounced_count: number;
     clicked_count: number;
-    content_html: string;
-    content_text: string | null;
+    content: string;
     created_at: string;
     created_by: string | null;
     deleted_at: string | null;
@@ -6277,13 +6102,12 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_campaign_status"];
     subject: string;
-    template_id: string | null;
     updated_at: string;
 } | {
     bounced_at: string | null;
     campaign_id: string;
     clicked_at: string | null;
-    client_id: string;
+    client_id: string | null;
     client_name: string;
     created_at: string;
     delivered_at: string | null;
@@ -6294,15 +6118,6 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     resend_id: string | null;
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_email_status"];
-} | {
-    content_html_template: string;
-    content_text_template: string | null;
-    created_at: string;
-    description: string | null;
-    id: string;
-    name: string;
-    subject_template: string;
-    updated_at: string;
 } | {
     created_at: string;
     email_id: string;
@@ -6541,8 +6356,7 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
 } | {
     bounced_count: number;
     clicked_count: number;
-    content_html: string;
-    content_text: string | null;
+    content: string;
     created_at: string;
     created_by: string | null;
     deleted_at: string | null;
@@ -6554,13 +6368,12 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_campaign_status"];
     subject: string;
-    template_id: string | null;
     updated_at: string;
 } | {
     bounced_at: string | null;
     campaign_id: string;
     clicked_at: string | null;
-    client_id: string;
+    client_id: string | null;
     client_name: string;
     created_at: string;
     delivered_at: string | null;
@@ -6571,15 +6384,6 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     resend_id: string | null;
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_email_status"];
-} | {
-    content_html_template: string;
-    content_text_template: string | null;
-    created_at: string;
-    description: string | null;
-    id: string;
-    name: string;
-    subject_template: string;
-    updated_at: string;
 } | {
     created_at: string;
     email_id: string;

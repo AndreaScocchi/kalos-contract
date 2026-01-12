@@ -2,8 +2,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail, replaceTemplateVariables, getFromEmail, delay } from '../_shared/resend.ts'
 
+interface Recipient {
+  email: string
+  name: string
+  clientId?: string // Optional: null for manual email addresses
+}
+
 interface RequestBody {
   campaignId: string
+  recipients: Recipient[] // Recipients are now passed from frontend
 }
 
 interface ResponseBody {
@@ -17,6 +24,41 @@ interface ResponseBody {
 // Rate limiting: send in batches to avoid Resend limits
 const BATCH_SIZE = 10
 const BATCH_DELAY_MS = 1000
+
+// Simple HTML wrapper for plain text emails
+function wrapTextInHtml(text: string): string {
+  // Escape HTML entities
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+
+  // Convert newlines to <br> and wrap in basic HTML
+  const htmlContent = escaped.replace(/\n/g, '<br>')
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: "Jost", Arial, sans-serif; line-height: 1.6; color: #0F2D3B; margin: 0; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <p>${htmlContent}</p>
+    <div class="footer">
+      <p>Studio Kalos</p>
+    </div>
+  </div>
+</body>
+</html>`
+}
 
 Deno.serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
@@ -48,6 +90,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const body: RequestBody = await req.json()
     if (!body.campaignId) {
       return jsonResponse({ ok: false, reason: 'MISSING_CAMPAIGN_ID' }, 400)
+    }
+    if (!body.recipients || body.recipients.length === 0) {
+      return jsonResponse({ ok: false, reason: 'NO_RECIPIENTS' }, 400)
     }
 
     // Create admin client with service_role key
@@ -83,38 +128,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .update({ status: 'sending' })
       .eq('id', body.campaignId)
 
-    // Get all clients with valid email addresses (not archived)
-    const { data: clients, error: clientsError } = await supabaseAdmin
-      .from('clients')
-      .select('id, full_name, email')
-      .not('email', 'is', null)
-      .is('deleted_at', null)
-
-    if (clientsError) {
-      console.error('Error getting clients:', clientsError)
-      await supabaseAdmin
-        .from('newsletter_campaigns')
-        .update({ status: 'failed' })
-        .eq('id', body.campaignId)
-      return jsonResponse({ ok: false, reason: 'CLIENTS_FETCH_ERROR' }, 500)
-    }
-
-    const validClients = clients?.filter(c => c.email && c.email.includes('@')) ?? []
-
-    if (validClients.length === 0) {
-      await supabaseAdmin
-        .from('newsletter_campaigns')
-        .update({ status: 'failed' })
-        .eq('id', body.campaignId)
-      return jsonResponse({ ok: false, reason: 'NO_VALID_RECIPIENTS' }, 400)
-    }
-
     // Create newsletter_emails records for all recipients
-    const emailRecords = validClients.map(client => ({
+    const emailRecords = body.recipients.map(recipient => ({
       campaign_id: body.campaignId,
-      client_id: client.id,
-      email_address: client.email,
-      client_name: client.full_name,
+      client_id: recipient.clientId || null,
+      email_address: recipient.email,
+      client_name: recipient.name,
       status: 'pending',
     }))
 
@@ -154,17 +173,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // Process batch in parallel
       const results = await Promise.all(
         batch.map(async (emailRecord) => {
-          // Replace template variables
-          const personalizedHtml = replaceTemplateVariables(campaign.content_html, {
-            client_name: emailRecord.client_name,
+          // Replace template variables ({{nome}} -> recipient name)
+          const personalizedText = replaceTemplateVariables(campaign.content, {
+            nome: emailRecord.client_name,
+            client_name: emailRecord.client_name, // Keep old variable for compatibility
             studio_name: 'Studio Kalos',
           })
-          const personalizedText = campaign.content_text
-            ? replaceTemplateVariables(campaign.content_text, {
-                client_name: emailRecord.client_name,
-                studio_name: 'Studio Kalos',
-              })
-            : undefined
+
+          // Convert plain text to HTML
+          const personalizedHtml = wrapTextInHtml(personalizedText)
 
           // Send email
           const { data, error } = await sendEmail({

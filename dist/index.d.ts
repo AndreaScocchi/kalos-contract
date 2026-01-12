@@ -629,6 +629,7 @@ type Database = {
                     id: string;
                     opened_count: number;
                     recipient_count: number;
+                    recipients: Json | null;
                     scheduled_at: string | null;
                     sent_at: string | null;
                     status: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -646,6 +647,7 @@ type Database = {
                     id?: string;
                     opened_count?: number;
                     recipient_count?: number;
+                    recipients?: Json | null;
                     scheduled_at?: string | null;
                     sent_at?: string | null;
                     status?: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -663,6 +665,7 @@ type Database = {
                     id?: string;
                     opened_count?: number;
                     recipient_count?: number;
+                    recipients?: Json | null;
                     scheduled_at?: string | null;
                     sent_at?: string | null;
                     status?: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -2559,6 +2562,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id: string;
                 opened_count: number;
                 recipient_count: number;
+                recipients: Json | null;
                 scheduled_at: string | null;
                 sent_at: string | null;
                 status: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -2576,6 +2580,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id?: string;
                 opened_count?: number;
                 recipient_count?: number;
+                recipients?: Json | null;
                 scheduled_at?: string | null;
                 sent_at?: string | null;
                 status?: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -2593,6 +2598,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id?: string;
                 opened_count?: number;
                 recipient_count?: number;
+                recipients?: Json | null;
                 scheduled_at?: string | null;
                 sent_at?: string | null;
                 status?: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -4202,6 +4208,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id: string;
         opened_count: number;
         recipient_count: number;
+        recipients: Json | null;
         scheduled_at: string | null;
         sent_at: string | null;
         status: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -4219,6 +4226,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id?: string;
         opened_count?: number;
         recipient_count?: number;
+        recipients?: Json | null;
         scheduled_at?: string | null;
         sent_at?: string | null;
         status?: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -4236,6 +4244,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id?: string;
         opened_count?: number;
         recipient_count?: number;
+        recipients?: Json | null;
         scheduled_at?: string | null;
         sent_at?: string | null;
         status?: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -5327,6 +5336,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     id: string;
     opened_count: number;
     recipient_count: number;
+    recipients: Json | null;
     scheduled_at: string | null;
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -5584,6 +5594,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     id: string;
     opened_count: number;
     recipient_count: number;
+    recipients: Json | null;
     scheduled_at: string | null;
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -5841,6 +5852,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     id: string;
     opened_count: number;
     recipient_count: number;
+    recipients: Json | null;
     scheduled_at: string | null;
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -6098,6 +6110,7 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     id: string;
     opened_count: number;
     recipient_count: number;
+    recipients: Json | null;
     scheduled_at: string | null;
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_campaign_status"];
@@ -6364,6 +6377,7 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     id: string;
     opened_count: number;
     recipient_count: number;
+    recipients: Json | null;
     scheduled_at: string | null;
     sent_at: string | null;
     status: Database["public"]["Enums"]["newsletter_campaign_status"];

@@ -633,6 +633,7 @@ export type Database = {
           id: string
           opened_count: number
           recipient_count: number
+          recipients: Json | null
           scheduled_at: string | null
           sent_at: string | null
           status: Database["public"]["Enums"]["newsletter_campaign_status"]
@@ -650,6 +651,7 @@ export type Database = {
           id?: string
           opened_count?: number
           recipient_count?: number
+          recipients?: Json | null
           scheduled_at?: string | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["newsletter_campaign_status"]
@@ -667,6 +669,7 @@ export type Database = {
           id?: string
           opened_count?: number
           recipient_count?: number
+          recipients?: Json | null
           scheduled_at?: string | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["newsletter_campaign_status"]

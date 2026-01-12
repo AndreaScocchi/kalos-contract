@@ -625,8 +625,7 @@ export type Database = {
         Row: {
           bounced_count: number
           clicked_count: number
-          content_html: string
-          content_text: string | null
+          content: string
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -638,14 +637,12 @@ export type Database = {
           sent_at: string | null
           status: Database["public"]["Enums"]["newsletter_campaign_status"]
           subject: string
-          template_id: string | null
           updated_at: string
         }
         Insert: {
           bounced_count?: number
           clicked_count?: number
-          content_html: string
-          content_text?: string | null
+          content: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -657,14 +654,12 @@ export type Database = {
           sent_at?: string | null
           status?: Database["public"]["Enums"]["newsletter_campaign_status"]
           subject: string
-          template_id?: string | null
           updated_at?: string
         }
         Update: {
           bounced_count?: number
           clicked_count?: number
-          content_html?: string
-          content_text?: string | null
+          content?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -676,7 +671,6 @@ export type Database = {
           sent_at?: string | null
           status?: Database["public"]["Enums"]["newsletter_campaign_status"]
           subject?: string
-          template_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -687,13 +681,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "newsletter_campaigns_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "newsletter_templates"
-            referencedColumns: ["id"]
-          },
         ]
       }
       newsletter_emails: {
@@ -701,7 +688,7 @@ export type Database = {
           bounced_at: string | null
           campaign_id: string
           clicked_at: string | null
-          client_id: string
+          client_id: string | null
           client_name: string
           created_at: string
           delivered_at: string | null
@@ -717,7 +704,7 @@ export type Database = {
           bounced_at?: string | null
           campaign_id: string
           clicked_at?: string | null
-          client_id: string
+          client_id?: string | null
           client_name: string
           created_at?: string
           delivered_at?: string | null
@@ -733,7 +720,7 @@ export type Database = {
           bounced_at?: string | null
           campaign_id?: string
           clicked_at?: string | null
-          client_id?: string
+          client_id?: string | null
           client_name?: string
           created_at?: string
           delivered_at?: string | null
@@ -761,39 +748,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      newsletter_templates: {
-        Row: {
-          content_html_template: string
-          content_text_template: string | null
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          subject_template: string
-          updated_at: string
-        }
-        Insert: {
-          content_html_template: string
-          content_text_template?: string | null
-          created_at?: string
-          description?: string | null
-          id: string
-          name: string
-          subject_template: string
-          updated_at?: string
-        }
-        Update: {
-          content_html_template?: string
-          content_text_template?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          subject_template?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       newsletter_tracking_events: {
         Row: {

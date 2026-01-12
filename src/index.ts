@@ -66,3 +66,4 @@ export type {
   GetEventsWithAvailabilityParams,
 } from './queries/public';
 
+// Force rebuild Mon Jan 12 15:53:34 CET 2026

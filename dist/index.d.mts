@@ -617,6 +617,215 @@ type Database = {
                     }
                 ];
             };
+            newsletter_campaigns: {
+                Row: {
+                    bounced_count: number;
+                    clicked_count: number;
+                    content_html: string;
+                    content_text: string | null;
+                    created_at: string;
+                    created_by: string | null;
+                    deleted_at: string | null;
+                    delivered_count: number;
+                    id: string;
+                    opened_count: number;
+                    recipient_count: number;
+                    scheduled_at: string | null;
+                    sent_at: string | null;
+                    status: Database["public"]["Enums"]["newsletter_campaign_status"];
+                    subject: string;
+                    template_id: string | null;
+                    updated_at: string;
+                };
+                Insert: {
+                    bounced_count?: number;
+                    clicked_count?: number;
+                    content_html: string;
+                    content_text?: string | null;
+                    created_at?: string;
+                    created_by?: string | null;
+                    deleted_at?: string | null;
+                    delivered_count?: number;
+                    id?: string;
+                    opened_count?: number;
+                    recipient_count?: number;
+                    scheduled_at?: string | null;
+                    sent_at?: string | null;
+                    status?: Database["public"]["Enums"]["newsletter_campaign_status"];
+                    subject: string;
+                    template_id?: string | null;
+                    updated_at?: string;
+                };
+                Update: {
+                    bounced_count?: number;
+                    clicked_count?: number;
+                    content_html?: string;
+                    content_text?: string | null;
+                    created_at?: string;
+                    created_by?: string | null;
+                    deleted_at?: string | null;
+                    delivered_count?: number;
+                    id?: string;
+                    opened_count?: number;
+                    recipient_count?: number;
+                    scheduled_at?: string | null;
+                    sent_at?: string | null;
+                    status?: Database["public"]["Enums"]["newsletter_campaign_status"];
+                    subject?: string;
+                    template_id?: string | null;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "newsletter_campaigns_created_by_fkey";
+                        columns: ["created_by"];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "newsletter_campaigns_template_id_fkey";
+                        columns: ["template_id"];
+                        isOneToOne: false;
+                        referencedRelation: "newsletter_templates";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            newsletter_emails: {
+                Row: {
+                    bounced_at: string | null;
+                    campaign_id: string;
+                    clicked_at: string | null;
+                    client_id: string;
+                    client_name: string;
+                    created_at: string;
+                    delivered_at: string | null;
+                    email_address: string;
+                    error_message: string | null;
+                    id: string;
+                    opened_at: string | null;
+                    resend_id: string | null;
+                    sent_at: string | null;
+                    status: Database["public"]["Enums"]["newsletter_email_status"];
+                };
+                Insert: {
+                    bounced_at?: string | null;
+                    campaign_id: string;
+                    clicked_at?: string | null;
+                    client_id: string;
+                    client_name: string;
+                    created_at?: string;
+                    delivered_at?: string | null;
+                    email_address: string;
+                    error_message?: string | null;
+                    id?: string;
+                    opened_at?: string | null;
+                    resend_id?: string | null;
+                    sent_at?: string | null;
+                    status?: Database["public"]["Enums"]["newsletter_email_status"];
+                };
+                Update: {
+                    bounced_at?: string | null;
+                    campaign_id?: string;
+                    clicked_at?: string | null;
+                    client_id?: string;
+                    client_name?: string;
+                    created_at?: string;
+                    delivered_at?: string | null;
+                    email_address?: string;
+                    error_message?: string | null;
+                    id?: string;
+                    opened_at?: string | null;
+                    resend_id?: string | null;
+                    sent_at?: string | null;
+                    status?: Database["public"]["Enums"]["newsletter_email_status"];
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "newsletter_emails_campaign_id_fkey";
+                        columns: ["campaign_id"];
+                        isOneToOne: false;
+                        referencedRelation: "newsletter_campaigns";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "newsletter_emails_client_id_fkey";
+                        columns: ["client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            newsletter_templates: {
+                Row: {
+                    content_html_template: string;
+                    content_text_template: string | null;
+                    created_at: string;
+                    description: string | null;
+                    id: string;
+                    name: string;
+                    subject_template: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    content_html_template: string;
+                    content_text_template?: string | null;
+                    created_at?: string;
+                    description?: string | null;
+                    id: string;
+                    name: string;
+                    subject_template: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    content_html_template?: string;
+                    content_text_template?: string | null;
+                    created_at?: string;
+                    description?: string | null;
+                    id?: string;
+                    name?: string;
+                    subject_template?: string;
+                    updated_at?: string;
+                };
+                Relationships: [];
+            };
+            newsletter_tracking_events: {
+                Row: {
+                    created_at: string;
+                    email_id: string;
+                    event_data: Json | null;
+                    event_type: Database["public"]["Enums"]["newsletter_event_type"];
+                    id: string;
+                    occurred_at: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    email_id: string;
+                    event_data?: Json | null;
+                    event_type: Database["public"]["Enums"]["newsletter_event_type"];
+                    id?: string;
+                    occurred_at: string;
+                };
+                Update: {
+                    created_at?: string;
+                    email_id?: string;
+                    event_data?: Json | null;
+                    event_type?: Database["public"]["Enums"]["newsletter_event_type"];
+                    id?: string;
+                    occurred_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "newsletter_tracking_events_email_id_fkey";
+                        columns: ["email_id"];
+                        isOneToOne: false;
+                        referencedRelation: "newsletter_emails";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             operators: {
                 Row: {
                     bio: string | null;
@@ -1555,6 +1764,12 @@ type Database = {
                 };
                 Returns: Json;
             };
+            staff_get_user_email_status: {
+                Args: {
+                    p_user_id: string;
+                };
+                Returns: Json;
+            };
             staff_update_booking_status: {
                 Args: {
                     p_booking_id: string;
@@ -1566,6 +1781,9 @@ type Database = {
         Enums: {
             booking_status: "booked" | "canceled" | "attended" | "no_show";
             bug_status: "open" | "in_progress" | "resolved" | "closed";
+            newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
+            newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
+            newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
             subscription_status: "active" | "completed" | "expired" | "canceled";
             user_role: "user" | "operator" | "admin" | "finance";
         };
@@ -2373,6 +2591,207 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 isOneToOne: false;
                 referencedRelation: "public_site_schedule";
                 referencedColumns: ["operator_id"];
+            }];
+        };
+        newsletter_campaigns: {
+            Row: {
+                bounced_count: number;
+                clicked_count: number;
+                content_html: string;
+                content_text: string | null;
+                created_at: string;
+                created_by: string | null;
+                deleted_at: string | null;
+                delivered_count: number;
+                id: string;
+                opened_count: number;
+                recipient_count: number;
+                scheduled_at: string | null;
+                sent_at: string | null;
+                status: Database["public"]["Enums"]["newsletter_campaign_status"];
+                subject: string;
+                template_id: string | null;
+                updated_at: string;
+            };
+            Insert: {
+                bounced_count?: number;
+                clicked_count?: number;
+                content_html: string;
+                content_text?: string | null;
+                created_at?: string;
+                created_by?: string | null;
+                deleted_at?: string | null;
+                delivered_count?: number;
+                id?: string;
+                opened_count?: number;
+                recipient_count?: number;
+                scheduled_at?: string | null;
+                sent_at?: string | null;
+                status?: Database["public"]["Enums"]["newsletter_campaign_status"];
+                subject: string;
+                template_id?: string | null;
+                updated_at?: string;
+            };
+            Update: {
+                bounced_count?: number;
+                clicked_count?: number;
+                content_html?: string;
+                content_text?: string | null;
+                created_at?: string;
+                created_by?: string | null;
+                deleted_at?: string | null;
+                delivered_count?: number;
+                id?: string;
+                opened_count?: number;
+                recipient_count?: number;
+                scheduled_at?: string | null;
+                sent_at?: string | null;
+                status?: Database["public"]["Enums"]["newsletter_campaign_status"];
+                subject?: string;
+                template_id?: string | null;
+                updated_at?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "newsletter_campaigns_created_by_fkey";
+                columns: ["created_by"];
+                isOneToOne: false;
+                referencedRelation: "profiles";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "newsletter_campaigns_template_id_fkey";
+                columns: ["template_id"];
+                isOneToOne: false;
+                referencedRelation: "newsletter_templates";
+                referencedColumns: ["id"];
+            }];
+        };
+        newsletter_emails: {
+            Row: {
+                bounced_at: string | null;
+                campaign_id: string;
+                clicked_at: string | null;
+                client_id: string;
+                client_name: string;
+                created_at: string;
+                delivered_at: string | null;
+                email_address: string;
+                error_message: string | null;
+                id: string;
+                opened_at: string | null;
+                resend_id: string | null;
+                sent_at: string | null;
+                status: Database["public"]["Enums"]["newsletter_email_status"];
+            };
+            Insert: {
+                bounced_at?: string | null;
+                campaign_id: string;
+                clicked_at?: string | null;
+                client_id: string;
+                client_name: string;
+                created_at?: string;
+                delivered_at?: string | null;
+                email_address: string;
+                error_message?: string | null;
+                id?: string;
+                opened_at?: string | null;
+                resend_id?: string | null;
+                sent_at?: string | null;
+                status?: Database["public"]["Enums"]["newsletter_email_status"];
+            };
+            Update: {
+                bounced_at?: string | null;
+                campaign_id?: string;
+                clicked_at?: string | null;
+                client_id?: string;
+                client_name?: string;
+                created_at?: string;
+                delivered_at?: string | null;
+                email_address?: string;
+                error_message?: string | null;
+                id?: string;
+                opened_at?: string | null;
+                resend_id?: string | null;
+                sent_at?: string | null;
+                status?: Database["public"]["Enums"]["newsletter_email_status"];
+            };
+            Relationships: [{
+                foreignKeyName: "newsletter_emails_campaign_id_fkey";
+                columns: ["campaign_id"];
+                isOneToOne: false;
+                referencedRelation: "newsletter_campaigns";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "newsletter_emails_client_id_fkey";
+                columns: ["client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
+                referencedColumns: ["id"];
+            }];
+        };
+        newsletter_templates: {
+            Row: {
+                content_html_template: string;
+                content_text_template: string | null;
+                created_at: string;
+                description: string | null;
+                id: string;
+                name: string;
+                subject_template: string;
+                updated_at: string;
+            };
+            Insert: {
+                content_html_template: string;
+                content_text_template?: string | null;
+                created_at?: string;
+                description?: string | null;
+                id: string;
+                name: string;
+                subject_template: string;
+                updated_at?: string;
+            };
+            Update: {
+                content_html_template?: string;
+                content_text_template?: string | null;
+                created_at?: string;
+                description?: string | null;
+                id?: string;
+                name?: string;
+                subject_template?: string;
+                updated_at?: string;
+            };
+            Relationships: [];
+        };
+        newsletter_tracking_events: {
+            Row: {
+                created_at: string;
+                email_id: string;
+                event_data: Json | null;
+                event_type: Database["public"]["Enums"]["newsletter_event_type"];
+                id: string;
+                occurred_at: string;
+            };
+            Insert: {
+                created_at?: string;
+                email_id: string;
+                event_data?: Json | null;
+                event_type: Database["public"]["Enums"]["newsletter_event_type"];
+                id?: string;
+                occurred_at: string;
+            };
+            Update: {
+                created_at?: string;
+                email_id?: string;
+                event_data?: Json | null;
+                event_type?: Database["public"]["Enums"]["newsletter_event_type"];
+                id?: string;
+                occurred_at?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "newsletter_tracking_events_email_id_fkey";
+                columns: ["email_id"];
+                isOneToOne: false;
+                referencedRelation: "newsletter_emails";
+                referencedColumns: ["id"];
             }];
         };
         operators: {
@@ -3279,6 +3698,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             };
             Returns: Json;
         };
+        staff_get_user_email_status: {
+            Args: {
+                p_user_id: string;
+            };
+            Returns: Json;
+        };
         staff_update_booking_status: {
             Args: {
                 p_booking_id: string;
@@ -3290,6 +3715,9 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     Enums: {
         booking_status: "booked" | "canceled" | "attended" | "no_show";
         bug_status: "open" | "in_progress" | "resolved" | "closed";
+        newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
+        newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
+        newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
         subscription_status: "active" | "completed" | "expired" | "canceled";
         user_role: "user" | "operator" | "admin" | "finance";
     };
@@ -3855,6 +4283,203 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     }];
 } | {
     Row: {
+        bounced_count: number;
+        clicked_count: number;
+        content_html: string;
+        content_text: string | null;
+        created_at: string;
+        created_by: string | null;
+        deleted_at: string | null;
+        delivered_count: number;
+        id: string;
+        opened_count: number;
+        recipient_count: number;
+        scheduled_at: string | null;
+        sent_at: string | null;
+        status: Database["public"]["Enums"]["newsletter_campaign_status"];
+        subject: string;
+        template_id: string | null;
+        updated_at: string;
+    };
+    Insert: {
+        bounced_count?: number;
+        clicked_count?: number;
+        content_html: string;
+        content_text?: string | null;
+        created_at?: string;
+        created_by?: string | null;
+        deleted_at?: string | null;
+        delivered_count?: number;
+        id?: string;
+        opened_count?: number;
+        recipient_count?: number;
+        scheduled_at?: string | null;
+        sent_at?: string | null;
+        status?: Database["public"]["Enums"]["newsletter_campaign_status"];
+        subject: string;
+        template_id?: string | null;
+        updated_at?: string;
+    };
+    Update: {
+        bounced_count?: number;
+        clicked_count?: number;
+        content_html?: string;
+        content_text?: string | null;
+        created_at?: string;
+        created_by?: string | null;
+        deleted_at?: string | null;
+        delivered_count?: number;
+        id?: string;
+        opened_count?: number;
+        recipient_count?: number;
+        scheduled_at?: string | null;
+        sent_at?: string | null;
+        status?: Database["public"]["Enums"]["newsletter_campaign_status"];
+        subject?: string;
+        template_id?: string | null;
+        updated_at?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "newsletter_campaigns_created_by_fkey";
+        columns: ["created_by"];
+        isOneToOne: false;
+        referencedRelation: "profiles";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "newsletter_campaigns_template_id_fkey";
+        columns: ["template_id"];
+        isOneToOne: false;
+        referencedRelation: "newsletter_templates";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
+        bounced_at: string | null;
+        campaign_id: string;
+        clicked_at: string | null;
+        client_id: string;
+        client_name: string;
+        created_at: string;
+        delivered_at: string | null;
+        email_address: string;
+        error_message: string | null;
+        id: string;
+        opened_at: string | null;
+        resend_id: string | null;
+        sent_at: string | null;
+        status: Database["public"]["Enums"]["newsletter_email_status"];
+    };
+    Insert: {
+        bounced_at?: string | null;
+        campaign_id: string;
+        clicked_at?: string | null;
+        client_id: string;
+        client_name: string;
+        created_at?: string;
+        delivered_at?: string | null;
+        email_address: string;
+        error_message?: string | null;
+        id?: string;
+        opened_at?: string | null;
+        resend_id?: string | null;
+        sent_at?: string | null;
+        status?: Database["public"]["Enums"]["newsletter_email_status"];
+    };
+    Update: {
+        bounced_at?: string | null;
+        campaign_id?: string;
+        clicked_at?: string | null;
+        client_id?: string;
+        client_name?: string;
+        created_at?: string;
+        delivered_at?: string | null;
+        email_address?: string;
+        error_message?: string | null;
+        id?: string;
+        opened_at?: string | null;
+        resend_id?: string | null;
+        sent_at?: string | null;
+        status?: Database["public"]["Enums"]["newsletter_email_status"];
+    };
+    Relationships: [{
+        foreignKeyName: "newsletter_emails_campaign_id_fkey";
+        columns: ["campaign_id"];
+        isOneToOne: false;
+        referencedRelation: "newsletter_campaigns";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "newsletter_emails_client_id_fkey";
+        columns: ["client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
+        content_html_template: string;
+        content_text_template: string | null;
+        created_at: string;
+        description: string | null;
+        id: string;
+        name: string;
+        subject_template: string;
+        updated_at: string;
+    };
+    Insert: {
+        content_html_template: string;
+        content_text_template?: string | null;
+        created_at?: string;
+        description?: string | null;
+        id: string;
+        name: string;
+        subject_template: string;
+        updated_at?: string;
+    };
+    Update: {
+        content_html_template?: string;
+        content_text_template?: string | null;
+        created_at?: string;
+        description?: string | null;
+        id?: string;
+        name?: string;
+        subject_template?: string;
+        updated_at?: string;
+    };
+    Relationships: [];
+} | {
+    Row: {
+        created_at: string;
+        email_id: string;
+        event_data: Json | null;
+        event_type: Database["public"]["Enums"]["newsletter_event_type"];
+        id: string;
+        occurred_at: string;
+    };
+    Insert: {
+        created_at?: string;
+        email_id: string;
+        event_data?: Json | null;
+        event_type: Database["public"]["Enums"]["newsletter_event_type"];
+        id?: string;
+        occurred_at: string;
+    };
+    Update: {
+        created_at?: string;
+        email_id?: string;
+        event_data?: Json | null;
+        event_type?: Database["public"]["Enums"]["newsletter_event_type"];
+        id?: string;
+        occurred_at?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "newsletter_tracking_events_email_id_fkey";
+        columns: ["email_id"];
+        isOneToOne: false;
+        referencedRelation: "newsletter_emails";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
         bio: string | null;
         created_at: string | null;
         deleted_at: string | null;
@@ -4341,7 +4966,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "profiles";
         referencedColumns: ["id"];
     }];
-}, "clients" | "lessons" | "subscriptions" | "profiles" | "events" | "activities" | "operators" | "plans" | "bookings" | "bug_reports" | "event_bookings" | "expenses" | "payout_rules" | "payouts" | "plan_activities" | "promotions" | "subscription_usages" | "waitlist", [] | [{
+}, "clients" | "lessons" | "subscriptions" | "profiles" | "events" | "activities" | "operators" | "newsletter_templates" | "newsletter_campaigns" | "newsletter_emails" | "plans" | "bookings" | "bug_reports" | "event_bookings" | "expenses" | "newsletter_tracking_events" | "payout_rules" | "payouts" | "plan_activities" | "promotions" | "subscription_usages" | "waitlist", [] | [{
     foreignKeyName: "bookings_client_id_fkey";
     columns: ["client_id"];
     isOneToOne: false;
@@ -4545,6 +5170,36 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     isOneToOne: false;
     referencedRelation: "public_site_schedule";
     referencedColumns: ["operator_id"];
+}] | [{
+    foreignKeyName: "newsletter_campaigns_created_by_fkey";
+    columns: ["created_by"];
+    isOneToOne: false;
+    referencedRelation: "profiles";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "newsletter_campaigns_template_id_fkey";
+    columns: ["template_id"];
+    isOneToOne: false;
+    referencedRelation: "newsletter_templates";
+    referencedColumns: ["id"];
+}] | [{
+    foreignKeyName: "newsletter_emails_campaign_id_fkey";
+    columns: ["campaign_id"];
+    isOneToOne: false;
+    referencedRelation: "newsletter_campaigns";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "newsletter_emails_client_id_fkey";
+    columns: ["client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
+    referencedColumns: ["id"];
+}] | [{
+    foreignKeyName: "newsletter_tracking_events_email_id_fkey";
+    columns: ["email_id"];
+    isOneToOne: false;
+    referencedRelation: "newsletter_emails";
+    referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "operators_profile_id_fkey";
     columns: ["profile_id"];
@@ -4803,6 +5458,55 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    bounced_count: number;
+    clicked_count: number;
+    content_html: string;
+    content_text: string | null;
+    created_at: string;
+    created_by: string | null;
+    deleted_at: string | null;
+    delivered_count: number;
+    id: string;
+    opened_count: number;
+    recipient_count: number;
+    scheduled_at: string | null;
+    sent_at: string | null;
+    status: Database["public"]["Enums"]["newsletter_campaign_status"];
+    subject: string;
+    template_id: string | null;
+    updated_at: string;
+} | {
+    bounced_at: string | null;
+    campaign_id: string;
+    clicked_at: string | null;
+    client_id: string;
+    client_name: string;
+    created_at: string;
+    delivered_at: string | null;
+    email_address: string;
+    error_message: string | null;
+    id: string;
+    opened_at: string | null;
+    resend_id: string | null;
+    sent_at: string | null;
+    status: Database["public"]["Enums"]["newsletter_email_status"];
+} | {
+    content_html_template: string;
+    content_text_template: string | null;
+    created_at: string;
+    description: string | null;
+    id: string;
+    name: string;
+    subject_template: string;
+    updated_at: string;
+} | {
+    created_at: string;
+    email_id: string;
+    event_data: Json | null;
+    event_type: Database["public"]["Enums"]["newsletter_event_type"];
+    id: string;
+    occurred_at: string;
+} | {
     bio: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -5021,6 +5725,55 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     operator_id: string | null;
     recurring_series_id: string | null;
     starts_at: string;
+} | {
+    bounced_count: number;
+    clicked_count: number;
+    content_html: string;
+    content_text: string | null;
+    created_at: string;
+    created_by: string | null;
+    deleted_at: string | null;
+    delivered_count: number;
+    id: string;
+    opened_count: number;
+    recipient_count: number;
+    scheduled_at: string | null;
+    sent_at: string | null;
+    status: Database["public"]["Enums"]["newsletter_campaign_status"];
+    subject: string;
+    template_id: string | null;
+    updated_at: string;
+} | {
+    bounced_at: string | null;
+    campaign_id: string;
+    clicked_at: string | null;
+    client_id: string;
+    client_name: string;
+    created_at: string;
+    delivered_at: string | null;
+    email_address: string;
+    error_message: string | null;
+    id: string;
+    opened_at: string | null;
+    resend_id: string | null;
+    sent_at: string | null;
+    status: Database["public"]["Enums"]["newsletter_email_status"];
+} | {
+    content_html_template: string;
+    content_text_template: string | null;
+    created_at: string;
+    description: string | null;
+    id: string;
+    name: string;
+    subject_template: string;
+    updated_at: string;
+} | {
+    created_at: string;
+    email_id: string;
+    event_data: Json | null;
+    event_type: Database["public"]["Enums"]["newsletter_event_type"];
+    id: string;
+    occurred_at: string;
 } | {
     bio: string | null;
     created_at: string | null;
@@ -5241,6 +5994,55 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    bounced_count: number;
+    clicked_count: number;
+    content_html: string;
+    content_text: string | null;
+    created_at: string;
+    created_by: string | null;
+    deleted_at: string | null;
+    delivered_count: number;
+    id: string;
+    opened_count: number;
+    recipient_count: number;
+    scheduled_at: string | null;
+    sent_at: string | null;
+    status: Database["public"]["Enums"]["newsletter_campaign_status"];
+    subject: string;
+    template_id: string | null;
+    updated_at: string;
+} | {
+    bounced_at: string | null;
+    campaign_id: string;
+    clicked_at: string | null;
+    client_id: string;
+    client_name: string;
+    created_at: string;
+    delivered_at: string | null;
+    email_address: string;
+    error_message: string | null;
+    id: string;
+    opened_at: string | null;
+    resend_id: string | null;
+    sent_at: string | null;
+    status: Database["public"]["Enums"]["newsletter_email_status"];
+} | {
+    content_html_template: string;
+    content_text_template: string | null;
+    created_at: string;
+    description: string | null;
+    id: string;
+    name: string;
+    subject_template: string;
+    updated_at: string;
+} | {
+    created_at: string;
+    email_id: string;
+    event_data: Json | null;
+    event_type: Database["public"]["Enums"]["newsletter_event_type"];
+    id: string;
+    occurred_at: string;
+} | {
     bio: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -5459,6 +6261,55 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     operator_id: string | null;
     recurring_series_id: string | null;
     starts_at: string;
+} | {
+    bounced_count: number;
+    clicked_count: number;
+    content_html: string;
+    content_text: string | null;
+    created_at: string;
+    created_by: string | null;
+    deleted_at: string | null;
+    delivered_count: number;
+    id: string;
+    opened_count: number;
+    recipient_count: number;
+    scheduled_at: string | null;
+    sent_at: string | null;
+    status: Database["public"]["Enums"]["newsletter_campaign_status"];
+    subject: string;
+    template_id: string | null;
+    updated_at: string;
+} | {
+    bounced_at: string | null;
+    campaign_id: string;
+    clicked_at: string | null;
+    client_id: string;
+    client_name: string;
+    created_at: string;
+    delivered_at: string | null;
+    email_address: string;
+    error_message: string | null;
+    id: string;
+    opened_at: string | null;
+    resend_id: string | null;
+    sent_at: string | null;
+    status: Database["public"]["Enums"]["newsletter_email_status"];
+} | {
+    content_html_template: string;
+    content_text_template: string | null;
+    created_at: string;
+    description: string | null;
+    id: string;
+    name: string;
+    subject_template: string;
+    updated_at: string;
+} | {
+    created_at: string;
+    email_id: string;
+    event_data: Json | null;
+    event_type: Database["public"]["Enums"]["newsletter_event_type"];
+    id: string;
+    occurred_at: string;
 } | {
     bio: string | null;
     created_at: string | null;
@@ -5687,6 +6538,55 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     operator_id: string | null;
     recurring_series_id: string | null;
     starts_at: string;
+} | {
+    bounced_count: number;
+    clicked_count: number;
+    content_html: string;
+    content_text: string | null;
+    created_at: string;
+    created_by: string | null;
+    deleted_at: string | null;
+    delivered_count: number;
+    id: string;
+    opened_count: number;
+    recipient_count: number;
+    scheduled_at: string | null;
+    sent_at: string | null;
+    status: Database["public"]["Enums"]["newsletter_campaign_status"];
+    subject: string;
+    template_id: string | null;
+    updated_at: string;
+} | {
+    bounced_at: string | null;
+    campaign_id: string;
+    clicked_at: string | null;
+    client_id: string;
+    client_name: string;
+    created_at: string;
+    delivered_at: string | null;
+    email_address: string;
+    error_message: string | null;
+    id: string;
+    opened_at: string | null;
+    resend_id: string | null;
+    sent_at: string | null;
+    status: Database["public"]["Enums"]["newsletter_email_status"];
+} | {
+    content_html_template: string;
+    content_text_template: string | null;
+    created_at: string;
+    description: string | null;
+    id: string;
+    name: string;
+    subject_template: string;
+    updated_at: string;
+} | {
+    created_at: string;
+    email_id: string;
+    event_data: Json | null;
+    event_type: Database["public"]["Enums"]["newsletter_event_type"];
+    id: string;
+    occurred_at: string;
 } | {
     bio: string | null;
     created_at: string | null;

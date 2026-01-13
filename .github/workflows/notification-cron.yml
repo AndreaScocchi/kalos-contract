@@ -1,0 +1,19 @@
+name: Process Notification Queue
+
+on:
+  schedule:
+    # Ogni 5 minuti
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Permette esecuzione manuale
+
+jobs:
+  process-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process notification queue
+        run: |
+          curl -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/process-notification-queue" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'

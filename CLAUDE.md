@@ -25,7 +25,7 @@ kalos-contract/
 │   └── queries/
 │       └── public.ts           # Public query helpers
 ├── supabase/
-│   ├── migrations/             # 47 canonical migrations
+│   ├── migrations/             # 76 canonical migrations
 │   │   ├── 20240101000000_migration_0000.sql
 │   │   ├── 20240101000001_migration_0001.sql
 │   │   └── ...
@@ -237,12 +237,12 @@ npm run verify:migrations   # Check migration integrity
 
 ## Versioning
 
-Current: **v0.1.4**
+Current: **v0.1.5**
 
 Consumers reference via git tag:
 ```json
 {
-  "@kalos/contract": "https://github.com/AndreaScocchi/kalos-contract.git#v0.1.4"
+  "@kalos/contract": "https://github.com/AndreaScocchi/kalos-contract.git#v0.1.5"
 }
 ```
 

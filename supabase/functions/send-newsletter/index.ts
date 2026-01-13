@@ -34,8 +34,33 @@ async function generateUnsubscribeToken(email: string): Promise<string> {
   return hashArray.slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+// Generate signed URL for newsletter image
+async function getImageSignedUrl(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  imageUrl: string | null
+): Promise<string | null> {
+  if (!imageUrl) return null
+
+  // If it's already a full URL, return as-is
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl
+  }
+
+  // Generate signed URL from storage bucket
+  const { data, error } = await supabaseAdmin.storage
+    .from('newsletter')
+    .createSignedUrl(imageUrl, 3600) // 1 hour validity
+
+  if (error) {
+    console.error('Error generating signed URL for newsletter image:', error)
+    return null
+  }
+
+  return data.signedUrl
+}
+
 // HTML email template with professional styling
-function wrapTextInHtml(text: string, unsubscribeUrl: string): string {
+function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string | null = null): string {
   // Escape HTML entities
   const escaped = text
     .replace(/&/g, '&amp;')
@@ -84,18 +109,20 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string): string {
       <td align="center" style="padding: 40px 20px;">
         <!-- Main content card -->
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; background-color: ${cardBackground}; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); overflow: hidden;">
-          <!-- Top accent line -->
-          <tr>
-            <td style="height: 1px; background-color: ${accentColor};"></td>
-          </tr>
           <!-- Header with logo/brand -->
           <tr>
             <td style="padding: 32px 40px 0 40px; text-align: center;">
               <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: ${primaryColor}; letter-spacing: 2px;">STUDIO KALÒS</h1>
-              <p style="margin: 8px 0 16px 0; font-size: 13px; color: ${accentColor}; text-transform: uppercase; letter-spacing: 1px;">Centro Olistico</p>
+              <p style="margin: 8px 0 16px 0; font-size: 13px; color: ${accentColor}; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Centro Olistico</p>
               <div style="width: 40px; height: 1px; background-color: ${accentOrange}; margin: 0 auto 24px auto;"></div>
             </td>
           </tr>
+          ${imageUrl ? `<!-- Newsletter Image -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <img src="${imageUrl}" alt="Newsletter" style="width: 100%; height: auto; border-radius: 8px; display: block;" />
+            </td>
+          </tr>` : ''}
           <!-- Body content -->
           <tr>
             <td style="padding: 40px; color: ${primaryColor}; font-size: 16px; line-height: 1.7;">
@@ -246,6 +273,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
     let failedCount = 0
     const fromEmail = getFromEmail()
 
+    // Generate signed URL for newsletter image (if present)
+    const imageSignedUrl = await getImageSignedUrl(supabaseAdmin, campaign.image_url)
+
     for (let i = 0; i < pendingEmails.length; i += BATCH_SIZE) {
       const batch = pendingEmails.slice(i, i + BATCH_SIZE)
 
@@ -264,8 +294,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
           const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
           const unsubscribeUrl = `${supabaseUrl}/functions/v1/unsubscribe-newsletter?email=${encodeURIComponent(emailRecord.email_address)}&token=${token}`
 
-          // Convert plain text to HTML
-          const personalizedHtml = wrapTextInHtml(personalizedText, unsubscribeUrl)
+          // Convert plain text to HTML (with image if present)
+          const personalizedHtml = wrapTextInHtml(personalizedText, unsubscribeUrl, imageSignedUrl)
 
           // Send email
           const { data, error } = await sendEmail({

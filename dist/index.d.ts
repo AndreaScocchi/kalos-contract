@@ -205,6 +205,7 @@ type Database = {
             };
             clients: {
                 Row: {
+                    birthday: string | null;
                     created_at: string;
                     deleted_at: string | null;
                     email: string | null;
@@ -217,6 +218,7 @@ type Database = {
                     updated_at: string;
                 };
                 Insert: {
+                    birthday?: string | null;
                     created_at?: string;
                     deleted_at?: string | null;
                     email?: string | null;
@@ -229,6 +231,7 @@ type Database = {
                     updated_at?: string;
                 };
                 Update: {
+                    birthday?: string | null;
                     created_at?: string;
                     deleted_at?: string | null;
                     email?: string | null;
@@ -246,6 +249,53 @@ type Database = {
                         columns: ["profile_id"];
                         isOneToOne: false;
                         referencedRelation: "profiles";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            device_tokens: {
+                Row: {
+                    app_version: string | null;
+                    client_id: string;
+                    created_at: string;
+                    device_id: string | null;
+                    expo_push_token: string;
+                    id: string;
+                    is_active: boolean;
+                    last_used_at: string;
+                    platform: string | null;
+                    updated_at: string;
+                };
+                Insert: {
+                    app_version?: string | null;
+                    client_id: string;
+                    created_at?: string;
+                    device_id?: string | null;
+                    expo_push_token: string;
+                    id?: string;
+                    is_active?: boolean;
+                    last_used_at?: string;
+                    platform?: string | null;
+                    updated_at?: string;
+                };
+                Update: {
+                    app_version?: string | null;
+                    client_id?: string;
+                    created_at?: string;
+                    device_id?: string | null;
+                    expo_push_token?: string;
+                    id?: string;
+                    is_active?: boolean;
+                    last_used_at?: string;
+                    platform?: string | null;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "device_tokens_client_id_fkey";
+                        columns: ["client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
                         referencedColumns: ["id"];
                     }
                 ];
@@ -619,6 +669,7 @@ type Database = {
             };
             newsletter_campaigns: {
                 Row: {
+                    archived: boolean;
                     bounced_count: number;
                     clicked_count: number;
                     content: string;
@@ -627,6 +678,7 @@ type Database = {
                     deleted_at: string | null;
                     delivered_count: number;
                     id: string;
+                    image_url: string | null;
                     opened_count: number;
                     recipient_count: number;
                     recipients: Json | null;
@@ -637,6 +689,7 @@ type Database = {
                     updated_at: string;
                 };
                 Insert: {
+                    archived?: boolean;
                     bounced_count?: number;
                     clicked_count?: number;
                     content: string;
@@ -645,6 +698,7 @@ type Database = {
                     deleted_at?: string | null;
                     delivered_count?: number;
                     id?: string;
+                    image_url?: string | null;
                     opened_count?: number;
                     recipient_count?: number;
                     recipients?: Json | null;
@@ -655,6 +709,7 @@ type Database = {
                     updated_at?: string;
                 };
                 Update: {
+                    archived?: boolean;
                     bounced_count?: number;
                     clicked_count?: number;
                     content?: string;
@@ -663,6 +718,7 @@ type Database = {
                     deleted_at?: string | null;
                     delivered_count?: number;
                     id?: string;
+                    image_url?: string | null;
                     opened_count?: number;
                     recipient_count?: number;
                     recipients?: Json | null;
@@ -748,6 +804,30 @@ type Database = {
                     }
                 ];
             };
+            newsletter_extra_emails: {
+                Row: {
+                    created_at: string;
+                    deleted_at: string | null;
+                    email: string;
+                    id: string;
+                    name: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    deleted_at?: string | null;
+                    email: string;
+                    id?: string;
+                    name: string;
+                };
+                Update: {
+                    created_at?: string;
+                    deleted_at?: string | null;
+                    email?: string;
+                    id?: string;
+                    name?: string;
+                };
+                Relationships: [];
+            };
             newsletter_tracking_events: {
                 Row: {
                     created_at: string;
@@ -779,6 +859,159 @@ type Database = {
                         columns: ["email_id"];
                         isOneToOne: false;
                         referencedRelation: "newsletter_emails";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            notification_logs: {
+                Row: {
+                    body: string | null;
+                    category: Database["public"]["Enums"]["notification_category"];
+                    channel: Database["public"]["Enums"]["notification_channel"];
+                    client_id: string;
+                    data: Json | null;
+                    delivered_at: string | null;
+                    error_message: string | null;
+                    expo_receipt_id: string | null;
+                    id: string;
+                    resend_id: string | null;
+                    sent_at: string;
+                    status: Database["public"]["Enums"]["notification_status"];
+                    title: string;
+                };
+                Insert: {
+                    body?: string | null;
+                    category: Database["public"]["Enums"]["notification_category"];
+                    channel: Database["public"]["Enums"]["notification_channel"];
+                    client_id: string;
+                    data?: Json | null;
+                    delivered_at?: string | null;
+                    error_message?: string | null;
+                    expo_receipt_id?: string | null;
+                    id?: string;
+                    resend_id?: string | null;
+                    sent_at?: string;
+                    status?: Database["public"]["Enums"]["notification_status"];
+                    title: string;
+                };
+                Update: {
+                    body?: string | null;
+                    category?: Database["public"]["Enums"]["notification_category"];
+                    channel?: Database["public"]["Enums"]["notification_channel"];
+                    client_id?: string;
+                    data?: Json | null;
+                    delivered_at?: string | null;
+                    error_message?: string | null;
+                    expo_receipt_id?: string | null;
+                    id?: string;
+                    resend_id?: string | null;
+                    sent_at?: string;
+                    status?: Database["public"]["Enums"]["notification_status"];
+                    title?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "notification_logs_client_id_fkey";
+                        columns: ["client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            notification_preferences: {
+                Row: {
+                    category: Database["public"]["Enums"]["notification_category"];
+                    client_id: string;
+                    created_at: string;
+                    email_enabled: boolean;
+                    id: string;
+                    push_enabled: boolean;
+                    updated_at: string;
+                };
+                Insert: {
+                    category: Database["public"]["Enums"]["notification_category"];
+                    client_id: string;
+                    created_at?: string;
+                    email_enabled?: boolean;
+                    id?: string;
+                    push_enabled?: boolean;
+                    updated_at?: string;
+                };
+                Update: {
+                    category?: Database["public"]["Enums"]["notification_category"];
+                    client_id?: string;
+                    created_at?: string;
+                    email_enabled?: boolean;
+                    id?: string;
+                    push_enabled?: boolean;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "notification_preferences_client_id_fkey";
+                        columns: ["client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            notification_queue: {
+                Row: {
+                    attempts: number;
+                    body: string;
+                    category: Database["public"]["Enums"]["notification_category"];
+                    channel: Database["public"]["Enums"]["notification_channel"];
+                    client_id: string;
+                    created_at: string;
+                    data: Json | null;
+                    error_message: string | null;
+                    id: string;
+                    last_attempt_at: string | null;
+                    processed_at: string | null;
+                    scheduled_for: string;
+                    status: Database["public"]["Enums"]["notification_status"];
+                    title: string;
+                };
+                Insert: {
+                    attempts?: number;
+                    body: string;
+                    category: Database["public"]["Enums"]["notification_category"];
+                    channel: Database["public"]["Enums"]["notification_channel"];
+                    client_id: string;
+                    created_at?: string;
+                    data?: Json | null;
+                    error_message?: string | null;
+                    id?: string;
+                    last_attempt_at?: string | null;
+                    processed_at?: string | null;
+                    scheduled_for: string;
+                    status?: Database["public"]["Enums"]["notification_status"];
+                    title: string;
+                };
+                Update: {
+                    attempts?: number;
+                    body?: string;
+                    category?: Database["public"]["Enums"]["notification_category"];
+                    channel?: Database["public"]["Enums"]["notification_channel"];
+                    client_id?: string;
+                    created_at?: string;
+                    data?: Json | null;
+                    error_message?: string | null;
+                    id?: string;
+                    last_attempt_at?: string | null;
+                    processed_at?: string | null;
+                    scheduled_for?: string;
+                    status?: Database["public"]["Enums"]["notification_status"];
+                    title?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "notification_queue_client_id_fkey";
+                        columns: ["client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
                         referencedColumns: ["id"];
                     }
                 ];
@@ -1582,8 +1815,22 @@ type Database = {
                     studio_margin_cents: number;
                 }[];
             };
+            call_edge_function: {
+                Args: {
+                    p_body?: Json;
+                    p_function_name: string;
+                };
+                Returns: number;
+            };
             can_access_finance: {
                 Args: never;
+                Returns: boolean;
+            };
+            can_send_re_engagement: {
+                Args: {
+                    p_client_id: string;
+                    p_days?: number;
+                };
                 Returns: boolean;
             };
             cancel_booking: {
@@ -1597,6 +1844,18 @@ type Database = {
                     p_booking_id: string;
                 };
                 Returns: Json;
+            };
+            client_has_active_push_tokens: {
+                Args: {
+                    p_client_id: string;
+                };
+                Returns: boolean;
+            };
+            count_attended_lessons: {
+                Args: {
+                    p_client_id: string;
+                };
+                Returns: number;
             };
             create_user_profile: {
                 Args: {
@@ -1624,6 +1883,30 @@ type Database = {
                     isOneToOne: true;
                     isSetofReturn: false;
                 };
+            };
+            cron_process_notification_queue: {
+                Args: never;
+                Returns: undefined;
+            };
+            cron_queue_birthday: {
+                Args: never;
+                Returns: undefined;
+            };
+            cron_queue_entries_low: {
+                Args: never;
+                Returns: undefined;
+            };
+            cron_queue_lesson_reminders: {
+                Args: never;
+                Returns: undefined;
+            };
+            cron_queue_re_engagement: {
+                Args: never;
+                Returns: undefined;
+            };
+            cron_queue_subscription_expiry: {
+                Args: never;
+                Returns: undefined;
             };
             fix_missing_cancel_restore_entries: {
                 Args: never;
@@ -1675,6 +1958,13 @@ type Database = {
                 Args: never;
                 Returns: string;
             };
+            get_notification_channel: {
+                Args: {
+                    p_category: Database["public"]["Enums"]["notification_category"];
+                    p_client_id: string;
+                };
+                Returns: Database["public"]["Enums"]["notification_channel"];
+            };
             get_revenue_breakdown: {
                 Args: {
                     p_month_end?: string;
@@ -1693,6 +1983,54 @@ type Database = {
             is_staff: {
                 Args: never;
                 Returns: boolean;
+            };
+            milestone_already_sent: {
+                Args: {
+                    p_client_id: string;
+                    p_milestone: number;
+                };
+                Returns: boolean;
+            };
+            queue_birthday: {
+                Args: never;
+                Returns: Json;
+            };
+            queue_entries_low: {
+                Args: never;
+                Returns: Json;
+            };
+            queue_first_lesson: {
+                Args: {
+                    p_client_id: string;
+                };
+                Returns: boolean;
+            };
+            queue_lesson_reminders: {
+                Args: never;
+                Returns: Json;
+            };
+            queue_milestone: {
+                Args: {
+                    p_client_id: string;
+                    p_milestone: number;
+                };
+                Returns: boolean;
+            };
+            queue_new_event: {
+                Args: {
+                    p_event_date: string;
+                    p_event_id: string;
+                    p_event_name: string;
+                };
+                Returns: Json;
+            };
+            queue_re_engagement: {
+                Args: never;
+                Returns: Json;
+            };
+            queue_subscription_expiry: {
+                Args: never;
+                Returns: Json;
             };
             staff_book_event: {
                 Args: {
@@ -1741,6 +2079,9 @@ type Database = {
             newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
             newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
             newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
+            notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event";
+            notification_channel: "push" | "email";
+            notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
             subscription_status: "active" | "completed" | "expired" | "canceled";
             user_role: "user" | "operator" | "admin" | "finance";
         };
@@ -2168,6 +2509,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         };
         clients: {
             Row: {
+                birthday: string | null;
                 created_at: string;
                 deleted_at: string | null;
                 email: string | null;
@@ -2180,6 +2522,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 updated_at: string;
             };
             Insert: {
+                birthday?: string | null;
                 created_at?: string;
                 deleted_at?: string | null;
                 email?: string | null;
@@ -2192,6 +2535,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 updated_at?: string;
             };
             Update: {
+                birthday?: string | null;
                 created_at?: string;
                 deleted_at?: string | null;
                 email?: string | null;
@@ -2208,6 +2552,51 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["profile_id"];
                 isOneToOne: false;
                 referencedRelation: "profiles";
+                referencedColumns: ["id"];
+            }];
+        };
+        device_tokens: {
+            Row: {
+                app_version: string | null;
+                client_id: string;
+                created_at: string;
+                device_id: string | null;
+                expo_push_token: string;
+                id: string;
+                is_active: boolean;
+                last_used_at: string;
+                platform: string | null;
+                updated_at: string;
+            };
+            Insert: {
+                app_version?: string | null;
+                client_id: string;
+                created_at?: string;
+                device_id?: string | null;
+                expo_push_token: string;
+                id?: string;
+                is_active?: boolean;
+                last_used_at?: string;
+                platform?: string | null;
+                updated_at?: string;
+            };
+            Update: {
+                app_version?: string | null;
+                client_id?: string;
+                created_at?: string;
+                device_id?: string | null;
+                expo_push_token?: string;
+                id?: string;
+                is_active?: boolean;
+                last_used_at?: string;
+                platform?: string | null;
+                updated_at?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "device_tokens_client_id_fkey";
+                columns: ["client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
                 referencedColumns: ["id"];
             }];
         };
@@ -2552,6 +2941,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         };
         newsletter_campaigns: {
             Row: {
+                archived: boolean;
                 bounced_count: number;
                 clicked_count: number;
                 content: string;
@@ -2560,6 +2950,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 deleted_at: string | null;
                 delivered_count: number;
                 id: string;
+                image_url: string | null;
                 opened_count: number;
                 recipient_count: number;
                 recipients: Json | null;
@@ -2570,6 +2961,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 updated_at: string;
             };
             Insert: {
+                archived?: boolean;
                 bounced_count?: number;
                 clicked_count?: number;
                 content: string;
@@ -2578,6 +2970,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 deleted_at?: string | null;
                 delivered_count?: number;
                 id?: string;
+                image_url?: string | null;
                 opened_count?: number;
                 recipient_count?: number;
                 recipients?: Json | null;
@@ -2588,6 +2981,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 updated_at?: string;
             };
             Update: {
+                archived?: boolean;
                 bounced_count?: number;
                 clicked_count?: number;
                 content?: string;
@@ -2596,6 +2990,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 deleted_at?: string | null;
                 delivered_count?: number;
                 id?: string;
+                image_url?: string | null;
                 opened_count?: number;
                 recipient_count?: number;
                 recipients?: Json | null;
@@ -2676,6 +3071,30 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedColumns: ["id"];
             }];
         };
+        newsletter_extra_emails: {
+            Row: {
+                created_at: string;
+                deleted_at: string | null;
+                email: string;
+                id: string;
+                name: string;
+            };
+            Insert: {
+                created_at?: string;
+                deleted_at?: string | null;
+                email: string;
+                id?: string;
+                name: string;
+            };
+            Update: {
+                created_at?: string;
+                deleted_at?: string | null;
+                email?: string;
+                id?: string;
+                name?: string;
+            };
+            Relationships: [];
+        };
         newsletter_tracking_events: {
             Row: {
                 created_at: string;
@@ -2706,6 +3125,153 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["email_id"];
                 isOneToOne: false;
                 referencedRelation: "newsletter_emails";
+                referencedColumns: ["id"];
+            }];
+        };
+        notification_logs: {
+            Row: {
+                body: string | null;
+                category: Database["public"]["Enums"]["notification_category"];
+                channel: Database["public"]["Enums"]["notification_channel"];
+                client_id: string;
+                data: Json | null;
+                delivered_at: string | null;
+                error_message: string | null;
+                expo_receipt_id: string | null;
+                id: string;
+                resend_id: string | null;
+                sent_at: string;
+                status: Database["public"]["Enums"]["notification_status"];
+                title: string;
+            };
+            Insert: {
+                body?: string | null;
+                category: Database["public"]["Enums"]["notification_category"];
+                channel: Database["public"]["Enums"]["notification_channel"];
+                client_id: string;
+                data?: Json | null;
+                delivered_at?: string | null;
+                error_message?: string | null;
+                expo_receipt_id?: string | null;
+                id?: string;
+                resend_id?: string | null;
+                sent_at?: string;
+                status?: Database["public"]["Enums"]["notification_status"];
+                title: string;
+            };
+            Update: {
+                body?: string | null;
+                category?: Database["public"]["Enums"]["notification_category"];
+                channel?: Database["public"]["Enums"]["notification_channel"];
+                client_id?: string;
+                data?: Json | null;
+                delivered_at?: string | null;
+                error_message?: string | null;
+                expo_receipt_id?: string | null;
+                id?: string;
+                resend_id?: string | null;
+                sent_at?: string;
+                status?: Database["public"]["Enums"]["notification_status"];
+                title?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "notification_logs_client_id_fkey";
+                columns: ["client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
+                referencedColumns: ["id"];
+            }];
+        };
+        notification_preferences: {
+            Row: {
+                category: Database["public"]["Enums"]["notification_category"];
+                client_id: string;
+                created_at: string;
+                email_enabled: boolean;
+                id: string;
+                push_enabled: boolean;
+                updated_at: string;
+            };
+            Insert: {
+                category: Database["public"]["Enums"]["notification_category"];
+                client_id: string;
+                created_at?: string;
+                email_enabled?: boolean;
+                id?: string;
+                push_enabled?: boolean;
+                updated_at?: string;
+            };
+            Update: {
+                category?: Database["public"]["Enums"]["notification_category"];
+                client_id?: string;
+                created_at?: string;
+                email_enabled?: boolean;
+                id?: string;
+                push_enabled?: boolean;
+                updated_at?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "notification_preferences_client_id_fkey";
+                columns: ["client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
+                referencedColumns: ["id"];
+            }];
+        };
+        notification_queue: {
+            Row: {
+                attempts: number;
+                body: string;
+                category: Database["public"]["Enums"]["notification_category"];
+                channel: Database["public"]["Enums"]["notification_channel"];
+                client_id: string;
+                created_at: string;
+                data: Json | null;
+                error_message: string | null;
+                id: string;
+                last_attempt_at: string | null;
+                processed_at: string | null;
+                scheduled_for: string;
+                status: Database["public"]["Enums"]["notification_status"];
+                title: string;
+            };
+            Insert: {
+                attempts?: number;
+                body: string;
+                category: Database["public"]["Enums"]["notification_category"];
+                channel: Database["public"]["Enums"]["notification_channel"];
+                client_id: string;
+                created_at?: string;
+                data?: Json | null;
+                error_message?: string | null;
+                id?: string;
+                last_attempt_at?: string | null;
+                processed_at?: string | null;
+                scheduled_for: string;
+                status?: Database["public"]["Enums"]["notification_status"];
+                title: string;
+            };
+            Update: {
+                attempts?: number;
+                body?: string;
+                category?: Database["public"]["Enums"]["notification_category"];
+                channel?: Database["public"]["Enums"]["notification_channel"];
+                client_id?: string;
+                created_at?: string;
+                data?: Json | null;
+                error_message?: string | null;
+                id?: string;
+                last_attempt_at?: string | null;
+                processed_at?: string | null;
+                scheduled_for?: string;
+                status?: Database["public"]["Enums"]["notification_status"];
+                title?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "notification_queue_client_id_fkey";
+                columns: ["client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
                 referencedColumns: ["id"];
             }];
         };
@@ -3474,8 +4040,22 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 studio_margin_cents: number;
             }[];
         };
+        call_edge_function: {
+            Args: {
+                p_body?: Json;
+                p_function_name: string;
+            };
+            Returns: number;
+        };
         can_access_finance: {
             Args: never;
+            Returns: boolean;
+        };
+        can_send_re_engagement: {
+            Args: {
+                p_client_id: string;
+                p_days?: number;
+            };
             Returns: boolean;
         };
         cancel_booking: {
@@ -3489,6 +4069,18 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 p_booking_id: string;
             };
             Returns: Json;
+        };
+        client_has_active_push_tokens: {
+            Args: {
+                p_client_id: string;
+            };
+            Returns: boolean;
+        };
+        count_attended_lessons: {
+            Args: {
+                p_client_id: string;
+            };
+            Returns: number;
         };
         create_user_profile: {
             Args: {
@@ -3516,6 +4108,30 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 isOneToOne: true;
                 isSetofReturn: false;
             };
+        };
+        cron_process_notification_queue: {
+            Args: never;
+            Returns: undefined;
+        };
+        cron_queue_birthday: {
+            Args: never;
+            Returns: undefined;
+        };
+        cron_queue_entries_low: {
+            Args: never;
+            Returns: undefined;
+        };
+        cron_queue_lesson_reminders: {
+            Args: never;
+            Returns: undefined;
+        };
+        cron_queue_re_engagement: {
+            Args: never;
+            Returns: undefined;
+        };
+        cron_queue_subscription_expiry: {
+            Args: never;
+            Returns: undefined;
         };
         fix_missing_cancel_restore_entries: {
             Args: never;
@@ -3567,6 +4183,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Args: never;
             Returns: string;
         };
+        get_notification_channel: {
+            Args: {
+                p_category: Database["public"]["Enums"]["notification_category"];
+                p_client_id: string;
+            };
+            Returns: Database["public"]["Enums"]["notification_channel"];
+        };
         get_revenue_breakdown: {
             Args: {
                 p_month_end?: string;
@@ -3585,6 +4208,54 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         is_staff: {
             Args: never;
             Returns: boolean;
+        };
+        milestone_already_sent: {
+            Args: {
+                p_client_id: string;
+                p_milestone: number;
+            };
+            Returns: boolean;
+        };
+        queue_birthday: {
+            Args: never;
+            Returns: Json;
+        };
+        queue_entries_low: {
+            Args: never;
+            Returns: Json;
+        };
+        queue_first_lesson: {
+            Args: {
+                p_client_id: string;
+            };
+            Returns: boolean;
+        };
+        queue_lesson_reminders: {
+            Args: never;
+            Returns: Json;
+        };
+        queue_milestone: {
+            Args: {
+                p_client_id: string;
+                p_milestone: number;
+            };
+            Returns: boolean;
+        };
+        queue_new_event: {
+            Args: {
+                p_event_date: string;
+                p_event_id: string;
+                p_event_name: string;
+            };
+            Returns: Json;
+        };
+        queue_re_engagement: {
+            Args: never;
+            Returns: Json;
+        };
+        queue_subscription_expiry: {
+            Args: never;
+            Returns: Json;
         };
         staff_book_event: {
             Args: {
@@ -3633,6 +4304,9 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
         newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
         newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
+        notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event";
+        notification_channel: "push" | "email";
+        notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
         subscription_status: "active" | "completed" | "expired" | "canceled";
         user_role: "user" | "operator" | "admin" | "finance";
     };
@@ -3819,6 +4493,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     }];
 } | {
     Row: {
+        birthday: string | null;
         created_at: string;
         deleted_at: string | null;
         email: string | null;
@@ -3831,6 +4506,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         updated_at: string;
     };
     Insert: {
+        birthday?: string | null;
         created_at?: string;
         deleted_at?: string | null;
         email?: string | null;
@@ -3843,6 +4519,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         updated_at?: string;
     };
     Update: {
+        birthday?: string | null;
         created_at?: string;
         deleted_at?: string | null;
         email?: string | null;
@@ -3859,6 +4536,50 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["profile_id"];
         isOneToOne: false;
         referencedRelation: "profiles";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
+        app_version: string | null;
+        client_id: string;
+        created_at: string;
+        device_id: string | null;
+        expo_push_token: string;
+        id: string;
+        is_active: boolean;
+        last_used_at: string;
+        platform: string | null;
+        updated_at: string;
+    };
+    Insert: {
+        app_version?: string | null;
+        client_id: string;
+        created_at?: string;
+        device_id?: string | null;
+        expo_push_token: string;
+        id?: string;
+        is_active?: boolean;
+        last_used_at?: string;
+        platform?: string | null;
+        updated_at?: string;
+    };
+    Update: {
+        app_version?: string | null;
+        client_id?: string;
+        created_at?: string;
+        device_id?: string | null;
+        expo_push_token?: string;
+        id?: string;
+        is_active?: boolean;
+        last_used_at?: string;
+        platform?: string | null;
+        updated_at?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "device_tokens_client_id_fkey";
+        columns: ["client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
         referencedColumns: ["id"];
     }];
 } | {
@@ -4198,6 +4919,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     }];
 } | {
     Row: {
+        archived: boolean;
         bounced_count: number;
         clicked_count: number;
         content: string;
@@ -4206,6 +4928,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         deleted_at: string | null;
         delivered_count: number;
         id: string;
+        image_url: string | null;
         opened_count: number;
         recipient_count: number;
         recipients: Json | null;
@@ -4216,6 +4939,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         updated_at: string;
     };
     Insert: {
+        archived?: boolean;
         bounced_count?: number;
         clicked_count?: number;
         content: string;
@@ -4224,6 +4948,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         deleted_at?: string | null;
         delivered_count?: number;
         id?: string;
+        image_url?: string | null;
         opened_count?: number;
         recipient_count?: number;
         recipients?: Json | null;
@@ -4234,6 +4959,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         updated_at?: string;
     };
     Update: {
+        archived?: boolean;
         bounced_count?: number;
         clicked_count?: number;
         content?: string;
@@ -4242,6 +4968,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         deleted_at?: string | null;
         delivered_count?: number;
         id?: string;
+        image_url?: string | null;
         opened_count?: number;
         recipient_count?: number;
         recipients?: Json | null;
@@ -4323,6 +5050,29 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
 } | {
     Row: {
         created_at: string;
+        deleted_at: string | null;
+        email: string;
+        id: string;
+        name: string;
+    };
+    Insert: {
+        created_at?: string;
+        deleted_at?: string | null;
+        email: string;
+        id?: string;
+        name: string;
+    };
+    Update: {
+        created_at?: string;
+        deleted_at?: string | null;
+        email?: string;
+        id?: string;
+        name?: string;
+    };
+    Relationships: [];
+} | {
+    Row: {
+        created_at: string;
         email_id: string;
         event_data: Json | null;
         event_type: Database["public"]["Enums"]["newsletter_event_type"];
@@ -4350,6 +5100,150 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["email_id"];
         isOneToOne: false;
         referencedRelation: "newsletter_emails";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
+        body: string | null;
+        category: Database["public"]["Enums"]["notification_category"];
+        channel: Database["public"]["Enums"]["notification_channel"];
+        client_id: string;
+        data: Json | null;
+        delivered_at: string | null;
+        error_message: string | null;
+        expo_receipt_id: string | null;
+        id: string;
+        resend_id: string | null;
+        sent_at: string;
+        status: Database["public"]["Enums"]["notification_status"];
+        title: string;
+    };
+    Insert: {
+        body?: string | null;
+        category: Database["public"]["Enums"]["notification_category"];
+        channel: Database["public"]["Enums"]["notification_channel"];
+        client_id: string;
+        data?: Json | null;
+        delivered_at?: string | null;
+        error_message?: string | null;
+        expo_receipt_id?: string | null;
+        id?: string;
+        resend_id?: string | null;
+        sent_at?: string;
+        status?: Database["public"]["Enums"]["notification_status"];
+        title: string;
+    };
+    Update: {
+        body?: string | null;
+        category?: Database["public"]["Enums"]["notification_category"];
+        channel?: Database["public"]["Enums"]["notification_channel"];
+        client_id?: string;
+        data?: Json | null;
+        delivered_at?: string | null;
+        error_message?: string | null;
+        expo_receipt_id?: string | null;
+        id?: string;
+        resend_id?: string | null;
+        sent_at?: string;
+        status?: Database["public"]["Enums"]["notification_status"];
+        title?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "notification_logs_client_id_fkey";
+        columns: ["client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
+        category: Database["public"]["Enums"]["notification_category"];
+        client_id: string;
+        created_at: string;
+        email_enabled: boolean;
+        id: string;
+        push_enabled: boolean;
+        updated_at: string;
+    };
+    Insert: {
+        category: Database["public"]["Enums"]["notification_category"];
+        client_id: string;
+        created_at?: string;
+        email_enabled?: boolean;
+        id?: string;
+        push_enabled?: boolean;
+        updated_at?: string;
+    };
+    Update: {
+        category?: Database["public"]["Enums"]["notification_category"];
+        client_id?: string;
+        created_at?: string;
+        email_enabled?: boolean;
+        id?: string;
+        push_enabled?: boolean;
+        updated_at?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "notification_preferences_client_id_fkey";
+        columns: ["client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
+        attempts: number;
+        body: string;
+        category: Database["public"]["Enums"]["notification_category"];
+        channel: Database["public"]["Enums"]["notification_channel"];
+        client_id: string;
+        created_at: string;
+        data: Json | null;
+        error_message: string | null;
+        id: string;
+        last_attempt_at: string | null;
+        processed_at: string | null;
+        scheduled_for: string;
+        status: Database["public"]["Enums"]["notification_status"];
+        title: string;
+    };
+    Insert: {
+        attempts?: number;
+        body: string;
+        category: Database["public"]["Enums"]["notification_category"];
+        channel: Database["public"]["Enums"]["notification_channel"];
+        client_id: string;
+        created_at?: string;
+        data?: Json | null;
+        error_message?: string | null;
+        id?: string;
+        last_attempt_at?: string | null;
+        processed_at?: string | null;
+        scheduled_for: string;
+        status?: Database["public"]["Enums"]["notification_status"];
+        title: string;
+    };
+    Update: {
+        attempts?: number;
+        body?: string;
+        category?: Database["public"]["Enums"]["notification_category"];
+        channel?: Database["public"]["Enums"]["notification_channel"];
+        client_id?: string;
+        created_at?: string;
+        data?: Json | null;
+        error_message?: string | null;
+        id?: string;
+        last_attempt_at?: string | null;
+        processed_at?: string | null;
+        scheduled_for?: string;
+        status?: Database["public"]["Enums"]["notification_status"];
+        title?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "notification_queue_client_id_fkey";
+        columns: ["client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
         referencedColumns: ["id"];
     }];
 } | {
@@ -4840,7 +5734,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "profiles";
         referencedColumns: ["id"];
     }];
-}, "clients" | "lessons" | "subscriptions" | "profiles" | "events" | "activities" | "operators" | "newsletter_campaigns" | "newsletter_emails" | "plans" | "bookings" | "bug_reports" | "event_bookings" | "expenses" | "newsletter_tracking_events" | "payout_rules" | "payouts" | "plan_activities" | "promotions" | "subscription_usages" | "waitlist", [] | [{
+}, "clients" | "lessons" | "subscriptions" | "profiles" | "events" | "activities" | "operators" | "newsletter_campaigns" | "newsletter_emails" | "plans" | "bookings" | "bug_reports" | "device_tokens" | "event_bookings" | "expenses" | "newsletter_extra_emails" | "newsletter_tracking_events" | "notification_logs" | "notification_preferences" | "notification_queue" | "payout_rules" | "payouts" | "plan_activities" | "promotions" | "subscription_usages" | "waitlist", [] | [{
     foreignKeyName: "bookings_client_id_fkey";
     columns: ["client_id"];
     isOneToOne: false;
@@ -4893,6 +5787,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["profile_id"];
     isOneToOne: false;
     referencedRelation: "profiles";
+    referencedColumns: ["id"];
+}] | [{
+    foreignKeyName: "device_tokens_client_id_fkey";
+    columns: ["client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
     referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "event_bookings_client_id_fkey";
@@ -5067,6 +5967,24 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["email_id"];
     isOneToOne: false;
     referencedRelation: "newsletter_emails";
+    referencedColumns: ["id"];
+}] | [{
+    foreignKeyName: "notification_logs_client_id_fkey";
+    columns: ["client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
+    referencedColumns: ["id"];
+}] | [{
+    foreignKeyName: "notification_preferences_client_id_fkey";
+    columns: ["client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
+    referencedColumns: ["id"];
+}] | [{
+    foreignKeyName: "notification_queue_client_id_fkey";
+    columns: ["client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
     referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "operators_profile_id_fkey";
@@ -5260,6 +6178,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     title: string;
     updated_at: string;
 } | {
+    birthday: string | null;
     created_at: string;
     deleted_at: string | null;
     email: string | null;
@@ -5269,6 +6188,17 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     notes: string | null;
     phone: string | null;
     profile_id: string | null;
+    updated_at: string;
+} | {
+    app_version: string | null;
+    client_id: string;
+    created_at: string;
+    device_id: string | null;
+    expo_push_token: string;
+    id: string;
+    is_active: boolean;
+    last_used_at: string;
+    platform: string | null;
     updated_at: string;
 } | {
     client_id: string | null;
@@ -5326,6 +6256,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    archived: boolean;
     bounced_count: number;
     clicked_count: number;
     content: string;
@@ -5334,6 +6265,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     deleted_at: string | null;
     delivered_count: number;
     id: string;
+    image_url: string | null;
     opened_count: number;
     recipient_count: number;
     recipients: Json | null;
@@ -5359,11 +6291,54 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     status: Database["public"]["Enums"]["newsletter_email_status"];
 } | {
     created_at: string;
+    deleted_at: string | null;
+    email: string;
+    id: string;
+    name: string;
+} | {
+    created_at: string;
     email_id: string;
     event_data: Json | null;
     event_type: Database["public"]["Enums"]["newsletter_event_type"];
     id: string;
     occurred_at: string;
+} | {
+    body: string | null;
+    category: Database["public"]["Enums"]["notification_category"];
+    channel: Database["public"]["Enums"]["notification_channel"];
+    client_id: string;
+    data: Json | null;
+    delivered_at: string | null;
+    error_message: string | null;
+    expo_receipt_id: string | null;
+    id: string;
+    resend_id: string | null;
+    sent_at: string;
+    status: Database["public"]["Enums"]["notification_status"];
+    title: string;
+} | {
+    category: Database["public"]["Enums"]["notification_category"];
+    client_id: string;
+    created_at: string;
+    email_enabled: boolean;
+    id: string;
+    push_enabled: boolean;
+    updated_at: string;
+} | {
+    attempts: number;
+    body: string;
+    category: Database["public"]["Enums"]["notification_category"];
+    channel: Database["public"]["Enums"]["notification_channel"];
+    client_id: string;
+    created_at: string;
+    data: Json | null;
+    error_message: string | null;
+    id: string;
+    last_attempt_at: string | null;
+    processed_at: string | null;
+    scheduled_for: string;
+    status: Database["public"]["Enums"]["notification_status"];
+    title: string;
 } | {
     bio: string | null;
     created_at: string | null;
@@ -5518,6 +6493,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     title: string;
     updated_at: string;
 } | {
+    birthday: string | null;
     created_at: string;
     deleted_at: string | null;
     email: string | null;
@@ -5527,6 +6503,17 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     notes: string | null;
     phone: string | null;
     profile_id: string | null;
+    updated_at: string;
+} | {
+    app_version: string | null;
+    client_id: string;
+    created_at: string;
+    device_id: string | null;
+    expo_push_token: string;
+    id: string;
+    is_active: boolean;
+    last_used_at: string;
+    platform: string | null;
     updated_at: string;
 } | {
     client_id: string | null;
@@ -5584,6 +6571,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    archived: boolean;
     bounced_count: number;
     clicked_count: number;
     content: string;
@@ -5592,6 +6580,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     deleted_at: string | null;
     delivered_count: number;
     id: string;
+    image_url: string | null;
     opened_count: number;
     recipient_count: number;
     recipients: Json | null;
@@ -5617,11 +6606,54 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     status: Database["public"]["Enums"]["newsletter_email_status"];
 } | {
     created_at: string;
+    deleted_at: string | null;
+    email: string;
+    id: string;
+    name: string;
+} | {
+    created_at: string;
     email_id: string;
     event_data: Json | null;
     event_type: Database["public"]["Enums"]["newsletter_event_type"];
     id: string;
     occurred_at: string;
+} | {
+    body: string | null;
+    category: Database["public"]["Enums"]["notification_category"];
+    channel: Database["public"]["Enums"]["notification_channel"];
+    client_id: string;
+    data: Json | null;
+    delivered_at: string | null;
+    error_message: string | null;
+    expo_receipt_id: string | null;
+    id: string;
+    resend_id: string | null;
+    sent_at: string;
+    status: Database["public"]["Enums"]["notification_status"];
+    title: string;
+} | {
+    category: Database["public"]["Enums"]["notification_category"];
+    client_id: string;
+    created_at: string;
+    email_enabled: boolean;
+    id: string;
+    push_enabled: boolean;
+    updated_at: string;
+} | {
+    attempts: number;
+    body: string;
+    category: Database["public"]["Enums"]["notification_category"];
+    channel: Database["public"]["Enums"]["notification_channel"];
+    client_id: string;
+    created_at: string;
+    data: Json | null;
+    error_message: string | null;
+    id: string;
+    last_attempt_at: string | null;
+    processed_at: string | null;
+    scheduled_for: string;
+    status: Database["public"]["Enums"]["notification_status"];
+    title: string;
 } | {
     bio: string | null;
     created_at: string | null;
@@ -5776,6 +6808,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     title: string;
     updated_at: string;
 } | {
+    birthday: string | null;
     created_at: string;
     deleted_at: string | null;
     email: string | null;
@@ -5785,6 +6818,17 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     notes: string | null;
     phone: string | null;
     profile_id: string | null;
+    updated_at: string;
+} | {
+    app_version: string | null;
+    client_id: string;
+    created_at: string;
+    device_id: string | null;
+    expo_push_token: string;
+    id: string;
+    is_active: boolean;
+    last_used_at: string;
+    platform: string | null;
     updated_at: string;
 } | {
     client_id: string | null;
@@ -5842,6 +6886,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    archived: boolean;
     bounced_count: number;
     clicked_count: number;
     content: string;
@@ -5850,6 +6895,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     deleted_at: string | null;
     delivered_count: number;
     id: string;
+    image_url: string | null;
     opened_count: number;
     recipient_count: number;
     recipients: Json | null;
@@ -5875,11 +6921,54 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     status: Database["public"]["Enums"]["newsletter_email_status"];
 } | {
     created_at: string;
+    deleted_at: string | null;
+    email: string;
+    id: string;
+    name: string;
+} | {
+    created_at: string;
     email_id: string;
     event_data: Json | null;
     event_type: Database["public"]["Enums"]["newsletter_event_type"];
     id: string;
     occurred_at: string;
+} | {
+    body: string | null;
+    category: Database["public"]["Enums"]["notification_category"];
+    channel: Database["public"]["Enums"]["notification_channel"];
+    client_id: string;
+    data: Json | null;
+    delivered_at: string | null;
+    error_message: string | null;
+    expo_receipt_id: string | null;
+    id: string;
+    resend_id: string | null;
+    sent_at: string;
+    status: Database["public"]["Enums"]["notification_status"];
+    title: string;
+} | {
+    category: Database["public"]["Enums"]["notification_category"];
+    client_id: string;
+    created_at: string;
+    email_enabled: boolean;
+    id: string;
+    push_enabled: boolean;
+    updated_at: string;
+} | {
+    attempts: number;
+    body: string;
+    category: Database["public"]["Enums"]["notification_category"];
+    channel: Database["public"]["Enums"]["notification_channel"];
+    client_id: string;
+    created_at: string;
+    data: Json | null;
+    error_message: string | null;
+    id: string;
+    last_attempt_at: string | null;
+    processed_at: string | null;
+    scheduled_for: string;
+    status: Database["public"]["Enums"]["notification_status"];
+    title: string;
 } | {
     bio: string | null;
     created_at: string | null;
@@ -6034,6 +7123,7 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     title: string;
     updated_at: string;
 } | {
+    birthday: string | null;
     created_at: string;
     deleted_at: string | null;
     email: string | null;
@@ -6043,6 +7133,17 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     notes: string | null;
     phone: string | null;
     profile_id: string | null;
+    updated_at: string;
+} | {
+    app_version: string | null;
+    client_id: string;
+    created_at: string;
+    device_id: string | null;
+    expo_push_token: string;
+    id: string;
+    is_active: boolean;
+    last_used_at: string;
+    platform: string | null;
     updated_at: string;
 } | {
     client_id: string | null;
@@ -6100,6 +7201,7 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    archived: boolean;
     bounced_count: number;
     clicked_count: number;
     content: string;
@@ -6108,6 +7210,7 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     deleted_at: string | null;
     delivered_count: number;
     id: string;
+    image_url: string | null;
     opened_count: number;
     recipient_count: number;
     recipients: Json | null;
@@ -6133,11 +7236,54 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     status: Database["public"]["Enums"]["newsletter_email_status"];
 } | {
     created_at: string;
+    deleted_at: string | null;
+    email: string;
+    id: string;
+    name: string;
+} | {
+    created_at: string;
     email_id: string;
     event_data: Json | null;
     event_type: Database["public"]["Enums"]["newsletter_event_type"];
     id: string;
     occurred_at: string;
+} | {
+    body: string | null;
+    category: Database["public"]["Enums"]["notification_category"];
+    channel: Database["public"]["Enums"]["notification_channel"];
+    client_id: string;
+    data: Json | null;
+    delivered_at: string | null;
+    error_message: string | null;
+    expo_receipt_id: string | null;
+    id: string;
+    resend_id: string | null;
+    sent_at: string;
+    status: Database["public"]["Enums"]["notification_status"];
+    title: string;
+} | {
+    category: Database["public"]["Enums"]["notification_category"];
+    client_id: string;
+    created_at: string;
+    email_enabled: boolean;
+    id: string;
+    push_enabled: boolean;
+    updated_at: string;
+} | {
+    attempts: number;
+    body: string;
+    category: Database["public"]["Enums"]["notification_category"];
+    channel: Database["public"]["Enums"]["notification_channel"];
+    client_id: string;
+    created_at: string;
+    data: Json | null;
+    error_message: string | null;
+    id: string;
+    last_attempt_at: string | null;
+    processed_at: string | null;
+    scheduled_for: string;
+    status: Database["public"]["Enums"]["notification_status"];
+    title: string;
 } | {
     bio: string | null;
     created_at: string | null;
@@ -6301,6 +7447,7 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     title: string;
     updated_at: string;
 } | {
+    birthday: string | null;
     created_at: string;
     deleted_at: string | null;
     email: string | null;
@@ -6310,6 +7457,17 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     notes: string | null;
     phone: string | null;
     profile_id: string | null;
+    updated_at: string;
+} | {
+    app_version: string | null;
+    client_id: string;
+    created_at: string;
+    device_id: string | null;
+    expo_push_token: string;
+    id: string;
+    is_active: boolean;
+    last_used_at: string;
+    platform: string | null;
     updated_at: string;
 } | {
     client_id: string | null;
@@ -6367,6 +7525,7 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    archived: boolean;
     bounced_count: number;
     clicked_count: number;
     content: string;
@@ -6375,6 +7534,7 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     deleted_at: string | null;
     delivered_count: number;
     id: string;
+    image_url: string | null;
     opened_count: number;
     recipient_count: number;
     recipients: Json | null;
@@ -6400,11 +7560,54 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     status: Database["public"]["Enums"]["newsletter_email_status"];
 } | {
     created_at: string;
+    deleted_at: string | null;
+    email: string;
+    id: string;
+    name: string;
+} | {
+    created_at: string;
     email_id: string;
     event_data: Json | null;
     event_type: Database["public"]["Enums"]["newsletter_event_type"];
     id: string;
     occurred_at: string;
+} | {
+    body: string | null;
+    category: Database["public"]["Enums"]["notification_category"];
+    channel: Database["public"]["Enums"]["notification_channel"];
+    client_id: string;
+    data: Json | null;
+    delivered_at: string | null;
+    error_message: string | null;
+    expo_receipt_id: string | null;
+    id: string;
+    resend_id: string | null;
+    sent_at: string;
+    status: Database["public"]["Enums"]["notification_status"];
+    title: string;
+} | {
+    category: Database["public"]["Enums"]["notification_category"];
+    client_id: string;
+    created_at: string;
+    email_enabled: boolean;
+    id: string;
+    push_enabled: boolean;
+    updated_at: string;
+} | {
+    attempts: number;
+    body: string;
+    category: Database["public"]["Enums"]["notification_category"];
+    channel: Database["public"]["Enums"]["notification_channel"];
+    client_id: string;
+    created_at: string;
+    data: Json | null;
+    error_message: string | null;
+    id: string;
+    last_attempt_at: string | null;
+    processed_at: string | null;
+    scheduled_for: string;
+    status: Database["public"]["Enums"]["notification_status"];
+    title: string;
 } | {
     bio: string | null;
     created_at: string | null;

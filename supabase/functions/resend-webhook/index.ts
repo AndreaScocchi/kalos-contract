@@ -10,7 +10,8 @@ interface ResendWebhookEvent {
     to: string[]
     subject: string
     created_at: string
-    tags?: { name: string; value: string }[]
+    // Tags can be either an object or an array depending on Resend API version
+    tags?: { name: string; value: string }[] | Record<string, string>
     click?: { link: string }
   }
 }
@@ -71,14 +72,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: true }, 200)
     }
 
-    // Extract email_id from tags
-    const emailIdTag = event.data.tags?.find(t => t.name === 'email_id')
-    if (!emailIdTag) {
+    // Extract email_id from tags (handle both array and object formats)
+    let emailId: string | undefined
+    const tags = event.data.tags
+    if (tags) {
+      if (Array.isArray(tags)) {
+        // Array format: [{ name: "email_id", value: "..." }]
+        const emailIdTag = tags.find(t => t.name === 'email_id')
+        emailId = emailIdTag?.value
+      } else {
+        // Object format: { email_id: "..." }
+        emailId = tags.email_id
+      }
+    }
+
+    if (!emailId) {
       console.log('No email_id tag found in webhook, skipping')
       return jsonResponse({ ok: true }, 200)
     }
-
-    const emailId = emailIdTag.value
 
     // Create admin client with service_role key
     const supabaseAdmin = createClient(

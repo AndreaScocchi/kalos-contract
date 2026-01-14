@@ -143,10 +143,26 @@ npm run verify:migrations   # Check migration integrity
 | `promotions` | Discount codes |
 | `waitlist` | Class waiting list |
 
+### Communication Tables
+
+| Table | Purpose |
+|-------|---------|
+| `notification_queue` | Pending notifications to send |
+| `notification_logs` | Sent notification history |
+| `notification_preferences` | User channel preferences |
+| `notification_reads` | Read status tracking |
+| `device_tokens` | Push notification tokens |
+| `announcements` | Broadcast messages |
+| `newsletter_campaigns` | Email campaigns |
+| `newsletter_sends` | Campaign send history |
+
 ### Enums
 
 - `booking_status`: booked, canceled, attended, no_show
 - `subscription_status`: active, completed, expired, canceled
+- `notification_category`: lesson_reminder, subscription_expiry, booking_confirmation, booking_cancellation, waitlist_promotion, welcome, event_reminder, feedback_request, announcement
+- `notification_channel`: push, email
+- `notification_status`: pending, sent, failed, skipped
 
 ### Public Views
 
@@ -183,6 +199,18 @@ npm run verify:migrations   # Check migration integrity
 ### get_my_client_id()
 - Returns current user's client_id
 - Auto-creates client if needed
+
+### Notification RPCs
+
+| Function | Purpose |
+|----------|---------|
+| `queue_lesson_reminder(p_lesson_id)` | Queue reminder 1h before lesson |
+| `queue_subscription_expiry(p_subscription_id, p_days_until)` | Queue expiry warning |
+| `queue_announcement(p_announcement_id, p_title, p_body)` | Queue push to all clients with active tokens |
+| `get_notification_channel(p_client_id, p_category)` | Get preferred channel |
+| `mark_notification_read(p_notification_log_id, p_announcement_id)` | Mark as read |
+| `mark_all_notifications_read()` | Mark all as read |
+| `get_unread_notifications_count()` | Count unread |
 
 ## Row-Level Security
 

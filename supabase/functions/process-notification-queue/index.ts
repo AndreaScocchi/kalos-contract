@@ -1,5 +1,5 @@
 // Edge Function: process-notification-queue
-// Processa la coda notifiche: invia push via Expo e email via Resend.
+// Processa la coda notifiche: invia push via Web Push API e email via Resend.
 // Chiamata ogni 5 minuti dal cron job.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -7,23 +7,19 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail, getFromEmail, delay } from '../_shared/resend.ts'
 
 const BATCH_SIZE = 50
-const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send'
 
-interface ExpoPushMessage {
-  to: string
-  title: string
-  body: string
-  data?: Record<string, unknown>
-  sound?: 'default' | null
-  badge?: number
-  channelId?: string
+interface WebPushSubscription {
+  endpoint: string
+  keys: {
+    p256dh: string
+    auth: string
+  }
 }
 
-interface ExpoPushTicket {
-  id?: string
-  status: 'ok' | 'error'
-  message?: string
-  details?: { error: string }
+interface WebPushResult {
+  success: boolean
+  statusCode?: number
+  error?: string
 }
 
 interface QueueItem {
@@ -74,31 +70,69 @@ function emailTemplate(title: string, body: string, ctaUrl: string): string {
 </html>`
 }
 
-// Send push notifications via Expo
-async function sendExpoPush(messages: ExpoPushMessage[]): Promise<ExpoPushTicket[]> {
-  if (messages.length === 0) return []
+// Send Web Push notification
+async function sendWebPush(
+  subscription: WebPushSubscription,
+  payload: { title: string; body: string; data?: Record<string, unknown> }
+): Promise<WebPushResult> {
+  const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
+  const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
+  const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:info@kalosstudio.it'
+
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    console.error('VAPID keys not configured')
+    return { success: false, error: 'VAPID keys not configured' }
+  }
 
   try {
-    const response = await fetch(EXPO_PUSH_URL, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Accept-encoding': 'gzip, deflate',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(messages),
+    // Import web-push library
+    const webpush = await import('npm:web-push@3.6.7')
+
+    webpush.default.setVapidDetails(
+      vapidSubject,
+      vapidPublicKey,
+      vapidPrivateKey
+    )
+
+    const pushPayload = JSON.stringify({
+      title: payload.title,
+      body: payload.body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: payload.data || {},
     })
 
-    if (!response.ok) {
-      console.error('Expo push error:', response.status, await response.text())
-      return messages.map(() => ({ status: 'error', message: 'HTTP error' }))
+    const result = await webpush.default.sendNotification(
+      {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: subscription.keys.p256dh,
+          auth: subscription.keys.auth,
+        },
+      },
+      pushPayload
+    )
+
+    return { success: true, statusCode: result.statusCode }
+  } catch (error) {
+    console.error('Web push error:', error)
+
+    // Check if subscription is expired/invalid
+    if (error.statusCode === 410 || error.statusCode === 404) {
+      return { success: false, statusCode: error.statusCode, error: 'SUBSCRIPTION_EXPIRED' }
     }
 
-    const result = await response.json()
-    return result.data || []
-  } catch (error) {
-    console.error('Expo push network error:', error)
-    return messages.map(() => ({ status: 'error', message: error.message }))
+    return { success: false, statusCode: error.statusCode, error: error.message }
+  }
+}
+
+// Check if token is a web push subscription (JSON) or Expo token
+function isWebPushSubscription(token: string): boolean {
+  try {
+    const parsed = JSON.parse(token)
+    return parsed.endpoint && parsed.keys?.p256dh && parsed.keys?.auth
+  } catch {
+    return false
   }
 }
 
@@ -184,82 +218,89 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const clientIds = [...new Set(pushNotifications.map(n => n.client_id))]
       const { data: tokens } = await supabaseAdmin
         .from('device_tokens')
-        .select('client_id, expo_push_token')
+        .select('client_id, expo_push_token, platform')
         .in('client_id', clientIds)
         .eq('is_active', true)
 
       if (tokens && tokens.length > 0) {
-        // Build messages for each notification
-        const messages: ExpoPushMessage[] = []
-        const messageToNotification: Map<number, QueueItem> = new Map()
-
         for (const notification of pushNotifications) {
           const clientTokens = tokens.filter(t => t.client_id === notification.client_id)
+          let sent = false
+
           for (const token of clientTokens) {
-            const idx = messages.length
-            messages.push({
-              to: token.expo_push_token,
-              title: notification.title,
-              body: notification.body,
-              data: notification.data,
-              sound: 'default',
-            })
-            messageToNotification.set(idx, notification)
-          }
-        }
+            // Check if it's a web push subscription
+            if (isWebPushSubscription(token.expo_push_token)) {
+              const subscription: WebPushSubscription = JSON.parse(token.expo_push_token)
+              const result = await sendWebPush(subscription, {
+                title: notification.title,
+                body: notification.body,
+                data: notification.data,
+              })
 
-        // Send in batches of 100 (Expo limit)
-        const EXPO_BATCH_SIZE = 100
-        for (let i = 0; i < messages.length; i += EXPO_BATCH_SIZE) {
-          const batch = messages.slice(i, i + EXPO_BATCH_SIZE)
-          const tickets = await sendExpoPush(batch)
-
-          // Process results
-          for (let j = 0; j < tickets.length; j++) {
-            const ticket = tickets[j]
-            const message = batch[j]
-
-            if (ticket.status === 'ok') {
-              pushCount++
-            } else {
-              // If token is invalid, deactivate it
-              if (ticket.details?.error === 'DeviceNotRegistered') {
+              if (result.success) {
+                sent = true
+                pushCount++
+              } else if (result.error === 'SUBSCRIPTION_EXPIRED') {
+                // Deactivate expired subscription
                 await supabaseAdmin
                   .from('device_tokens')
                   .update({ is_active: false })
-                  .eq('expo_push_token', message.to)
-                console.log(`Deactivated invalid token: ${message.to}`)
+                  .eq('expo_push_token', token.expo_push_token)
+                console.log(`Deactivated expired web push subscription`)
               }
             }
+            // Note: Expo tokens are no longer supported for web
+            // If you want to support native apps in the future, add Expo push logic here
           }
-        }
-      }
 
-      // Update queue status and log for push notifications
-      for (const notification of pushNotifications) {
-        const hasTokens = tokens?.some(t => t.client_id === notification.client_id) ?? false
-        const status = hasTokens ? 'sent' : 'skipped'
+          // Update queue status
+          const status = sent ? 'sent' : (clientTokens.length > 0 ? 'failed' : 'skipped')
+          await supabaseAdmin
+            .from('notification_queue')
+            .update({
+              status,
+              processed_at: new Date().toISOString(),
+              attempts: notification.attempts + 1,
+              error_message: sent ? null : (clientTokens.length > 0 ? 'Push send failed' : 'No active push tokens'),
+            })
+            .eq('id', notification.id)
 
-        await supabaseAdmin
-          .from('notification_queue')
-          .update({
+          // Log the notification
+          await supabaseAdmin.from('notification_logs').insert({
+            client_id: notification.client_id,
+            category: notification.category,
+            channel: 'push',
+            title: notification.title,
+            body: notification.body,
+            data: notification.data,
             status,
-            processed_at: new Date().toISOString(),
-            attempts: notification.attempts + 1,
-            error_message: hasTokens ? null : 'No active push tokens',
           })
-          .eq('id', notification.id)
 
-        // Log the notification
-        await supabaseAdmin.from('notification_logs').insert({
-          client_id: notification.client_id,
-          category: notification.category,
-          channel: 'push',
-          title: notification.title,
-          body: notification.body,
-          data: notification.data,
-          status,
-        })
+          if (!sent) failedCount++
+        }
+      } else {
+        // No tokens found for any client
+        for (const notification of pushNotifications) {
+          await supabaseAdmin
+            .from('notification_queue')
+            .update({
+              status: 'skipped',
+              processed_at: new Date().toISOString(),
+              attempts: notification.attempts + 1,
+              error_message: 'No active push tokens',
+            })
+            .eq('id', notification.id)
+
+          await supabaseAdmin.from('notification_logs').insert({
+            client_id: notification.client_id,
+            category: notification.category,
+            channel: 'push',
+            title: notification.title,
+            body: notification.body,
+            data: notification.data,
+            status: 'skipped',
+          })
+        }
       }
     }
 

@@ -1,14 +1,27 @@
 // Edge Function: register-push-token
-// Registra un token push Expo per un utente autenticato.
-// Chiamata dall'app quando l'utente accetta le notifiche push.
+// Registra un token push per un utente autenticato.
+// Supporta sia Web Push subscription che Expo Push Token (legacy).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
+interface WebPushSubscription {
+  endpoint: string
+  keys: {
+    p256dh: string
+    auth: string
+  }
+}
+
 interface RequestBody {
-  expoPushToken: string
+  // Web Push subscription
+  webPushSubscription?: WebPushSubscription
+  // Expo Push Token (legacy per app native)
+  expoPushToken?: string
+  // Platform
+  platform: 'ios' | 'android' | 'web'
+  // Optional metadata
   deviceId?: string
-  platform?: 'ios' | 'android' | 'web'
   appVersion?: string
 }
 
@@ -47,20 +60,45 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // Parse request body
     const body: RequestBody = await req.json()
-    if (!body.expoPushToken) {
+
+    // Validate request
+    if (!body.webPushSubscription && !body.expoPushToken) {
       return new Response(
-        JSON.stringify({ ok: false, reason: 'MISSING_TOKEN' }),
+        JSON.stringify({ ok: false, reason: 'MISSING_TOKEN_OR_SUBSCRIPTION' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Validate token format (Expo Push Token or web push)
-    const isValidToken = body.expoPushToken.startsWith('ExponentPushToken[') ||
-                         body.expoPushToken.startsWith('ExpoPushToken[') ||
-                         body.platform === 'web'
-    if (!isValidToken) {
+    // Determine token value based on platform
+    let tokenValue: string
+
+    if (body.platform === 'web' && body.webPushSubscription) {
+      // Per Web Push, salviamo la subscription come JSON
+      tokenValue = JSON.stringify(body.webPushSubscription)
+
+      // Validate web push subscription
+      if (!body.webPushSubscription.endpoint || !body.webPushSubscription.keys?.p256dh || !body.webPushSubscription.keys?.auth) {
+        return new Response(
+          JSON.stringify({ ok: false, reason: 'INVALID_WEB_PUSH_SUBSCRIPTION' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } else if (body.expoPushToken) {
+      // Expo token per app native
+      tokenValue = body.expoPushToken
+
+      // Validate Expo token format
+      const isValidExpoToken = body.expoPushToken.startsWith('ExponentPushToken[') ||
+                               body.expoPushToken.startsWith('ExpoPushToken[')
+      if (!isValidExpoToken) {
+        return new Response(
+          JSON.stringify({ ok: false, reason: 'INVALID_EXPO_TOKEN_FORMAT' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } else {
       return new Response(
-        JSON.stringify({ ok: false, reason: 'INVALID_TOKEN_FORMAT' }),
+        JSON.stringify({ ok: false, reason: 'INVALID_REQUEST' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -78,7 +116,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .upsert(
         {
           client_id: clientId,
-          expo_push_token: body.expoPushToken,
+          expo_push_token: tokenValue,
           device_id: body.deviceId || null,
           platform: body.platform || null,
           app_version: body.appVersion || null,

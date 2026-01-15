@@ -34,11 +34,8 @@ async function generateUnsubscribeToken(email: string): Promise<string> {
   return hashArray.slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-// Generate signed URL for newsletter image
-async function getImageSignedUrl(
-  supabaseAdmin: ReturnType<typeof createClient>,
-  imageUrl: string | null
-): Promise<string | null> {
+// Generate public URL for newsletter image (bucket is public, URLs never expire)
+function getImagePublicUrl(imageUrl: string | null): string | null {
   if (!imageUrl) return null
 
   // If it's already a full URL, return as-is
@@ -46,17 +43,9 @@ async function getImageSignedUrl(
     return imageUrl
   }
 
-  // Generate signed URL from storage bucket
-  const { data, error } = await supabaseAdmin.storage
-    .from('newsletter')
-    .createSignedUrl(imageUrl, 3600) // 1 hour validity
-
-  if (error) {
-    console.error('Error generating signed URL for newsletter image:', error)
-    return null
-  }
-
-  return data.signedUrl
+  // Generate public URL from storage bucket
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+  return `${supabaseUrl}/storage/v1/object/public/newsletter/${imageUrl}`
 }
 
 // HTML email template with professional styling
@@ -113,8 +102,7 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
           <tr>
             <td style="padding: 32px 40px 0 40px; text-align: center;">
               <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: ${primaryColor}; letter-spacing: 2px;">STUDIO KALÒS</h1>
-              <p style="margin: 8px 0 16px 0; font-size: 13px; color: ${accentColor}; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Centro Olistico</p>
-              <div style="width: 40px; height: 1px; background-color: ${accentOrange}; margin: 0 auto 24px auto;"></div>
+              <div style="width: 40px; height: 1px; background-color: ${accentOrange}; margin: 16px auto 24px auto;"></div>
             </td>
           </tr>
           ${imageUrl ? `<!-- Newsletter Image -->
@@ -273,8 +261,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     let failedCount = 0
     const fromEmail = getFromEmail()
 
-    // Generate signed URL for newsletter image (if present)
-    const imageSignedUrl = await getImageSignedUrl(supabaseAdmin, campaign.image_url)
+    // Generate public URL for newsletter image (if present)
+    const imagePublicUrl = getImagePublicUrl(campaign.image_url)
 
     for (let i = 0; i < pendingEmails.length; i += BATCH_SIZE) {
       const batch = pendingEmails.slice(i, i + BATCH_SIZE)
@@ -295,7 +283,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
           const unsubscribeUrl = `${supabaseUrl}/functions/v1/unsubscribe-newsletter?email=${encodeURIComponent(emailRecord.email_address)}&token=${token}`
 
           // Convert plain text to HTML (with image if present)
-          const personalizedHtml = wrapTextInHtml(personalizedText, unsubscribeUrl, imageSignedUrl)
+          const personalizedHtml = wrapTextInHtml(personalizedText, unsubscribeUrl, imagePublicUrl)
 
           // Send email
           const { data, error } = await sendEmail({

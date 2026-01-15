@@ -165,7 +165,7 @@ const getImageUrl = async (imagePath: string | null) => {
 ### 3. UI/UX Suggerimenti
 
 1. **Navigazione**:
-   - Aggiungere voce "Segnala Bug" o "Supporto" nel menu principale
+   - Aggiungere voce "Segnala anomalia" o "Supporto" nel menu principale
    - Icona appropriata (es. Bug, Alert, MessageQuestion)
 
 2. **Form Creazione**:

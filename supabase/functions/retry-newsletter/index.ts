@@ -2,15 +2,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail, replaceTemplateVariables, getFromEmail, delay } from '../_shared/resend.ts'
 
-interface Recipient {
-  email: string
-  name: string
-  clientId?: string // Optional: null for manual email addresses
-}
-
 interface RequestBody {
   campaignId: string
-  recipients: Recipient[] // Recipients are now passed from frontend
 }
 
 interface ResponseBody {
@@ -19,6 +12,7 @@ interface ResponseBody {
   message?: string
   sentCount?: number
   failedCount?: number
+  totalRetried?: number
 }
 
 // Rate limiting: Resend allows 2 requests per second
@@ -48,19 +42,9 @@ function getImagePublicUrl(imageUrl: string | null): string | null {
   return `${supabaseUrl}/storage/v1/object/public/newsletter/${imageUrl}`
 }
 
-// Parse markdown bold and italic to HTML
-function parseMarkdownFormatting(text: string): string {
-  // Process double asterisks first (**text**) then single (*text*)
-  // **text** -> <em>text</em> (italic)
-  let result = text.replace(/\*\*(.+?)\*\*/g, '<em>$1</em>')
-  // *text* -> <strong>text</strong> (bold)
-  result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<strong>$1</strong>')
-  return result
-}
-
-// HTML email template with professional styling
+// HTML email template with professional styling (same as send-newsletter)
 function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string | null = null): string {
-  // Escape HTML entities (but preserve our markdown markers for now)
+  // Escape HTML entities
   const escaped = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -68,17 +52,14 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
 
-  // Parse markdown formatting (bold/italic) into HTML tags
-  const formatted = parseMarkdownFormatting(escaped)
-
   // Convert newlines to <br>
-  const htmlContent = formatted.replace(/\n/g, '<br>')
+  const htmlContent = escaped.replace(/\n/g, '<br>')
 
-  // Colors from Studio Kalòs brand
-  const primaryColor = '#0F2D3B' // Dark teal - text color
-  const accentColor = '#036257' // Teal accent
-  const accentOrange = '#F75C2C' // Orange accent
-  const backgroundColor = '#FDFBF7' // Warm white background
+  // Colors from Studio Kalos brand
+  const primaryColor = '#0F2D3B'
+  const accentColor = '#036257'
+  const accentOrange = '#F75C2C'
+  const backgroundColor = '#FDFBF7'
   const cardBackground = '#FFFFFF'
   const footerText = '#6B7280'
 
@@ -89,7 +70,7 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light only">
   <meta name="supported-color-schemes" content="light only">
-  <title>Studio Kalòs</title>
+  <title>Studio Kalos</title>
   <!--[if mso]>
   <noscript>
     <xml>
@@ -114,7 +95,7 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
           <!-- Header with logo/brand -->
           <tr>
             <td style="padding: 32px 40px 0 40px; text-align: center;">
-              <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: ${primaryColor}; letter-spacing: 2px;">STUDIO KALÒS</h1>
+              <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: ${primaryColor}; letter-spacing: 2px;">STUDIO KALOS</h1>
               <div style="width: 40px; height: 1px; background-color: ${accentOrange}; margin: 16px auto 24px auto;"></div>
             </td>
           </tr>
@@ -136,11 +117,11 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr>
                   <td style="text-align: center;">
-                    <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: ${primaryColor};">Studio Kalòs</p>
+                    <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: ${primaryColor};">Studio Kalos</p>
                     <p style="margin: 0; font-size: 13px; color: ${footerText};">
                       <a href="mailto:info.studiokalos@gmail.com" style="color: ${accentColor}; text-decoration: none;">info.studiokalos@gmail.com</a>
                     </p>
-                    <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">Località Casello Ferroviario, 3 - 34079 Staranzano (GO)</p>
+                    <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">Localita Casello Ferroviario, 3 - 34079 Staranzano (GO)</p>
                   </td>
                 </tr>
               </table>
@@ -152,7 +133,7 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
           <tr>
             <td style="padding: 24px 20px; text-align: center;">
               <p style="margin: 0; font-size: 12px; color: ${footerText};">
-                Ricevi questa email perché sei iscritto alla newsletter di Studio Kalòs.
+                Ricevi questa email perche sei iscritto alla newsletter di Studio Kalos.
               </p>
               <p style="margin: 8px 0 0 0; font-size: 11px;">
                 <a href="${unsubscribeUrl}" style="color: ${footerText}; text-decoration: underline;">Annulla iscrizione</a>
@@ -198,9 +179,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!body.campaignId) {
       return jsonResponse({ ok: false, reason: 'MISSING_CAMPAIGN_ID' }, 400)
     }
-    if (!body.recipients || body.recipients.length === 0) {
-      return jsonResponse({ ok: false, reason: 'NO_RECIPIENTS' }, 400)
-    }
 
     // Create admin client with service_role key
     const supabaseAdmin = createClient(
@@ -221,12 +199,26 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: false, reason: 'CAMPAIGN_NOT_FOUND' }, 404)
     }
 
-    // Check campaign status
-    if (campaign.status === 'sent') {
-      return jsonResponse({ ok: false, reason: 'CAMPAIGN_ALREADY_SENT' }, 400)
+    // Get all failed emails for this campaign
+    const { data: failedEmails, error: failedError } = await supabaseAdmin
+      .from('newsletter_emails')
+      .select('*')
+      .eq('campaign_id', body.campaignId)
+      .eq('status', 'failed')
+
+    if (failedError) {
+      console.error('Error getting failed emails:', failedError)
+      return jsonResponse({ ok: false, reason: 'FAILED_EMAILS_FETCH_ERROR' }, 500)
     }
-    if (campaign.status === 'sending') {
-      return jsonResponse({ ok: false, reason: 'CAMPAIGN_ALREADY_SENDING' }, 400)
+
+    if (!failedEmails || failedEmails.length === 0) {
+      return jsonResponse({
+        ok: true,
+        sentCount: 0,
+        failedCount: 0,
+        totalRetried: 0,
+        message: 'No failed emails to retry',
+      }, 200)
     }
 
     // Update campaign status to 'sending'
@@ -234,40 +226,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .from('newsletter_campaigns')
       .update({ status: 'sending' })
       .eq('id', body.campaignId)
-
-    // Create newsletter_emails records for all recipients
-    const emailRecords = body.recipients.map(recipient => ({
-      campaign_id: body.campaignId,
-      client_id: recipient.clientId || null,
-      email_address: recipient.email,
-      client_name: recipient.name,
-      status: 'pending',
-    }))
-
-    const { error: insertError } = await supabaseAdmin
-      .from('newsletter_emails')
-      .insert(emailRecords)
-
-    if (insertError) {
-      console.error('Error creating email records:', insertError)
-      // Continue anyway, some might already exist from a previous attempt
-    }
-
-    // Get all pending emails for this campaign
-    const { data: pendingEmails, error: pendingError } = await supabaseAdmin
-      .from('newsletter_emails')
-      .select('*')
-      .eq('campaign_id', body.campaignId)
-      .eq('status', 'pending')
-
-    if (pendingError || !pendingEmails) {
-      console.error('Error getting pending emails:', pendingError)
-      await supabaseAdmin
-        .from('newsletter_campaigns')
-        .update({ status: 'failed' })
-        .eq('id', body.campaignId)
-      return jsonResponse({ ok: false, reason: 'PENDING_EMAILS_FETCH_ERROR' }, 500)
-    }
 
     // Send emails sequentially to respect Resend rate limit (2 req/sec)
     let sentCount = 0
@@ -277,14 +235,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Generate public URL for newsletter image (if present)
     const imagePublicUrl = getImagePublicUrl(campaign.image_url)
 
-    for (let i = 0; i < pendingEmails.length; i++) {
-      const emailRecord = pendingEmails[i]
+    for (let i = 0; i < failedEmails.length; i++) {
+      const emailRecord = failedEmails[i]
+
+      // Reset the email status to pending before retry
+      await supabaseAdmin
+        .from('newsletter_emails')
+        .update({
+          status: 'pending',
+          error_message: null,
+        })
+        .eq('id', emailRecord.id)
 
       // Replace template variables ({{nome}} -> recipient name)
       const personalizedText = replaceTemplateVariables(campaign.content, {
         nome: emailRecord.client_name,
-        client_name: emailRecord.client_name, // Keep old variable for compatibility
-        studio_name: 'Studio Kalòs',
+        client_name: emailRecord.client_name,
+        studio_name: 'Studio Kalos',
       })
 
       // Generate unsubscribe URL
@@ -305,11 +272,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
         tags: [
           { name: 'campaign_id', value: body.campaignId },
           { name: 'email_id', value: emailRecord.id },
+          { name: 'retry', value: 'true' },
         ],
       })
 
       if (error) {
-        console.error(`Failed to send email to ${emailRecord.email_address}:`, error)
+        console.error(`Retry failed for ${emailRecord.email_address}:`, error)
         await supabaseAdmin
           .from('newsletter_emails')
           .update({
@@ -326,26 +294,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
             status: 'sent',
             resend_id: data?.id ?? null,
             sent_at: new Date().toISOString(),
+            error_message: null,
           })
           .eq('id', emailRecord.id)
         sentCount++
       }
 
-      // Delay between emails to respect rate limit (2 req/sec = 500ms minimum)
-      // Using 550ms to have a safety margin
-      if (i < pendingEmails.length - 1) {
+      // Delay between emails to respect rate limit
+      if (i < failedEmails.length - 1) {
         await delay(EMAIL_DELAY_MS)
       }
     }
 
-    // Update campaign with final stats
-    const finalStatus = failedCount === pendingEmails.length ? 'failed' : 'sent'
+    // Update campaign status
+    const finalStatus = failedCount === failedEmails.length ? 'failed' : 'sent'
     await supabaseAdmin
       .from('newsletter_campaigns')
       .update({
         status: finalStatus,
-        sent_at: new Date().toISOString(),
-        recipient_count: sentCount + failedCount,
       })
       .eq('id', body.campaignId)
 
@@ -353,6 +319,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       ok: true,
       sentCount,
       failedCount,
+      totalRetried: failedEmails.length,
     }, 200)
 
   } catch (error) {

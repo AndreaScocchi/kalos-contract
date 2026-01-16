@@ -7,6 +7,7 @@ export interface ResendEmailOptions {
   html: string
   text?: string
   tags?: { name: string; value: string }[]
+  headers?: Record<string, string>
 }
 
 export interface ResendEmailResponse {
@@ -42,6 +43,7 @@ export async function sendEmail(options: ResendEmailOptions): Promise<{ data: Re
         html: options.html,
         text: options.text,
         tags: options.tags,
+        headers: options.headers,
       }),
     })
 

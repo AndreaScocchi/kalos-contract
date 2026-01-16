@@ -131,6 +131,48 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_email_logs: {
+        Row: {
+          created_at: string
+          email: string
+          email_type: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          resend_id: string | null
+          source: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          email_type: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          resend_id?: string | null
+          source: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          resend_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           client_id: string | null
@@ -2312,6 +2354,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cron_execute_scheduled_campaigns: { Args: never; Returns: undefined }
+      cron_fetch_social_analytics: { Args: never; Returns: undefined }
       cron_process_notification_queue: { Args: never; Returns: undefined }
       cron_queue_birthday: { Args: never; Returns: undefined }
       cron_queue_entries_low: { Args: never; Returns: undefined }
@@ -2329,6 +2373,16 @@ export type Database = {
       generate_slug_from_discipline: {
         Args: { discipline_text: string }
         Returns: string
+      }
+      get_auth_email_stats: {
+        Args: { p_user_id: string }
+        Returns: {
+          bounced_count: number
+          failed_count: number
+          last_sent_at: string
+          last_status: string
+          total_sent: number
+        }[]
       }
       get_financial_kpis: {
         Args: { p_month_end?: string; p_month_start?: string }
@@ -2447,7 +2501,15 @@ export type Database = {
         | "instagram_reel"
         | "instagram_carousel"
         | "facebook_post"
-      campaign_tone: "formale" | "amichevole" | "urgente"
+      campaign_tone:
+        | "formale"
+        | "amichevole"
+        | "urgente"
+        | "entusiasta"
+        | "professionale"
+        | "empatico"
+        | "diretto"
+        | "esclusivo"
       campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo"
       content_status:
         | "pending"
@@ -2646,7 +2708,16 @@ export const Constants = {
         "instagram_carousel",
         "facebook_post",
       ],
-      campaign_tone: ["formale", "amichevole", "urgente"],
+      campaign_tone: [
+        "formale",
+        "amichevole",
+        "urgente",
+        "entusiasta",
+        "professionale",
+        "empatico",
+        "diretto",
+        "esclusivo",
+      ],
       campaign_type: ["promo", "evento", "annuncio", "corso_nuovo"],
       content_status: [
         "pending",

@@ -83,6 +83,54 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          link_label: string | null
+          link_url: string | null
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_label?: string | null
+          link_url?: string | null
+          starts_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_label?: string | null
+          link_url?: string | null
+          starts_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           client_id: string | null
@@ -207,12 +255,301 @@ export type Database = {
           },
         ]
       }
+      campaign_analytics: {
+        Row: {
+          campaign_id: string
+          channel: string
+          clicks: number | null
+          comments: number | null
+          content_id: string | null
+          created_at: string
+          emails_bounced: number | null
+          emails_clicked: number | null
+          emails_delivered: number | null
+          emails_opened: number | null
+          emails_sent: number | null
+          engagement: number | null
+          id: string
+          impressions: number | null
+          last_fetched_at: string | null
+          likes: number | null
+          push_clicked: number | null
+          push_delivered: number | null
+          push_sent: number | null
+          reach: number | null
+          saves: number | null
+          shares: number | null
+          story_replies: number | null
+          story_views: number | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          channel: string
+          clicks?: number | null
+          comments?: number | null
+          content_id?: string | null
+          created_at?: string
+          emails_bounced?: number | null
+          emails_clicked?: number | null
+          emails_delivered?: number | null
+          emails_opened?: number | null
+          emails_sent?: number | null
+          engagement?: number | null
+          id?: string
+          impressions?: number | null
+          last_fetched_at?: string | null
+          likes?: number | null
+          push_clicked?: number | null
+          push_delivered?: number | null
+          push_sent?: number | null
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          story_replies?: number | null
+          story_views?: number | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          channel?: string
+          clicks?: number | null
+          comments?: number | null
+          content_id?: string | null
+          created_at?: string
+          emails_bounced?: number | null
+          emails_clicked?: number | null
+          emails_delivered?: number | null
+          emails_opened?: number | null
+          emails_sent?: number | null
+          engagement?: number | null
+          id?: string
+          impressions?: number | null
+          last_fetched_at?: string | null
+          likes?: number | null
+          push_clicked?: number | null
+          push_delivered?: number | null
+          push_sent?: number | null
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          story_replies?: number | null
+          story_views?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_analytics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_analytics_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_contents: {
+        Row: {
+          ai_generated_body: string | null
+          ai_generated_hashtags: string[] | null
+          ai_generated_image_suggestions: string[] | null
+          ai_generated_title: string | null
+          body: string | null
+          campaign_id: string
+          content_type: Database["public"]["Enums"]["campaign_content_type"]
+          created_at: string
+          error_message: string | null
+          hashtags: string[] | null
+          id: string
+          image_suggestions: string[] | null
+          image_url: string | null
+          is_edited: boolean | null
+          link_label: string | null
+          link_url: string | null
+          meta_container_id: string | null
+          meta_post_id: string | null
+          newsletter_campaign_id: string | null
+          platform: Database["public"]["Enums"]["social_platform"] | null
+          published_at: string | null
+          retry_count: number | null
+          scheduled_for: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          title: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          ai_generated_body?: string | null
+          ai_generated_hashtags?: string[] | null
+          ai_generated_image_suggestions?: string[] | null
+          ai_generated_title?: string | null
+          body?: string | null
+          campaign_id: string
+          content_type: Database["public"]["Enums"]["campaign_content_type"]
+          created_at?: string
+          error_message?: string | null
+          hashtags?: string[] | null
+          id?: string
+          image_suggestions?: string[] | null
+          image_url?: string | null
+          is_edited?: boolean | null
+          link_label?: string | null
+          link_url?: string | null
+          meta_container_id?: string | null
+          meta_post_id?: string | null
+          newsletter_campaign_id?: string | null
+          platform?: Database["public"]["Enums"]["social_platform"] | null
+          published_at?: string | null
+          retry_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          title?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          ai_generated_body?: string | null
+          ai_generated_hashtags?: string[] | null
+          ai_generated_image_suggestions?: string[] | null
+          ai_generated_title?: string | null
+          body?: string | null
+          campaign_id?: string
+          content_type?: Database["public"]["Enums"]["campaign_content_type"]
+          created_at?: string
+          error_message?: string | null
+          hashtags?: string[] | null
+          id?: string
+          image_suggestions?: string[] | null
+          image_url?: string | null
+          is_edited?: boolean | null
+          link_label?: string | null
+          link_url?: string | null
+          meta_container_id?: string | null
+          meta_post_id?: string | null
+          newsletter_campaign_id?: string | null
+          platform?: Database["public"]["Enums"]["social_platform"] | null
+          published_at?: string | null
+          retry_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          title?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_contents_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_contents_newsletter_campaign_id_fkey"
+            columns: ["newsletter_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "newsletter_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          ai_generated_at: string | null
+          ai_model_used: string | null
+          ai_prompt_used: string | null
+          created_at: string
+          created_by: string | null
+          current_step: number
+          deleted_at: string | null
+          event_date: string | null
+          executed_at: string | null
+          id: string
+          message: string
+          name: string
+          scheduled_for: string | null
+          skipped_steps: number[] | null
+          status: Database["public"]["Enums"]["marketing_campaign_status"]
+          target: Json
+          tone: Database["public"]["Enums"]["campaign_tone"]
+          total_engagement: number | null
+          total_reach: number | null
+          type: Database["public"]["Enums"]["campaign_type"]
+          updated_at: string
+        }
+        Insert: {
+          ai_generated_at?: string | null
+          ai_model_used?: string | null
+          ai_prompt_used?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_step?: number
+          deleted_at?: string | null
+          event_date?: string | null
+          executed_at?: string | null
+          id?: string
+          message: string
+          name: string
+          scheduled_for?: string | null
+          skipped_steps?: number[] | null
+          status?: Database["public"]["Enums"]["marketing_campaign_status"]
+          target?: Json
+          tone?: Database["public"]["Enums"]["campaign_tone"]
+          total_engagement?: number | null
+          total_reach?: number | null
+          type: Database["public"]["Enums"]["campaign_type"]
+          updated_at?: string
+        }
+        Update: {
+          ai_generated_at?: string | null
+          ai_model_used?: string | null
+          ai_prompt_used?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_step?: number
+          deleted_at?: string | null
+          event_date?: string | null
+          executed_at?: string | null
+          id?: string
+          message?: string
+          name?: string
+          scheduled_for?: string | null
+          skipped_steps?: number[] | null
+          status?: Database["public"]["Enums"]["marketing_campaign_status"]
+          target?: Json
+          tone?: Database["public"]["Enums"]["campaign_tone"]
+          total_engagement?: number | null
+          total_reach?: number | null
+          type?: Database["public"]["Enums"]["campaign_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           birthday: string | null
           created_at: string
           deleted_at: string | null
           email: string | null
+          email_bounced: boolean | null
+          email_bounced_at: string | null
           full_name: string
           id: string
           is_active: boolean
@@ -226,6 +563,8 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           email?: string | null
+          email_bounced?: boolean | null
+          email_bounced_at?: string | null
           full_name: string
           id?: string
           is_active?: boolean
@@ -239,6 +578,8 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           email?: string | null
+          email_bounced?: boolean | null
+          email_bounced_at?: string | null
           full_name?: string
           id?: string
           is_active?: boolean
@@ -684,6 +1025,7 @@ export type Database = {
           id: string
           image_url: string | null
           opened_count: number
+          preview_text: string | null
           recipient_count: number
           recipients: Json | null
           scheduled_at: string | null
@@ -704,6 +1046,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           opened_count?: number
+          preview_text?: string | null
           recipient_count?: number
           recipients?: Json | null
           scheduled_at?: string | null
@@ -724,6 +1067,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           opened_count?: number
+          preview_text?: string | null
           recipient_count?: number
           recipients?: Json | null
           scheduled_at?: string | null
@@ -1016,6 +1360,52 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_reads: {
+        Row: {
+          announcement_id: string | null
+          client_id: string
+          id: string
+          notification_log_id: string | null
+          read_at: string
+        }
+        Insert: {
+          announcement_id?: string | null
+          client_id: string
+          id?: string
+          notification_log_id?: string | null
+          read_at?: string
+        }
+        Update: {
+          announcement_id?: string | null
+          client_id?: string
+          id?: string
+          notification_log_id?: string | null
+          read_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_reads_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_reads_notification_log_id_fkey"
+            columns: ["notification_log_id"]
+            isOneToOne: false
+            referencedRelation: "notification_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -1382,6 +1772,74 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "public_site_pricing"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_connections: {
+        Row: {
+          access_token: string
+          account_id: string
+          account_name: string | null
+          created_at: string
+          id: string
+          instagram_business_id: string | null
+          instagram_username: string | null
+          is_active: boolean
+          last_error: string | null
+          last_used_at: string | null
+          operator_id: string
+          page_id: string | null
+          page_name: string | null
+          permissions: string[] | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          account_id: string
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          instagram_business_id?: string | null
+          instagram_username?: string | null
+          is_active?: boolean
+          last_error?: string | null
+          last_used_at?: string | null
+          operator_id: string
+          page_id?: string | null
+          page_name?: string | null
+          permissions?: string[] | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          account_id?: string
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          instagram_business_id?: string | null
+          instagram_username?: string | null
+          is_active?: boolean
+          last_error?: string | null
+          last_used_at?: string | null
+          operator_id?: string
+          page_id?: string | null
+          page_name?: string | null
+          permissions?: string[] | null
+          platform?: Database["public"]["Enums"]["social_platform"]
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_connections_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1907,13 +2365,33 @@ export type Database = {
         Args: { p_month_end?: string; p_month_start?: string }
         Returns: Json
       }
+      get_unread_notifications_count: { Args: never; Returns: number }
       is_admin: { Args: never; Returns: boolean }
       is_finance: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      mark_all_notifications_read: { Args: never; Returns: number }
+      mark_notification_read: {
+        Args: { p_announcement_id?: string; p_notification_log_id?: string }
+        Returns: boolean
+      }
       milestone_already_sent: {
         Args: { p_client_id: string; p_milestone: number }
         Returns: boolean
       }
+      queue_announcement:
+        | {
+            Args: { p_announcement_id: string; p_body: string; p_title: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_announcement_id: string
+              p_body: string
+              p_scheduled_for?: string
+              p_title: string
+            }
+            Returns: Json
+          }
       queue_birthday: { Args: never; Returns: Json }
       queue_entries_low: { Args: never; Returns: Json }
       queue_first_lesson: { Args: { p_client_id: string }; Returns: boolean }
@@ -1960,6 +2438,34 @@ export type Database = {
     Enums: {
       booking_status: "booked" | "canceled" | "attended" | "no_show"
       bug_status: "open" | "in_progress" | "resolved" | "closed"
+      campaign_content_type:
+        | "brief"
+        | "push_notification"
+        | "newsletter"
+        | "instagram_post"
+        | "instagram_story"
+        | "instagram_reel"
+        | "instagram_carousel"
+        | "facebook_post"
+      campaign_tone: "formale" | "amichevole" | "urgente"
+      campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo"
+      content_status:
+        | "pending"
+        | "generated"
+        | "edited"
+        | "scheduled"
+        | "sent"
+        | "published"
+        | "failed"
+        | "skipped"
+      marketing_campaign_status:
+        | "draft"
+        | "ai_generating"
+        | "pending_review"
+        | "scheduled"
+        | "executing"
+        | "completed"
+        | "failed"
       newsletter_campaign_status:
         | "draft"
         | "scheduled"
@@ -1990,6 +2496,7 @@ export type Database = {
         | "milestone"
         | "birthday"
         | "new_event"
+        | "announcement"
       notification_channel: "push" | "email"
       notification_status:
         | "pending"
@@ -1997,6 +2504,7 @@ export type Database = {
         | "delivered"
         | "failed"
         | "skipped"
+      social_platform: "instagram" | "facebook"
       subscription_status: "active" | "completed" | "expired" | "canceled"
       user_role: "user" | "operator" | "admin" | "finance"
     }
@@ -2128,6 +2636,37 @@ export const Constants = {
     Enums: {
       booking_status: ["booked", "canceled", "attended", "no_show"],
       bug_status: ["open", "in_progress", "resolved", "closed"],
+      campaign_content_type: [
+        "brief",
+        "push_notification",
+        "newsletter",
+        "instagram_post",
+        "instagram_story",
+        "instagram_reel",
+        "instagram_carousel",
+        "facebook_post",
+      ],
+      campaign_tone: ["formale", "amichevole", "urgente"],
+      campaign_type: ["promo", "evento", "annuncio", "corso_nuovo"],
+      content_status: [
+        "pending",
+        "generated",
+        "edited",
+        "scheduled",
+        "sent",
+        "published",
+        "failed",
+        "skipped",
+      ],
+      marketing_campaign_status: [
+        "draft",
+        "ai_generating",
+        "pending_review",
+        "scheduled",
+        "executing",
+        "completed",
+        "failed",
+      ],
       newsletter_campaign_status: [
         "draft",
         "scheduled",
@@ -2161,6 +2700,7 @@ export const Constants = {
         "milestone",
         "birthday",
         "new_event",
+        "announcement",
       ],
       notification_channel: ["push", "email"],
       notification_status: [
@@ -2170,6 +2710,7 @@ export const Constants = {
         "failed",
         "skipped",
       ],
+      social_platform: ["instagram", "facebook"],
       subscription_status: ["active", "completed", "expired", "canceled"],
       user_role: ["user", "operator", "admin", "finance"],
     },

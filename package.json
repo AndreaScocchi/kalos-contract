@@ -1,6 +1,6 @@
 {
   "name": "@kalos/contract",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "description": "Shared contract library for Kalos projects - types, Supabase client factory, RPC wrappers, and public queries",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

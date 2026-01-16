@@ -13,6 +13,7 @@ interface Campaign {
   name: string
   status: string
   skipped_steps: number[]
+  test_client_id: string | null
 }
 
 interface Content {
@@ -50,7 +51,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Get campaigns that are scheduled and due
     const { data: campaigns, error: campaignsError } = await supabaseAdmin
       .from('campaigns')
-      .select('id, name, status, skipped_steps')
+      .select('id, name, status, skipped_steps, test_client_id')
       .eq('status', 'scheduled')
       .lte('scheduled_for', new Date().toISOString())
       .is('deleted_at', null)
@@ -116,11 +117,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
             // Execute based on content type
             switch (content.content_type) {
               case 'push_notification':
-                await executePushNotification(supabaseAdmin, content)
+                await executePushNotification(supabaseAdmin, content, campaign.test_client_id)
                 break
 
               case 'newsletter':
-                await executeNewsletter(supabaseAdmin, campaign, content)
+                await executeNewsletter(supabaseAdmin, campaign, content, campaign.test_client_id)
                 break
 
               case 'instagram_post':
@@ -193,22 +194,40 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
 async function executePushNotification(
   supabase: ReturnType<typeof createClient>,
-  content: Content
+  content: Content,
+  testClientId: string | null
 ): Promise<void> {
   // Insert into notification_queue (existing system)
+  // If testClientId is set, target only that client
+  const notificationData = testClientId
+    ? {
+        category: 'announcement',
+        title: content.title,
+        body: content.body,
+        target_type: 'specific_client',
+        client_id: testClientId,
+        status: 'pending',
+        metadata: {
+          campaign_content_id: content.id,
+          campaign_id: content.campaign_id,
+          is_test: true,
+        },
+      }
+    : {
+        category: 'announcement',
+        title: content.title,
+        body: content.body,
+        target_type: 'all_clients',
+        status: 'pending',
+        metadata: {
+          campaign_content_id: content.id,
+          campaign_id: content.campaign_id,
+        },
+      }
+
   const { error } = await supabase
     .from('notification_queue')
-    .insert({
-      category: 'announcement',
-      title: content.title,
-      body: content.body,
-      target_type: 'all_clients',
-      status: 'pending',
-      metadata: {
-        campaign_content_id: content.id,
-        campaign_id: content.campaign_id,
-      },
-    })
+    .insert(notificationData)
 
   if (error) {
     throw new Error(`Failed to queue push notification: ${error.message}`)
@@ -224,7 +243,8 @@ async function executePushNotification(
 async function executeNewsletter(
   supabase: ReturnType<typeof createClient>,
   campaign: Campaign,
-  content: Content
+  content: Content,
+  testClientId: string | null
 ): Promise<void> {
   // Create newsletter_campaign (existing system)
   const { data: newsletterCampaign, error: createError } = await supabase
@@ -236,6 +256,8 @@ async function executeNewsletter(
       metadata: {
         campaign_content_id: content.id,
         campaign_id: content.campaign_id,
+        test_client_id: testClientId,
+        is_test: !!testClientId,
       },
     })
     .select()
@@ -261,7 +283,10 @@ async function executeNewsletter(
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${serviceKey}`,
     },
-    body: JSON.stringify({ campaignId: newsletterCampaign.id }),
+    body: JSON.stringify({
+      campaignId: newsletterCampaign.id,
+      testClientId: testClientId, // Pass to newsletter for single recipient
+    }),
   })
 
   if (!response.ok) {

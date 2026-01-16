@@ -522,6 +522,7 @@ export type Database = {
           skipped_steps: number[] | null
           status: Database["public"]["Enums"]["marketing_campaign_status"]
           target: Json
+          test_client_id: string | null
           tone: Database["public"]["Enums"]["campaign_tone"]
           total_engagement: number | null
           total_reach: number | null
@@ -545,6 +546,7 @@ export type Database = {
           skipped_steps?: number[] | null
           status?: Database["public"]["Enums"]["marketing_campaign_status"]
           target?: Json
+          test_client_id?: string | null
           tone?: Database["public"]["Enums"]["campaign_tone"]
           total_engagement?: number | null
           total_reach?: number | null
@@ -568,6 +570,7 @@ export type Database = {
           skipped_steps?: number[] | null
           status?: Database["public"]["Enums"]["marketing_campaign_status"]
           target?: Json
+          test_client_id?: string | null
           tone?: Database["public"]["Enums"]["campaign_tone"]
           total_engagement?: number | null
           total_reach?: number | null
@@ -580,6 +583,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_test_client_id_fkey"
+            columns: ["test_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]

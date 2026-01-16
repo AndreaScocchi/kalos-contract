@@ -127,6 +127,48 @@ type Database = {
                 };
                 Relationships: [];
             };
+            auth_email_logs: {
+                Row: {
+                    created_at: string;
+                    email: string;
+                    email_type: string;
+                    error_message: string | null;
+                    id: string;
+                    metadata: Json | null;
+                    resend_id: string | null;
+                    source: string;
+                    status: string;
+                    updated_at: string;
+                    user_id: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    email: string;
+                    email_type: string;
+                    error_message?: string | null;
+                    id?: string;
+                    metadata?: Json | null;
+                    resend_id?: string | null;
+                    source: string;
+                    status?: string;
+                    updated_at?: string;
+                    user_id: string;
+                };
+                Update: {
+                    created_at?: string;
+                    email?: string;
+                    email_type?: string;
+                    error_message?: string | null;
+                    id?: string;
+                    metadata?: Json | null;
+                    resend_id?: string | null;
+                    source?: string;
+                    status?: string;
+                    updated_at?: string;
+                    user_id?: string;
+                };
+                Relationships: [];
+            };
             bookings: {
                 Row: {
                     client_id: string | null;
@@ -2342,6 +2384,14 @@ type Database = {
                     isSetofReturn: false;
                 };
             };
+            cron_execute_scheduled_campaigns: {
+                Args: never;
+                Returns: undefined;
+            };
+            cron_fetch_social_analytics: {
+                Args: never;
+                Returns: undefined;
+            };
             cron_process_notification_queue: {
                 Args: never;
                 Returns: undefined;
@@ -2379,6 +2429,18 @@ type Database = {
                     discipline_text: string;
                 };
                 Returns: string;
+            };
+            get_auth_email_stats: {
+                Args: {
+                    p_user_id: string;
+                };
+                Returns: {
+                    bounced_count: number;
+                    failed_count: number;
+                    last_sent_at: string;
+                    last_status: string;
+                    total_sent: number;
+                }[];
             };
             get_financial_kpis: {
                 Args: {
@@ -2566,7 +2628,7 @@ type Database = {
             booking_status: "booked" | "canceled" | "attended" | "no_show";
             bug_status: "open" | "in_progress" | "resolved" | "closed";
             campaign_content_type: "brief" | "push_notification" | "newsletter" | "instagram_post" | "instagram_story" | "instagram_reel" | "instagram_carousel" | "facebook_post";
-            campaign_tone: "formale" | "amichevole" | "urgente";
+            campaign_tone: "formale" | "amichevole" | "urgente" | "entusiasta" | "professionale" | "empatico" | "diretto" | "esclusivo";
             campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo";
             content_status: "pending" | "generated" | "edited" | "scheduled" | "sent" | "published" | "failed" | "skipped";
             marketing_campaign_status: "draft" | "ai_generating" | "pending_review" | "scheduled" | "executing" | "completed" | "failed";
@@ -2933,6 +2995,48 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 starts_at?: string;
                 title?: string;
                 updated_at?: string;
+            };
+            Relationships: [];
+        };
+        auth_email_logs: {
+            Row: {
+                created_at: string;
+                email: string;
+                email_type: string;
+                error_message: string | null;
+                id: string;
+                metadata: Json | null;
+                resend_id: string | null;
+                source: string;
+                status: string;
+                updated_at: string;
+                user_id: string;
+            };
+            Insert: {
+                created_at?: string;
+                email: string;
+                email_type: string;
+                error_message?: string | null;
+                id?: string;
+                metadata?: Json | null;
+                resend_id?: string | null;
+                source: string;
+                status?: string;
+                updated_at?: string;
+                user_id: string;
+            };
+            Update: {
+                created_at?: string;
+                email?: string;
+                email_type?: string;
+                error_message?: string | null;
+                id?: string;
+                metadata?: Json | null;
+                resend_id?: string | null;
+                source?: string;
+                status?: string;
+                updated_at?: string;
+                user_id?: string;
             };
             Relationships: [];
         };
@@ -5048,6 +5152,14 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 isSetofReturn: false;
             };
         };
+        cron_execute_scheduled_campaigns: {
+            Args: never;
+            Returns: undefined;
+        };
+        cron_fetch_social_analytics: {
+            Args: never;
+            Returns: undefined;
+        };
         cron_process_notification_queue: {
             Args: never;
             Returns: undefined;
@@ -5085,6 +5197,18 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 discipline_text: string;
             };
             Returns: string;
+        };
+        get_auth_email_stats: {
+            Args: {
+                p_user_id: string;
+            };
+            Returns: {
+                bounced_count: number;
+                failed_count: number;
+                last_sent_at: string;
+                last_status: string;
+                total_sent: number;
+            }[];
         };
         get_financial_kpis: {
             Args: {
@@ -5272,7 +5396,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         booking_status: "booked" | "canceled" | "attended" | "no_show";
         bug_status: "open" | "in_progress" | "resolved" | "closed";
         campaign_content_type: "brief" | "push_notification" | "newsletter" | "instagram_post" | "instagram_story" | "instagram_reel" | "instagram_carousel" | "facebook_post";
-        campaign_tone: "formale" | "amichevole" | "urgente";
+        campaign_tone: "formale" | "amichevole" | "urgente" | "entusiasta" | "professionale" | "empatico" | "diretto" | "esclusivo";
         campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo";
         content_status: "pending" | "generated" | "edited" | "scheduled" | "sent" | "published" | "failed" | "skipped";
         marketing_campaign_status: "draft" | "ai_generating" | "pending_review" | "scheduled" | "executing" | "completed" | "failed";
@@ -5400,6 +5524,47 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         starts_at?: string;
         title?: string;
         updated_at?: string;
+    };
+    Relationships: [];
+} | {
+    Row: {
+        created_at: string;
+        email: string;
+        email_type: string;
+        error_message: string | null;
+        id: string;
+        metadata: Json | null;
+        resend_id: string | null;
+        source: string;
+        status: string;
+        updated_at: string;
+        user_id: string;
+    };
+    Insert: {
+        created_at?: string;
+        email: string;
+        email_type: string;
+        error_message?: string | null;
+        id?: string;
+        metadata?: Json | null;
+        resend_id?: string | null;
+        source: string;
+        status?: string;
+        updated_at?: string;
+        user_id: string;
+    };
+    Update: {
+        created_at?: string;
+        email?: string;
+        email_type?: string;
+        error_message?: string | null;
+        id?: string;
+        metadata?: Json | null;
+        resend_id?: string | null;
+        source?: string;
+        status?: string;
+        updated_at?: string;
+        user_id?: string;
     };
     Relationships: [];
 } | {
@@ -7148,7 +7313,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "profiles";
         referencedColumns: ["id"];
     }];
-}, "clients" | "lessons" | "subscriptions" | "profiles" | "campaigns" | "campaign_contents" | "newsletter_campaigns" | "events" | "activities" | "operators" | "newsletter_emails" | "announcements" | "notification_logs" | "plans" | "bookings" | "bug_reports" | "campaign_analytics" | "device_tokens" | "event_bookings" | "expenses" | "newsletter_extra_emails" | "newsletter_tracking_events" | "notification_preferences" | "notification_queue" | "notification_reads" | "payout_rules" | "payouts" | "plan_activities" | "promotions" | "social_connections" | "subscription_usages" | "waitlist", [] | [{
+}, "clients" | "lessons" | "subscriptions" | "profiles" | "campaigns" | "campaign_contents" | "newsletter_campaigns" | "events" | "activities" | "operators" | "newsletter_emails" | "announcements" | "notification_logs" | "plans" | "auth_email_logs" | "bookings" | "bug_reports" | "campaign_analytics" | "device_tokens" | "event_bookings" | "expenses" | "newsletter_extra_emails" | "newsletter_tracking_events" | "notification_preferences" | "notification_queue" | "notification_reads" | "payout_rules" | "payouts" | "plan_activities" | "promotions" | "social_connections" | "subscription_usages" | "waitlist", [] | [{
     foreignKeyName: "bookings_client_id_fkey";
     columns: ["client_id"];
     isOneToOne: false;
@@ -7642,6 +7807,18 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     title: string;
     updated_at: string;
 } | {
+    created_at: string;
+    email: string;
+    email_type: string;
+    error_message: string | null;
+    id: string;
+    metadata: Json | null;
+    resend_id: string | null;
+    source: string;
+    status: string;
+    updated_at: string;
+    user_id: string;
+} | {
     client_id: string | null;
     created_at: string | null;
     id: string;
@@ -8074,6 +8251,18 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     starts_at: string;
     title: string;
     updated_at: string;
+} | {
+    created_at: string;
+    email: string;
+    email_type: string;
+    error_message: string | null;
+    id: string;
+    metadata: Json | null;
+    resend_id: string | null;
+    source: string;
+    status: string;
+    updated_at: string;
+    user_id: string;
 } | {
     client_id: string | null;
     created_at: string | null;
@@ -8508,6 +8697,18 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     title: string;
     updated_at: string;
 } | {
+    created_at: string;
+    email: string;
+    email_type: string;
+    error_message: string | null;
+    id: string;
+    metadata: Json | null;
+    resend_id: string | null;
+    source: string;
+    status: string;
+    updated_at: string;
+    user_id: string;
+} | {
     client_id: string | null;
     created_at: string | null;
     id: string;
@@ -8940,6 +9141,18 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     starts_at: string;
     title: string;
     updated_at: string;
+} | {
+    created_at: string;
+    email: string;
+    email_type: string;
+    error_message: string | null;
+    id: string;
+    metadata: Json | null;
+    resend_id: string | null;
+    source: string;
+    status: string;
+    updated_at: string;
+    user_id: string;
 } | {
     client_id: string | null;
     created_at: string | null;
@@ -9382,6 +9595,18 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     starts_at: string;
     title: string;
     updated_at: string;
+} | {
+    created_at: string;
+    email: string;
+    email_type: string;
+    error_message: string | null;
+    id: string;
+    metadata: Json | null;
+    resend_id: string | null;
+    source: string;
+    status: string;
+    updated_at: string;
+    user_id: string;
 } | {
     client_id: string | null;
     created_at: string | null;

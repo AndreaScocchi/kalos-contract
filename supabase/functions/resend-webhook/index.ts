@@ -101,7 +101,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Get current email record to check status priority
     const { data: emailRecord, error: fetchError } = await supabaseAdmin
       .from('newsletter_emails')
-      .select('id, campaign_id, status')
+      .select('id, campaign_id, status, client_id')
       .eq('id', emailId)
       .single()
 
@@ -132,6 +132,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
           break
         case 'email.bounced':
           updateData.bounced_at = event.created_at
+          // Mark client as bounced to exclude from future newsletter sends
+          if (emailRecord.client_id) {
+            await supabaseAdmin
+              .from('clients')
+              .update({
+                email_bounced: true,
+                email_bounced_at: event.created_at,
+              })
+              .eq('id', emailRecord.client_id)
+            console.log(`Marked client ${emailRecord.client_id} as email_bounced`)
+          }
           break
       }
 

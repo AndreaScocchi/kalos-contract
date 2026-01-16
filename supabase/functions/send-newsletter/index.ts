@@ -58,8 +58,15 @@ function parseMarkdownFormatting(text: string): string {
   return result
 }
 
+// Generate preview text padding to hide other content from email preview
+function generatePreviewPadding(): string {
+  // Use zero-width non-joiners and non-breaking spaces to fill the preview area
+  const padding = '&nbsp;&zwnj;'.repeat(100)
+  return padding
+}
+
 // HTML email template with professional styling
-function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string | null = null): string {
+function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string | null = null, previewText: string | null = null): string {
   // Escape HTML entities (but preserve our markdown markers for now)
   const escaped = text
     .replace(/&/g, '&amp;')
@@ -105,6 +112,10 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
   </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: ${backgroundColor}; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+  ${previewText ? `<!-- Preview text (preheader) - hidden but shown in email client preview -->
+  <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+    ${previewText}${generatePreviewPadding()}
+  </div>` : ''}
   <!-- Wrapper table for full-width background -->
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: ${backgroundColor};">
     <tr>
@@ -292,10 +303,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
       const unsubscribeUrl = `${supabaseUrl}/functions/v1/unsubscribe-newsletter?email=${encodeURIComponent(emailRecord.email_address)}&token=${token}`
 
-      // Convert plain text to HTML (with image if present)
-      const personalizedHtml = wrapTextInHtml(personalizedText, unsubscribeUrl, imagePublicUrl)
+      // Convert plain text to HTML (with image and preview text if present)
+      const personalizedHtml = wrapTextInHtml(personalizedText, unsubscribeUrl, imagePublicUrl, campaign.preview_text)
 
-      // Send email
+      // Send email with List-Unsubscribe headers for better deliverability
       const { data, error } = await sendEmail({
         from: fromEmail,
         to: emailRecord.email_address,
@@ -306,6 +317,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
           { name: 'campaign_id', value: body.campaignId },
           { name: 'email_id', value: emailRecord.id },
         ],
+        headers: {
+          'List-Unsubscribe': `<${unsubscribeUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
       })
 
       if (error) {

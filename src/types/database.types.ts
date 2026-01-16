@@ -83,6 +83,54 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          link_label: string | null
+          link_url: string | null
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_label?: string | null
+          link_url?: string | null
+          starts_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_label?: string | null
+          link_url?: string | null
+          starts_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           client_id: string | null
@@ -209,9 +257,12 @@ export type Database = {
       }
       clients: {
         Row: {
+          birthday: string | null
           created_at: string
           deleted_at: string | null
           email: string | null
+          email_bounced: boolean | null
+          email_bounced_at: string | null
           full_name: string
           id: string
           is_active: boolean
@@ -221,9 +272,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          birthday?: string | null
           created_at?: string
           deleted_at?: string | null
           email?: string | null
+          email_bounced?: boolean | null
+          email_bounced_at?: string | null
           full_name: string
           id?: string
           is_active?: boolean
@@ -233,9 +287,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          birthday?: string | null
           created_at?: string
           deleted_at?: string | null
           email?: string | null
+          email_bounced?: boolean | null
+          email_bounced_at?: string | null
           full_name?: string
           id?: string
           is_active?: boolean
@@ -250,6 +307,53 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_tokens: {
+        Row: {
+          app_version: string | null
+          client_id: string
+          created_at: string
+          device_id: string | null
+          expo_push_token: string
+          id: string
+          is_active: boolean
+          last_used_at: string
+          platform: string | null
+          updated_at: string
+        }
+        Insert: {
+          app_version?: string | null
+          client_id: string
+          created_at?: string
+          device_id?: string | null
+          expo_push_token: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string
+          platform?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_version?: string | null
+          client_id?: string
+          created_at?: string
+          device_id?: string | null
+          expo_push_token?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string
+          platform?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -623,6 +727,7 @@ export type Database = {
       }
       newsletter_campaigns: {
         Row: {
+          archived: boolean
           bounced_count: number
           clicked_count: number
           content: string
@@ -631,8 +736,11 @@ export type Database = {
           deleted_at: string | null
           delivered_count: number
           id: string
+          image_url: string | null
           opened_count: number
+          preview_text: string | null
           recipient_count: number
+          recipients: Json | null
           scheduled_at: string | null
           sent_at: string | null
           status: Database["public"]["Enums"]["newsletter_campaign_status"]
@@ -640,6 +748,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived?: boolean
           bounced_count?: number
           clicked_count?: number
           content: string
@@ -648,8 +757,11 @@ export type Database = {
           deleted_at?: string | null
           delivered_count?: number
           id?: string
+          image_url?: string | null
           opened_count?: number
+          preview_text?: string | null
           recipient_count?: number
+          recipients?: Json | null
           scheduled_at?: string | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["newsletter_campaign_status"]
@@ -657,6 +769,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived?: boolean
           bounced_count?: number
           clicked_count?: number
           content?: string
@@ -665,8 +778,11 @@ export type Database = {
           deleted_at?: string | null
           delivered_count?: number
           id?: string
+          image_url?: string | null
           opened_count?: number
+          preview_text?: string | null
           recipient_count?: number
+          recipients?: Json | null
           scheduled_at?: string | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["newsletter_campaign_status"]
@@ -749,6 +865,30 @@ export type Database = {
           },
         ]
       }
+      newsletter_extra_emails: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          email: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          email: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       newsletter_tracking_events: {
         Row: {
           created_at: string
@@ -780,6 +920,205 @@ export type Database = {
             columns: ["email_id"]
             isOneToOne: false
             referencedRelation: "newsletter_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_logs: {
+        Row: {
+          body: string | null
+          category: Database["public"]["Enums"]["notification_category"]
+          channel: Database["public"]["Enums"]["notification_channel"]
+          client_id: string
+          data: Json | null
+          delivered_at: string | null
+          error_message: string | null
+          expo_receipt_id: string | null
+          id: string
+          resend_id: string | null
+          sent_at: string
+          status: Database["public"]["Enums"]["notification_status"]
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          category: Database["public"]["Enums"]["notification_category"]
+          channel: Database["public"]["Enums"]["notification_channel"]
+          client_id: string
+          data?: Json | null
+          delivered_at?: string | null
+          error_message?: string | null
+          expo_receipt_id?: string | null
+          id?: string
+          resend_id?: string | null
+          sent_at?: string
+          status?: Database["public"]["Enums"]["notification_status"]
+          title: string
+        }
+        Update: {
+          body?: string | null
+          category?: Database["public"]["Enums"]["notification_category"]
+          channel?: Database["public"]["Enums"]["notification_channel"]
+          client_id?: string
+          data?: Json | null
+          delivered_at?: string | null
+          error_message?: string | null
+          expo_receipt_id?: string | null
+          id?: string
+          resend_id?: string | null
+          sent_at?: string
+          status?: Database["public"]["Enums"]["notification_status"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          category: Database["public"]["Enums"]["notification_category"]
+          client_id: string
+          created_at: string
+          email_enabled: boolean
+          id: string
+          push_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["notification_category"]
+          client_id: string
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          push_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["notification_category"]
+          client_id?: string
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          push_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_queue: {
+        Row: {
+          attempts: number
+          body: string
+          category: Database["public"]["Enums"]["notification_category"]
+          channel: Database["public"]["Enums"]["notification_channel"]
+          client_id: string
+          created_at: string
+          data: Json | null
+          error_message: string | null
+          id: string
+          last_attempt_at: string | null
+          processed_at: string | null
+          scheduled_for: string
+          status: Database["public"]["Enums"]["notification_status"]
+          title: string
+        }
+        Insert: {
+          attempts?: number
+          body: string
+          category: Database["public"]["Enums"]["notification_category"]
+          channel: Database["public"]["Enums"]["notification_channel"]
+          client_id: string
+          created_at?: string
+          data?: Json | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          processed_at?: string | null
+          scheduled_for: string
+          status?: Database["public"]["Enums"]["notification_status"]
+          title: string
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          category?: Database["public"]["Enums"]["notification_category"]
+          channel?: Database["public"]["Enums"]["notification_channel"]
+          client_id?: string
+          created_at?: string
+          data?: Json | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          processed_at?: string | null
+          scheduled_for?: string
+          status?: Database["public"]["Enums"]["notification_status"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_reads: {
+        Row: {
+          announcement_id: string | null
+          client_id: string
+          id: string
+          notification_log_id: string | null
+          read_at: string
+        }
+        Insert: {
+          announcement_id?: string | null
+          client_id: string
+          id?: string
+          notification_log_id?: string | null
+          read_at?: string
+        }
+        Update: {
+          announcement_id?: string | null
+          client_id?: string
+          id?: string
+          notification_log_id?: string | null
+          read_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_reads_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_reads_notification_log_id_fkey"
+            columns: ["notification_log_id"]
+            isOneToOne: false
+            referencedRelation: "notification_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -1575,9 +1914,22 @@ export type Database = {
           studio_margin_cents: number
         }[]
       }
+      call_edge_function: {
+        Args: { p_body?: Json; p_function_name: string }
+        Returns: number
+      }
       can_access_finance: { Args: never; Returns: boolean }
+      can_send_re_engagement: {
+        Args: { p_client_id: string; p_days?: number }
+        Returns: boolean
+      }
       cancel_booking: { Args: { p_booking_id: string }; Returns: Json }
       cancel_event_booking: { Args: { p_booking_id: string }; Returns: Json }
+      client_has_active_push_tokens: {
+        Args: { p_client_id: string }
+        Returns: boolean
+      }
+      count_attended_lessons: { Args: { p_client_id: string }; Returns: number }
       create_user_profile: {
         Args: {
           full_name: string
@@ -1605,6 +1957,12 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cron_process_notification_queue: { Args: never; Returns: undefined }
+      cron_queue_birthday: { Args: never; Returns: undefined }
+      cron_queue_entries_low: { Args: never; Returns: undefined }
+      cron_queue_lesson_reminders: { Args: never; Returns: undefined }
+      cron_queue_re_engagement: { Args: never; Returns: undefined }
+      cron_queue_subscription_expiry: { Args: never; Returns: undefined }
       fix_missing_cancel_restore_entries: {
         Args: never
         Returns: {
@@ -1641,13 +1999,58 @@ export type Database = {
         }[]
       }
       get_my_client_id: { Args: never; Returns: string }
+      get_notification_channel: {
+        Args: {
+          p_category: Database["public"]["Enums"]["notification_category"]
+          p_client_id: string
+        }
+        Returns: Database["public"]["Enums"]["notification_channel"]
+      }
       get_revenue_breakdown: {
         Args: { p_month_end?: string; p_month_start?: string }
         Returns: Json
       }
+      get_unread_notifications_count: { Args: never; Returns: number }
       is_admin: { Args: never; Returns: boolean }
       is_finance: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      mark_all_notifications_read: { Args: never; Returns: number }
+      mark_notification_read: {
+        Args: { p_announcement_id?: string; p_notification_log_id?: string }
+        Returns: boolean
+      }
+      milestone_already_sent: {
+        Args: { p_client_id: string; p_milestone: number }
+        Returns: boolean
+      }
+      queue_announcement:
+        | {
+            Args: { p_announcement_id: string; p_body: string; p_title: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_announcement_id: string
+              p_body: string
+              p_scheduled_for?: string
+              p_title: string
+            }
+            Returns: Json
+          }
+      queue_birthday: { Args: never; Returns: Json }
+      queue_entries_low: { Args: never; Returns: Json }
+      queue_first_lesson: { Args: { p_client_id: string }; Returns: boolean }
+      queue_lesson_reminders: { Args: never; Returns: Json }
+      queue_milestone: {
+        Args: { p_client_id: string; p_milestone: number }
+        Returns: boolean
+      }
+      queue_new_event: {
+        Args: { p_event_date: string; p_event_id: string; p_event_name: string }
+        Returns: Json
+      }
+      queue_re_engagement: { Args: never; Returns: Json }
+      queue_subscription_expiry: { Args: never; Returns: Json }
       staff_book_event: {
         Args: { p_client_id: string; p_event_id: string }
         Returns: Json
@@ -1701,6 +2104,23 @@ export type Database = {
         | "clicked"
         | "bounced"
         | "complained"
+      notification_category:
+        | "lesson_reminder"
+        | "subscription_expiry"
+        | "entries_low"
+        | "re_engagement"
+        | "first_lesson"
+        | "milestone"
+        | "birthday"
+        | "new_event"
+        | "announcement"
+      notification_channel: "push" | "email"
+      notification_status:
+        | "pending"
+        | "sent"
+        | "delivered"
+        | "failed"
+        | "skipped"
       subscription_status: "active" | "completed" | "expired" | "canceled"
       user_role: "user" | "operator" | "admin" | "finance"
     }
@@ -1855,6 +2275,25 @@ export const Constants = {
         "clicked",
         "bounced",
         "complained",
+      ],
+      notification_category: [
+        "lesson_reminder",
+        "subscription_expiry",
+        "entries_low",
+        "re_engagement",
+        "first_lesson",
+        "milestone",
+        "birthday",
+        "new_event",
+        "announcement",
+      ],
+      notification_channel: ["push", "email"],
+      notification_status: [
+        "pending",
+        "sent",
+        "delivered",
+        "failed",
+        "skipped",
       ],
       subscription_status: ["active", "completed", "expired", "canceled"],
       user_role: ["user", "operator", "admin", "finance"],

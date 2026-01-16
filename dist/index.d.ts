@@ -518,6 +518,7 @@ type Database = {
                     skipped_steps: number[] | null;
                     status: Database["public"]["Enums"]["marketing_campaign_status"];
                     target: Json;
+                    test_client_id: string | null;
                     tone: Database["public"]["Enums"]["campaign_tone"];
                     total_engagement: number | null;
                     total_reach: number | null;
@@ -541,6 +542,7 @@ type Database = {
                     skipped_steps?: number[] | null;
                     status?: Database["public"]["Enums"]["marketing_campaign_status"];
                     target?: Json;
+                    test_client_id?: string | null;
                     tone?: Database["public"]["Enums"]["campaign_tone"];
                     total_engagement?: number | null;
                     total_reach?: number | null;
@@ -564,6 +566,7 @@ type Database = {
                     skipped_steps?: number[] | null;
                     status?: Database["public"]["Enums"]["marketing_campaign_status"];
                     target?: Json;
+                    test_client_id?: string | null;
                     tone?: Database["public"]["Enums"]["campaign_tone"];
                     total_engagement?: number | null;
                     total_reach?: number | null;
@@ -576,6 +579,13 @@ type Database = {
                         columns: ["created_by"];
                         isOneToOne: false;
                         referencedRelation: "profiles";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "campaigns_test_client_id_fkey";
+                        columns: ["test_client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
                         referencedColumns: ["id"];
                     }
                 ];
@@ -3373,6 +3383,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 skipped_steps: number[] | null;
                 status: Database["public"]["Enums"]["marketing_campaign_status"];
                 target: Json;
+                test_client_id: string | null;
                 tone: Database["public"]["Enums"]["campaign_tone"];
                 total_engagement: number | null;
                 total_reach: number | null;
@@ -3396,6 +3407,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 skipped_steps?: number[] | null;
                 status?: Database["public"]["Enums"]["marketing_campaign_status"];
                 target?: Json;
+                test_client_id?: string | null;
                 tone?: Database["public"]["Enums"]["campaign_tone"];
                 total_engagement?: number | null;
                 total_reach?: number | null;
@@ -3419,6 +3431,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 skipped_steps?: number[] | null;
                 status?: Database["public"]["Enums"]["marketing_campaign_status"];
                 target?: Json;
+                test_client_id?: string | null;
                 tone?: Database["public"]["Enums"]["campaign_tone"];
                 total_engagement?: number | null;
                 total_reach?: number | null;
@@ -3430,6 +3443,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["created_by"];
                 isOneToOne: false;
                 referencedRelation: "profiles";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "campaigns_test_client_id_fkey";
+                columns: ["test_client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
                 referencedColumns: ["id"];
             }];
         };
@@ -5896,6 +5915,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         skipped_steps: number[] | null;
         status: Database["public"]["Enums"]["marketing_campaign_status"];
         target: Json;
+        test_client_id: string | null;
         tone: Database["public"]["Enums"]["campaign_tone"];
         total_engagement: number | null;
         total_reach: number | null;
@@ -5919,6 +5939,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         skipped_steps?: number[] | null;
         status?: Database["public"]["Enums"]["marketing_campaign_status"];
         target?: Json;
+        test_client_id?: string | null;
         tone?: Database["public"]["Enums"]["campaign_tone"];
         total_engagement?: number | null;
         total_reach?: number | null;
@@ -5942,6 +5963,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         skipped_steps?: number[] | null;
         status?: Database["public"]["Enums"]["marketing_campaign_status"];
         target?: Json;
+        test_client_id?: string | null;
         tone?: Database["public"]["Enums"]["campaign_tone"];
         total_engagement?: number | null;
         total_reach?: number | null;
@@ -5953,6 +5975,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["created_by"];
         isOneToOne: false;
         referencedRelation: "profiles";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "campaigns_test_client_id_fkey";
+        columns: ["test_client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
         referencedColumns: ["id"];
     }];
 } | {
@@ -7391,6 +7419,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     isOneToOne: false;
     referencedRelation: "profiles";
     referencedColumns: ["id"];
+}, {
+    foreignKeyName: "campaigns_test_client_id_fkey";
+    columns: ["test_client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
+    referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "clients_profile_id_fkey";
     columns: ["profile_id"];
@@ -7908,6 +7942,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     skipped_steps: number[] | null;
     status: Database["public"]["Enums"]["marketing_campaign_status"];
     target: Json;
+    test_client_id: string | null;
     tone: Database["public"]["Enums"]["campaign_tone"];
     total_engagement: number | null;
     total_reach: number | null;
@@ -8353,6 +8388,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     skipped_steps: number[] | null;
     status: Database["public"]["Enums"]["marketing_campaign_status"];
     target: Json;
+    test_client_id: string | null;
     tone: Database["public"]["Enums"]["campaign_tone"];
     total_engagement: number | null;
     total_reach: number | null;
@@ -8798,6 +8834,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     skipped_steps: number[] | null;
     status: Database["public"]["Enums"]["marketing_campaign_status"];
     target: Json;
+    test_client_id: string | null;
     tone: Database["public"]["Enums"]["campaign_tone"];
     total_engagement: number | null;
     total_reach: number | null;
@@ -9243,6 +9280,7 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     skipped_steps: number[] | null;
     status: Database["public"]["Enums"]["marketing_campaign_status"];
     target: Json;
+    test_client_id: string | null;
     tone: Database["public"]["Enums"]["campaign_tone"];
     total_engagement: number | null;
     total_reach: number | null;
@@ -9697,6 +9735,7 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     skipped_steps: number[] | null;
     status: Database["public"]["Enums"]["marketing_campaign_status"];
     target: Json;
+    test_client_id: string | null;
     tone: Database["public"]["Enums"]["campaign_tone"];
     total_engagement: number | null;
     total_reach: number | null;

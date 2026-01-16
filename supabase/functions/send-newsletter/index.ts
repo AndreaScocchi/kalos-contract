@@ -10,7 +10,8 @@ interface Recipient {
 
 interface RequestBody {
   campaignId: string
-  recipients: Recipient[] // Recipients are now passed from frontend
+  recipients?: Recipient[] // Recipients passed from frontend (optional for marketing campaigns)
+  testClientId?: string // When set, send only to this client (for testing marketing campaigns)
 }
 
 interface ResponseBody {
@@ -209,7 +210,52 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!body.campaignId) {
       return jsonResponse({ ok: false, reason: 'MISSING_CAMPAIGN_ID' }, 400)
     }
-    if (!body.recipients || body.recipients.length === 0) {
+
+    // Determine recipients - either passed directly or fetched from clients
+    let recipients: Recipient[] = body.recipients || []
+
+    // If testClientId is provided, fetch only that client
+    if (body.testClientId && recipients.length === 0) {
+      const { data: testClient, error: testClientError } = await supabaseUser
+        .from('clients')
+        .select('id, first_name, last_name, email')
+        .eq('id', body.testClientId)
+        .single()
+
+      if (testClientError || !testClient || !testClient.email) {
+        return jsonResponse({ ok: false, reason: 'TEST_CLIENT_NOT_FOUND', message: 'Cliente test non trovato o senza email' }, 400)
+      }
+
+      recipients = [{
+        email: testClient.email,
+        name: `${testClient.first_name || ''} ${testClient.last_name || ''}`.trim() || 'Cliente',
+        clientId: testClient.id,
+      }]
+    }
+
+    // If still no recipients, fetch all active clients with email (for marketing campaigns without test)
+    if (recipients.length === 0) {
+      const { data: clients, error: clientsError } = await supabaseUser
+        .from('clients')
+        .select('id, first_name, last_name, email')
+        .not('email', 'is', null)
+        .is('deleted_at', null)
+        .eq('email_bounced', false)
+
+      if (clientsError || !clients) {
+        return jsonResponse({ ok: false, reason: 'CLIENTS_FETCH_ERROR' }, 500)
+      }
+
+      recipients = clients
+        .filter((c: { email: string | null }) => c.email)
+        .map((c: { id: string; first_name: string | null; last_name: string | null; email: string | null }) => ({
+          email: c.email!,
+          name: `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Cliente',
+          clientId: c.id,
+        }))
+    }
+
+    if (recipients.length === 0) {
       return jsonResponse({ ok: false, reason: 'NO_RECIPIENTS' }, 400)
     }
 
@@ -247,7 +293,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .eq('id', body.campaignId)
 
     // Create newsletter_emails records for all recipients
-    const emailRecords = body.recipients.map(recipient => ({
+    const emailRecords = recipients.map(recipient => ({
       campaign_id: body.campaignId,
       client_id: recipient.clientId || null,
       email_address: recipient.email,

@@ -2372,6 +2372,7 @@ export type Database = {
       cron_queue_lesson_reminders: { Args: never; Returns: undefined }
       cron_queue_re_engagement: { Args: never; Returns: undefined }
       cron_queue_subscription_expiry: { Args: never; Returns: undefined }
+      delete_campaign: { Args: { campaign_id: string }; Returns: undefined }
       fix_missing_cancel_restore_entries: {
         Args: never
         Returns: {

@@ -2426,6 +2426,12 @@ type Database = {
                 Args: never;
                 Returns: undefined;
             };
+            delete_campaign: {
+                Args: {
+                    campaign_id: string;
+                };
+                Returns: undefined;
+            };
             fix_missing_cancel_restore_entries: {
                 Args: never;
                 Returns: {
@@ -5201,6 +5207,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         };
         cron_queue_subscription_expiry: {
             Args: never;
+            Returns: undefined;
+        };
+        delete_campaign: {
+            Args: {
+                campaign_id: string;
+            };
             Returns: undefined;
         };
         fix_missing_cancel_restore_entries: {

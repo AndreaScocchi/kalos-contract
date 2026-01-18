@@ -1838,6 +1838,7 @@ export type Database = {
           instagram_business_id: string | null
           instagram_username: string | null
           is_active: boolean
+          is_test: boolean
           last_error: string | null
           last_used_at: string | null
           operator_id: string
@@ -1857,6 +1858,7 @@ export type Database = {
           instagram_business_id?: string | null
           instagram_username?: string | null
           is_active?: boolean
+          is_test?: boolean
           last_error?: string | null
           last_used_at?: string | null
           operator_id: string
@@ -1876,6 +1878,7 @@ export type Database = {
           instagram_business_id?: string | null
           instagram_username?: string | null
           is_active?: boolean
+          is_test?: boolean
           last_error?: string | null
           last_used_at?: string | null
           operator_id?: string

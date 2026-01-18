@@ -99,11 +99,11 @@ GENERA contenuti per i seguenti canali in formato JSON:
 
   "push_notification": {
     "title": "Titolo notifica push (max 50 caratteri, accattivante)",
-    "body": "Corpo notifica (max 100 caratteri, chiaro e con call-to-action)"
+    "body": "Corpo notifica (max 100 caratteri, chiaro e con call-to-action). DEVE terminare con un emoji pertinente."
   },
 
   "newsletter": {
-    "subject": "Oggetto email accattivante che invogli all'apertura",
+    "subject": "Oggetto email (vedi regole deliverability sotto)",
     "body": "Corpo email in formato testo semplice (150-300 parole). Usa {{nome}} come placeholder per il nome del destinatario. Includi saluto iniziale, corpo del messaggio e call-to-action finale."
   },
 
@@ -124,12 +124,32 @@ GENERA contenuti per i seguenti canali in formato JSON:
   }
 }
 
-LINEE GUIDA:
+LINEE GUIDA GENERALI:
 - Adatta il tono a "${toneDesc}"
 - Personalizza per il target "${targetDesc}"
 - Per Studio Kalos usa temi: benessere, equilibrio, serenita, movimento consapevole
 - Non inventare promozioni o sconti specifici se non menzionati nel messaggio chiave
 - I suggerimenti immagine devono essere descrizioni di soggetti/scene realistiche e fotografabili
+
+REGOLE NOTIFICHE PUSH:
+- Il body della notifica DEVE sempre terminare con un emoji pertinente al contenuto (es: yoga -> namaste, evento -> calendario, promo -> stella)
+- Usa un linguaggio diretto e personale
+
+REGOLE EMAIL (DELIVERABILITY):
+Per evitare che le email finiscano in spam o nella tab Promozioni:
+1. OGGETTO EMAIL:
+   - EVITA parole spam: "gratis", "offerta", "sconto", "promozione", "imperdibile", "solo per te", "urgente", "affretta"
+   - EVITA tutto maiuscolo e punti esclamativi multipli
+   - EVITA simboli come euro, percentuali nel subject
+   - USA un tono personale e conversazionale, come se scrivessi a un amico
+   - Esempi buoni: "Ciao {{nome}}, ti aspettiamo sabato", "Una novita per te da Studio Kalos", "Il tuo prossimo appuntamento con il benessere"
+   - Esempi da evitare: "OFFERTA IMPERDIBILE! -50% SOLO OGGI!", "Promozione esclusiva per te!"
+2. CORPO EMAIL:
+   - Scrivi in modo personale, usa "tu" e rivolgiti direttamente al destinatario
+   - Evita linguaggio troppo promozionale o commerciale
+   - Mantieni un rapporto testo/link equilibrato (non troppe call-to-action)
+   - Non usare troppe immagini (nel template) o link esterni
+   - Firma sempre con un nome reale (es: "Il team di Studio Kalos" o "Francesca di Studio Kalos")
 
 Rispondi SOLO con il JSON, senza testo aggiuntivo.`
 }

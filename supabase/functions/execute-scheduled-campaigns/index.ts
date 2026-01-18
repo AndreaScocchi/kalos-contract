@@ -11,6 +11,7 @@ interface ResponseBody {
 interface Campaign {
   id: string
   name: string
+  type: string
   status: string
   skipped_steps: number[]
   test_client_id: string | null
@@ -24,6 +25,9 @@ interface Content {
   status: string
   title: string | null
   body: string | null
+  image_url: string | null
+  link_url: string | null
+  link_label: string | null
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
@@ -33,33 +37,78 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    // This function is called by CRON, verify service role key
     const authHeader = req.headers.get('Authorization')
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
 
-    if (!authHeader || !authHeader.includes(serviceKey || '')) {
+    // Parse body for manual execution
+    let body: { campaignId?: string } = {}
+    try {
+      body = await req.json()
+    } catch {
+      // No body or invalid JSON - that's OK for CRON calls
+    }
+
+    const isServiceRole = authHeader?.includes(serviceKey || '')
+    let isStaffUser = false
+
+    // If not service role, check if it's a valid staff user
+    if (!isServiceRole && authHeader) {
+      const token = authHeader.replace('Bearer ', '')
+      const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') ?? '', {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+
+      // Verify user and check if staff
+      const { data: { user } } = await supabaseUser.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabaseUser
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        isStaffUser = profile?.role && ['admin', 'operator', 'finance'].includes(profile.role)
+      }
+    }
+
+    if (!isServiceRole && !isStaffUser) {
       return jsonResponse({ ok: false, reason: 'UNAUTHORIZED' }, 401)
     }
 
-    // Create admin client
+    // Create admin client for operations
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
+      supabaseUrl,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    // Get campaigns that are scheduled and due
-    const { data: campaigns, error: campaignsError } = await supabaseAdmin
+    // If campaignId is provided, execute that specific campaign
+    // Otherwise, execute all scheduled campaigns that are due (CRON mode)
+    let campaignQuery = supabaseAdmin
       .from('campaigns')
-      .select('id, name, status, skipped_steps, test_client_id')
-      .eq('status', 'scheduled')
-      .lte('scheduled_for', new Date().toISOString())
+      .select('id, name, type, status, skipped_steps, test_client_id')
       .is('deleted_at', null)
+
+    if (body.campaignId) {
+      // Manual execution - execute specific campaign regardless of status
+      campaignQuery = campaignQuery.eq('id', body.campaignId)
+    } else {
+      // CRON execution - only scheduled campaigns that are due
+      campaignQuery = campaignQuery
+        .eq('status', 'scheduled')
+        .lte('scheduled_for', new Date().toISOString())
+    }
+
+    const { data: campaigns, error: campaignsError } = await campaignQuery
 
     if (campaignsError) {
       console.error('Failed to fetch campaigns:', campaignsError)
       return jsonResponse({ ok: false, reason: 'FETCH_FAILED' }, 500)
     }
+
+    console.log('Campaigns found:', JSON.stringify(campaigns, null, 2))
 
     if (!campaigns || campaigns.length === 0) {
       return jsonResponse({ ok: true, message: 'No campaigns to execute', executed_count: 0 }, 200)
@@ -117,7 +166,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
             // Execute based on content type
             switch (content.content_type) {
               case 'push_notification':
-                await executePushNotification(supabaseAdmin, content, campaign.test_client_id)
+                await executePushNotification(supabaseAdmin, campaign, content)
                 break
 
               case 'newsletter':
@@ -140,7 +189,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
             }
 
           } catch (err) {
-            console.error(`Error executing content ${content.id}:`, err)
+            const errorMessage = err instanceof Error ? err.message : String(err)
+            console.error(`Error executing content ${content.id} (type: ${content.content_type}):`, errorMessage)
             hasErrors = true
 
             // Update content status to failed
@@ -148,7 +198,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
               .from('campaign_contents')
               .update({
                 status: 'failed',
-                error_message: (err as Error).message,
+                error_message: errorMessage,
                 retry_count: (content as unknown as { retry_count: number }).retry_count + 1,
               })
               .eq('id', content.id)
@@ -194,44 +244,106 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
 async function executePushNotification(
   supabase: ReturnType<typeof createClient>,
-  content: Content,
-  testClientId: string | null
+  campaign: Campaign,
+  content: Content
 ): Promise<void> {
-  // Insert into notification_queue (existing system)
-  // If testClientId is set, target only that client
-  const notificationData = testClientId
-    ? {
-        category: 'announcement',
-        title: content.title,
-        body: content.body,
-        target_type: 'specific_client',
-        client_id: testClientId,
-        status: 'pending',
-        metadata: {
-          campaign_content_id: content.id,
-          campaign_id: content.campaign_id,
-          is_test: true,
-        },
-      }
-    : {
-        category: 'announcement',
-        title: content.title,
-        body: content.body,
-        target_type: 'all_clients',
-        status: 'pending',
-        metadata: {
-          campaign_content_id: content.id,
-          campaign_id: content.campaign_id,
-        },
-      }
+  const testClientId = campaign.test_client_id
+
+  // Get target clients
+  let clientIds: string[] = []
+
+  if (testClientId) {
+    // Test mode: only send to specific client
+    clientIds = [testClientId]
+  } else {
+    // Production mode: get all active clients
+    const { data: clients, error: clientsError } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('is_active', true)
+      .is('deleted_at', null)
+
+    if (clientsError) {
+      throw new Error(`Failed to fetch clients: ${clientsError.message}`)
+    }
+
+    clientIds = (clients || []).map((c: { id: string }) => c.id)
+  }
+
+  if (clientIds.length === 0) {
+    console.log('No clients to notify')
+    await supabase
+      .from('campaign_contents')
+      .update({ status: 'sent', sent_at: new Date().toISOString() })
+      .eq('id', content.id)
+    return
+  }
+
+  // Map campaign type to announcement category
+  const categoryMap: Record<string, string> = {
+    'promo': 'promotion',
+    'evento': 'event',
+    'annuncio': 'general',
+    'corso_nuovo': 'course',
+  }
+  const announcementCategory = categoryMap[campaign.type] || 'general'
+
+  // Create an announcement record so it appears in the app's notification list
+  // Only create if not in test mode (to avoid polluting the announcements table)
+  let announcementId: string | null = null
+  if (!testClientId) {
+    const { data: announcement, error: announcementError } = await supabase
+      .from('announcements')
+      .insert({
+        title: content.title || 'Notifica',
+        body: content.body || '',
+        category: announcementCategory,
+        image_url: content.image_url,
+        link_url: content.link_url,
+        link_label: content.link_label,
+        is_active: true,
+        starts_at: new Date().toISOString(),
+        ends_at: null, // No expiration - stays visible until manually deactivated
+      })
+      .select('id')
+      .single()
+
+    if (announcementError) {
+      console.error('Failed to create announcement:', announcementError)
+      // Don't throw - push notifications can still be sent without the announcement
+    } else {
+      announcementId = announcement?.id
+      console.log(`Created announcement ${announcementId} for campaign push notification`)
+    }
+  }
+
+  // Create notification queue entries for each client
+  const now = new Date().toISOString()
+  const notifications = clientIds.map(clientId => ({
+    client_id: clientId,
+    category: 'announcement' as const,
+    channel: 'push' as const,
+    title: content.title || 'Notifica',
+    body: content.body || '',
+    scheduled_for: now,
+    status: 'pending' as const,
+    data: {
+      campaign_content_id: content.id,
+      campaign_id: content.campaign_id,
+      announcement_id: announcementId,
+      is_test: !!testClientId,
+    },
+  }))
 
   const { error } = await supabase
     .from('notification_queue')
-    .insert(notificationData)
+    .insert(notifications)
 
   if (error) {
-    throw new Error(`Failed to queue push notification: ${error.message}`)
+    throw new Error(`Failed to queue push notifications: ${error.message}`)
   }
+
+  console.log(`Queued ${notifications.length} push notifications`)
 
   // Update content status
   await supabase
@@ -242,7 +354,7 @@ async function executePushNotification(
 
 async function executeNewsletter(
   supabase: ReturnType<typeof createClient>,
-  campaign: Campaign,
+  _campaign: Campaign,
   content: Content,
   testClientId: string | null
 ): Promise<void> {
@@ -250,15 +362,9 @@ async function executeNewsletter(
   const { data: newsletterCampaign, error: createError } = await supabase
     .from('newsletter_campaigns')
     .insert({
-      subject: content.title,
-      body: content.body,
+      subject: content.title || 'Newsletter',
+      content: content.body || '',
       status: 'draft',
-      metadata: {
-        campaign_content_id: content.id,
-        campaign_id: content.campaign_id,
-        test_client_id: testClientId,
-        is_test: !!testClientId,
-      },
     })
     .select()
     .single()
@@ -266,6 +372,8 @@ async function executeNewsletter(
   if (createError || !newsletterCampaign) {
     throw new Error(`Failed to create newsletter campaign: ${createError?.message}`)
   }
+
+  console.log(`Created newsletter campaign ${newsletterCampaign.id} for content ${content.id}, testClientId: ${testClientId}`)
 
   // Update content with newsletter reference
   await supabase

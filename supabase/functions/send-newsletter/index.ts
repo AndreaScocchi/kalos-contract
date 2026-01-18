@@ -12,6 +12,7 @@ interface RequestBody {
   campaignId: string
   recipients?: Recipient[] // Recipients passed from frontend (optional for marketing campaigns)
   testClientId?: string // When set, send only to this client (for testing marketing campaigns)
+  skipAtomicityCheck?: boolean // Skip the pre-flight test (for retry scenarios)
 }
 
 interface ResponseBody {
@@ -25,6 +26,80 @@ interface ResponseBody {
 // Rate limiting: Resend allows 2 requests per second
 // We send emails sequentially with 1000ms delay to stay safely under the limit
 const EMAIL_DELAY_MS = 1000
+
+// Atomicity gate: Admin client for pre-flight testing
+// Before sending to all recipients, we verify both email and push work
+const ATOMICITY_TEST_EMAIL = 'scocchiello@gmail.com'
+const ATOMICITY_TEST_CLIENT_ID = '23f253f5-9ef9-40da-b32a-4dc5e4370f3e'
+
+interface WebPushSubscription {
+  endpoint: string
+  keys: {
+    p256dh: string
+    auth: string
+  }
+}
+
+// Send Web Push notification (duplicated from process-notification-queue for atomicity test)
+async function sendWebPush(
+  subscription: WebPushSubscription,
+  payload: { title: string; body: string; data?: Record<string, unknown> }
+): Promise<{ success: boolean; error?: string }> {
+  const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
+  const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
+  const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:info@kalosstudio.it'
+
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    console.error('VAPID keys not configured')
+    return { success: false, error: 'VAPID keys not configured' }
+  }
+
+  try {
+    const webpush = await import('npm:web-push@3.6.7')
+
+    webpush.default.setVapidDetails(
+      vapidSubject,
+      vapidPublicKey,
+      vapidPrivateKey
+    )
+
+    const pushPayload = JSON.stringify({
+      title: payload.title,
+      body: payload.body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: payload.data || {},
+    })
+
+    await webpush.default.sendNotification(
+      {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: subscription.keys.p256dh,
+          auth: subscription.keys.auth,
+        },
+      },
+      pushPayload
+    )
+
+    return { success: true }
+  } catch (error) {
+    console.error('Web push error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+function isWebPushSubscription(token: string): WebPushSubscription | null {
+  try {
+    const parsed = JSON.parse(token)
+    if (parsed.endpoint && parsed.keys?.p256dh && parsed.keys?.auth) {
+      return parsed as WebPushSubscription
+    }
+    return null
+  } catch {
+    return null
+  }
+}
 
 // Generate unsubscribe token (must match unsubscribe-newsletter function)
 async function generateUnsubscribeToken(email: string): Promise<string> {
@@ -192,17 +267,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: false, reason: 'UNAUTHORIZED' }, 401)
     }
 
-    // Create client with the user's token to verify they are staff
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const isServiceRole = authHeader.includes(serviceKey || '')
+
+    // Create client with the user's token to verify they are staff (unless service role)
     const supabaseUser = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     )
 
-    // Verify user is staff
-    const { data: isStaff, error: staffError } = await supabaseUser.rpc('is_staff')
-    if (staffError || !isStaff) {
-      return jsonResponse({ ok: false, reason: 'UNAUTHORIZED' }, 403)
+    // Verify user is staff (skip if service role)
+    if (!isServiceRole) {
+      const { data: isStaff, error: staffError } = await supabaseUser.rpc('is_staff')
+      if (staffError || !isStaff) {
+        return jsonResponse({ ok: false, reason: 'UNAUTHORIZED' }, 403)
+      }
     }
 
     // Get request body
@@ -211,14 +291,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: false, reason: 'MISSING_CAMPAIGN_ID' }, 400)
     }
 
+    // Create admin client with service_role key (used for all DB operations)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
     // Determine recipients - either passed directly or fetched from clients
     let recipients: Recipient[] = body.recipients || []
 
     // If testClientId is provided, fetch only that client
     if (body.testClientId && recipients.length === 0) {
-      const { data: testClient, error: testClientError } = await supabaseUser
+      const { data: testClient, error: testClientError } = await supabaseAdmin
         .from('clients')
-        .select('id, first_name, last_name, email')
+        .select('id, full_name, email')
         .eq('id', body.testClientId)
         .single()
 
@@ -228,16 +315,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       recipients = [{
         email: testClient.email,
-        name: `${testClient.first_name || ''} ${testClient.last_name || ''}`.trim() || 'Cliente',
+        name: testClient.full_name || 'Cliente',
         clientId: testClient.id,
       }]
     }
 
     // If still no recipients, fetch all active clients with email (for marketing campaigns without test)
     if (recipients.length === 0) {
-      const { data: clients, error: clientsError } = await supabaseUser
+      const { data: clients, error: clientsError } = await supabaseAdmin
         .from('clients')
-        .select('id, first_name, last_name, email')
+        .select('id, full_name, email')
         .not('email', 'is', null)
         .is('deleted_at', null)
         .eq('email_bounced', false)
@@ -248,9 +335,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       recipients = clients
         .filter((c: { email: string | null }) => c.email)
-        .map((c: { id: string; first_name: string | null; last_name: string | null; email: string | null }) => ({
+        .map((c: { id: string; full_name: string | null; email: string | null }) => ({
           email: c.email!,
-          name: `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Cliente',
+          name: c.full_name || 'Cliente',
           clientId: c.id,
         }))
     }
@@ -258,13 +345,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (recipients.length === 0) {
       return jsonResponse({ ok: false, reason: 'NO_RECIPIENTS' }, 400)
     }
-
-    // Create admin client with service_role key
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
 
     // Get campaign
     const { data: campaign, error: campaignError } = await supabaseAdmin
@@ -284,6 +364,118 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
     if (campaign.status === 'sending') {
       return jsonResponse({ ok: false, reason: 'CAMPAIGN_ALREADY_SENDING' }, 400)
+    }
+
+    // ============================================================
+    // ATOMICITY GATE: Pre-flight test before sending to everyone
+    // We send a test email + push notification to the admin.
+    // If either fails, we abort the entire campaign.
+    // ============================================================
+    if (!body.skipAtomicityCheck && !body.testClientId) {
+      console.log('Running atomicity pre-flight check...')
+
+      const fromEmail = getFromEmail()
+      const imagePublicUrl = getImagePublicUrl(campaign.image_url)
+
+      // Prepare test email content
+      const testPersonalizedText = replaceTemplateVariables(campaign.content, {
+        nome: 'Admin Test',
+        client_name: 'Admin Test',
+        studio_name: 'Studio Kalòs',
+      })
+      const testToken = await generateUnsubscribeToken(ATOMICITY_TEST_EMAIL)
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+      const testUnsubscribeUrl = `${supabaseUrl}/functions/v1/unsubscribe-newsletter?email=${encodeURIComponent(ATOMICITY_TEST_EMAIL)}&token=${testToken}`
+      const testHtml = wrapTextInHtml(testPersonalizedText, testUnsubscribeUrl, imagePublicUrl, campaign.preview_text)
+
+      // 1. Test EMAIL delivery
+      console.log(`[Atomicity] Testing email to ${ATOMICITY_TEST_EMAIL}...`)
+      const { error: testEmailError } = await sendEmail({
+        from: fromEmail,
+        to: ATOMICITY_TEST_EMAIL,
+        subject: `[TEST] ${campaign.subject}`,
+        html: testHtml,
+        text: testPersonalizedText,
+        tags: [
+          { name: 'campaign_id', value: body.campaignId },
+          { name: 'atomicity_test', value: 'true' },
+        ],
+      })
+
+      if (testEmailError) {
+        console.error('[Atomicity] Email test FAILED:', testEmailError)
+        return jsonResponse({
+          ok: false,
+          reason: 'ATOMICITY_EMAIL_FAILED',
+          message: `Test email fallita: ${testEmailError.message}. Campagna bloccata.`
+        }, 500)
+      }
+      console.log('[Atomicity] Email test PASSED')
+
+      // 2. Test PUSH notification delivery
+      console.log(`[Atomicity] Testing push notification to client ${ATOMICITY_TEST_CLIENT_ID}...`)
+
+      // Get admin's push token
+      const { data: adminTokens, error: tokenError } = await supabaseAdmin
+        .from('device_tokens')
+        .select('expo_push_token')
+        .eq('client_id', ATOMICITY_TEST_CLIENT_ID)
+        .eq('is_active', true)
+
+      if (tokenError) {
+        console.error('[Atomicity] Failed to fetch admin tokens:', tokenError)
+        return jsonResponse({
+          ok: false,
+          reason: 'ATOMICITY_PUSH_TOKEN_ERROR',
+          message: `Errore nel recupero token push admin: ${tokenError.message}. Campagna bloccata.`
+        }, 500)
+      }
+
+      if (!adminTokens || adminTokens.length === 0) {
+        console.error('[Atomicity] No active push tokens for admin')
+        return jsonResponse({
+          ok: false,
+          reason: 'ATOMICITY_NO_PUSH_TOKEN',
+          message: 'Nessun token push attivo per l\'admin. Registra le notifiche push nell\'app prima di inviare campagne.'
+        }, 500)
+      }
+
+      // Try to send push to at least one token
+      let pushSuccess = false
+      let pushError = ''
+
+      for (const tokenRecord of adminTokens) {
+        const subscription = isWebPushSubscription(tokenRecord.expo_push_token)
+        if (subscription) {
+          const result = await sendWebPush(subscription, {
+            title: `[TEST] ${campaign.subject}`,
+            body: 'Test di verifica pre-invio campagna',
+            data: { campaignId: body.campaignId, test: true },
+          })
+
+          if (result.success) {
+            pushSuccess = true
+            break
+          } else {
+            pushError = result.error || 'Unknown push error'
+          }
+        }
+      }
+
+      if (!pushSuccess) {
+        console.error('[Atomicity] Push test FAILED:', pushError)
+        return jsonResponse({
+          ok: false,
+          reason: 'ATOMICITY_PUSH_FAILED',
+          message: `Test notifica push fallita: ${pushError}. Campagna bloccata.`
+        }, 500)
+      }
+      console.log('[Atomicity] Push test PASSED')
+
+      console.log('[Atomicity] All pre-flight checks PASSED. Proceeding with campaign send.')
+
+      // Small delay after test to ensure rate limits are respected
+      await delay(EMAIL_DELAY_MS)
     }
 
     // Update campaign status to 'sending'

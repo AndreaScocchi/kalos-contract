@@ -4,6 +4,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 interface RequestBody {
   contentId: string
   scheduledPublishTime?: number // Unix timestamp
+  isTest?: boolean // Use test social connection instead of production
 }
 
 interface ResponseBody {
@@ -86,17 +87,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: false, reason: 'INVALID_PLATFORM' }, 400)
     }
 
-    // Get social connection
+    // Determine if we should use test or production connection
+    const isTest = body.isTest ?? false
+
+    // Get social connection (filtered by is_test flag)
     const { data: connection, error: connError } = await supabaseAdmin
       .from('social_connections')
       .select('*')
       .eq('platform', platform)
       .eq('is_active', true)
+      .eq('is_test', isTest)
       .single()
 
     if (connError || !connection) {
-      console.error('No active connection found:', connError)
-      return jsonResponse({ ok: false, reason: 'NO_CONNECTION' }, 400)
+      console.error(`No active ${isTest ? 'test' : 'production'} connection found:`, connError)
+      return jsonResponse({
+        ok: false,
+        reason: 'NO_CONNECTION',
+        message: isTest
+          ? 'Nessun account Meta di test collegato. Collega un account di test nelle impostazioni.'
+          : 'Nessun account Meta di produzione collegato. Collega un account nelle impostazioni.'
+      }, 400)
     }
 
     // Check token expiry

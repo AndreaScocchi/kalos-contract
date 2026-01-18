@@ -59,15 +59,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return redirectWithError('MISSING_PARAMS', 'Missing code or state parameter')
     }
 
-    // Parse state (contains operator_id and redirect URL)
-    let stateData: { operator_id: string; redirect_url: string }
+    // Parse state (contains operator_id, redirect URL, and is_test flag)
+    let stateData: { operator_id: string; redirect_url: string; is_test?: boolean }
     try {
       stateData = JSON.parse(atob(state))
     } catch {
       return redirectWithError('INVALID_STATE', 'Could not parse state parameter')
     }
 
-    const { operator_id, redirect_url } = stateData
+    const { operator_id, redirect_url, is_test = false } = stateData
 
     // Get app credentials
     const appId = Deno.env.get('META_APP_ID')
@@ -155,6 +155,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         token_expires_at: tokenExpiresAt,
         permissions: ['pages_manage_posts', 'pages_read_engagement'],
         is_active: true,
+        is_test,
       })
 
       // Instagram connection (if business account linked)
@@ -172,14 +173,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
           token_expires_at: tokenExpiresAt,
           permissions: ['instagram_basic', 'instagram_content_publish', 'instagram_manage_insights'],
           is_active: true,
+          is_test,
         })
       }
     }
 
-    // Upsert connections
+    // Upsert connections (unique constraint includes is_test)
     const { error: upsertError } = await supabaseAdmin
       .from('social_connections')
-      .upsert(connections, { onConflict: 'operator_id,platform' })
+      .upsert(connections, { onConflict: 'operator_id,platform,is_test' })
 
     if (upsertError) {
       console.error('Failed to save connections:', upsertError)
@@ -190,6 +192,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const successUrl = new URL(redirect_url)
     successUrl.searchParams.set('meta_connected', 'true')
     successUrl.searchParams.set('pages_count', String(pagesData.data.length))
+    successUrl.searchParams.set('is_test', String(is_test))
 
     return Response.redirect(successUrl.toString(), 302)
 

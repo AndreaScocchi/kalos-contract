@@ -188,26 +188,120 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return redirectWithError('SAVE_FAILED', 'Could not save social connections')
     }
 
-    // Redirect back to management app with success
-    const successUrl = new URL(redirect_url)
-    successUrl.searchParams.set('meta_connected', 'true')
-    successUrl.searchParams.set('pages_count', String(pagesData.data.length))
-    successUrl.searchParams.set('is_test', String(is_test))
-
-    return Response.redirect(successUrl.toString(), 302)
+    // Return HTML page that communicates with opener and closes
+    return createCallbackPage({
+      success: true,
+      is_test,
+      pages_count: pagesData.data.length,
+    })
 
   } catch (error) {
     console.error('Meta OAuth error:', error)
-    return redirectWithError('INTERNAL_ERROR', (error as Error).message)
+    return createCallbackPage({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      error_message: (error as Error).message,
+    })
   }
 })
 
-function redirectWithError(reason: string, message: string): Response {
-  // Redirect to management app with error
-  const errorUrl = new URL(Deno.env.get('MANAGEMENT_URL') || 'https://gestionale.kalosstudio.it')
-  errorUrl.pathname = '/marketing'
-  errorUrl.searchParams.set('meta_error', reason)
-  errorUrl.searchParams.set('meta_error_message', message)
+interface CallbackResult {
+  success: boolean
+  is_test?: boolean
+  pages_count?: number
+  error?: string
+  error_message?: string
+}
 
-  return Response.redirect(errorUrl.toString(), 302)
+function createCallbackPage(result: CallbackResult): Response {
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Connessione Meta</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      text-align: center;
+      padding: 40px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    h2 { margin: 0 0 10px; }
+    p { margin: 0; opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="spinner"></div>
+    <h2>${result.success ? 'Connessione riuscita!' : 'Errore di connessione'}</h2>
+    <p>${result.success ? 'Chiusura in corso...' : result.error_message || 'Si è verificato un errore'}</p>
+  </div>
+  <script>
+    const result = ${JSON.stringify(result)};
+
+    // Send message to opener window
+    if (window.opener) {
+      window.opener.postMessage({
+        type: 'META_OAUTH_CALLBACK',
+        ...result
+      }, '*');
+
+      // Close this window after a short delay
+      setTimeout(() => {
+        window.close();
+      }, 1500);
+    } else {
+      // Fallback: redirect if no opener
+      const baseUrl = '${Deno.env.get('MANAGEMENT_URL') || 'https://gestionale.kalosstudio.it'}';
+      const params = new URLSearchParams();
+      if (result.success) {
+        params.set('meta_connected', 'true');
+        params.set('is_test', String(result.is_test));
+      } else {
+        params.set('meta_error', result.error || 'UNKNOWN');
+        params.set('meta_error_message', result.error_message || '');
+      }
+      window.location.href = baseUrl + '/marketing/wizard?' + params.toString();
+    }
+  </script>
+</body>
+</html>
+  `.trim()
+
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+    },
+  })
+}
+
+function redirectWithError(reason: string, message: string): Response {
+  return createCallbackPage({
+    success: false,
+    error: reason,
+    error_message: message,
+  })
 }

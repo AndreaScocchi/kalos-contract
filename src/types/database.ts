@@ -95,6 +95,7 @@ export type Database = {
           is_active: boolean
           link_label: string | null
           link_url: string | null
+          marketing_campaign_id: string | null
           starts_at: string
           title: string
           updated_at: string
@@ -110,6 +111,7 @@ export type Database = {
           is_active?: boolean
           link_label?: string | null
           link_url?: string | null
+          marketing_campaign_id?: string | null
           starts_at?: string
           title: string
           updated_at?: string
@@ -125,11 +127,20 @@ export type Database = {
           is_active?: boolean
           link_label?: string | null
           link_url?: string | null
+          marketing_campaign_id?: string | null
           starts_at?: string
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "announcements_marketing_campaign_id_fkey"
+            columns: ["marketing_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       auth_email_logs: {
         Row: {
@@ -422,6 +433,7 @@ export type Database = {
           retry_count: number | null
           scheduled_for: string | null
           sent_at: string | null
+          social_connection_id: string | null
           status: Database["public"]["Enums"]["content_status"]
           title: string | null
           updated_at: string
@@ -452,6 +464,7 @@ export type Database = {
           retry_count?: number | null
           scheduled_for?: string | null
           sent_at?: string | null
+          social_connection_id?: string | null
           status?: Database["public"]["Enums"]["content_status"]
           title?: string | null
           updated_at?: string
@@ -482,6 +495,7 @@ export type Database = {
           retry_count?: number | null
           scheduled_for?: string | null
           sent_at?: string | null
+          social_connection_id?: string | null
           status?: Database["public"]["Enums"]["content_status"]
           title?: string | null
           updated_at?: string
@@ -500,6 +514,13 @@ export type Database = {
             columns: ["newsletter_campaign_id"]
             isOneToOne: false
             referencedRelation: "newsletter_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_contents_social_connection_id_fkey"
+            columns: ["social_connection_id"]
+            isOneToOne: false
+            referencedRelation: "social_connections"
             referencedColumns: ["id"]
           },
         ]
@@ -1076,6 +1097,7 @@ export type Database = {
           delivered_count: number
           id: string
           image_url: string | null
+          marketing_campaign_id: string | null
           opened_count: number
           preview_text: string | null
           recipient_count: number
@@ -1097,6 +1119,7 @@ export type Database = {
           delivered_count?: number
           id?: string
           image_url?: string | null
+          marketing_campaign_id?: string | null
           opened_count?: number
           preview_text?: string | null
           recipient_count?: number
@@ -1118,6 +1141,7 @@ export type Database = {
           delivered_count?: number
           id?: string
           image_url?: string | null
+          marketing_campaign_id?: string | null
           opened_count?: number
           preview_text?: string | null
           recipient_count?: number
@@ -1134,6 +1158,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "newsletter_campaigns_marketing_campaign_id_fkey"
+            columns: ["marketing_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]

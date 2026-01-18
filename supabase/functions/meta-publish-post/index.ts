@@ -91,13 +91,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const isTest = body.isTest ?? false
 
     // Get social connection (filtered by is_test flag)
-    const { data: connection, error: connError } = await supabaseAdmin
+    // Use limit(1) instead of single() to handle cases where multiple pages exist
+    const { data: connections, error: connError } = await supabaseAdmin
       .from('social_connections')
       .select('*')
       .eq('platform', platform)
       .eq('is_active', true)
       .eq('is_test', isTest)
-      .single()
+      .order('last_used_at', { ascending: false, nullsFirst: false })
+      .limit(1)
+
+    const connection = connections?.[0]
 
     if (connError || !connection) {
       console.error(`No active ${isTest ? 'test' : 'production'} connection found:`, connError)

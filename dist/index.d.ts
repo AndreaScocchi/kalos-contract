@@ -1834,6 +1834,7 @@ type Database = {
                     instagram_business_id: string | null;
                     instagram_username: string | null;
                     is_active: boolean;
+                    is_test: boolean;
                     last_error: string | null;
                     last_used_at: string | null;
                     operator_id: string;
@@ -1853,6 +1854,7 @@ type Database = {
                     instagram_business_id?: string | null;
                     instagram_username?: string | null;
                     is_active?: boolean;
+                    is_test?: boolean;
                     last_error?: string | null;
                     last_used_at?: string | null;
                     operator_id: string;
@@ -1872,6 +1874,7 @@ type Database = {
                     instagram_business_id?: string | null;
                     instagram_username?: string | null;
                     is_active?: boolean;
+                    is_test?: boolean;
                     last_error?: string | null;
                     last_used_at?: string | null;
                     operator_id?: string;
@@ -4635,6 +4638,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 instagram_business_id: string | null;
                 instagram_username: string | null;
                 is_active: boolean;
+                is_test: boolean;
                 last_error: string | null;
                 last_used_at: string | null;
                 operator_id: string;
@@ -4654,6 +4658,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 instagram_business_id?: string | null;
                 instagram_username?: string | null;
                 is_active?: boolean;
+                is_test?: boolean;
                 last_error?: string | null;
                 last_used_at?: string | null;
                 operator_id: string;
@@ -4673,6 +4678,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 instagram_business_id?: string | null;
                 instagram_username?: string | null;
                 is_active?: boolean;
+                is_test?: boolean;
                 last_error?: string | null;
                 last_used_at?: string | null;
                 operator_id?: string;
@@ -7151,6 +7157,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         instagram_business_id: string | null;
         instagram_username: string | null;
         is_active: boolean;
+        is_test: boolean;
         last_error: string | null;
         last_used_at: string | null;
         operator_id: string;
@@ -7170,6 +7177,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         instagram_business_id?: string | null;
         instagram_username?: string | null;
         is_active?: boolean;
+        is_test?: boolean;
         last_error?: string | null;
         last_used_at?: string | null;
         operator_id: string;
@@ -7189,6 +7197,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         instagram_business_id?: string | null;
         instagram_username?: string | null;
         is_active?: boolean;
+        is_test?: boolean;
         last_error?: string | null;
         last_used_at?: string | null;
         operator_id?: string;
@@ -8216,6 +8225,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     instagram_business_id: string | null;
     instagram_username: string | null;
     is_active: boolean;
+    is_test: boolean;
     last_error: string | null;
     last_used_at: string | null;
     operator_id: string;
@@ -8662,6 +8672,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     instagram_business_id: string | null;
     instagram_username: string | null;
     is_active: boolean;
+    is_test: boolean;
     last_error: string | null;
     last_used_at: string | null;
     operator_id: string;
@@ -9108,6 +9119,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     instagram_business_id: string | null;
     instagram_username: string | null;
     is_active: boolean;
+    is_test: boolean;
     last_error: string | null;
     last_used_at: string | null;
     operator_id: string;
@@ -9554,6 +9566,7 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     instagram_business_id: string | null;
     instagram_username: string | null;
     is_active: boolean;
+    is_test: boolean;
     last_error: string | null;
     last_used_at: string | null;
     operator_id: string;
@@ -10009,6 +10022,7 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     instagram_business_id: string | null;
     instagram_username: string | null;
     is_active: boolean;
+    is_test: boolean;
     last_error: string | null;
     last_used_at: string | null;
     operator_id: string;

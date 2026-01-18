@@ -304,6 +304,7 @@ async function executePushNotification(
         is_active: true,
         starts_at: new Date().toISOString(),
         ends_at: null, // No expiration - stays visible until manually deactivated
+        marketing_campaign_id: campaign.id, // Link back to marketing campaign
       })
       .select('id')
       .single()
@@ -354,7 +355,7 @@ async function executePushNotification(
 
 async function executeNewsletter(
   supabase: ReturnType<typeof createClient>,
-  _campaign: Campaign,
+  campaign: Campaign,
   content: Content,
   testClientId: string | null
 ): Promise<void> {
@@ -365,6 +366,7 @@ async function executeNewsletter(
       subject: content.title || 'Newsletter',
       content: content.body || '',
       status: 'draft',
+      marketing_campaign_id: campaign.id, // Link back to marketing campaign
     })
     .select()
     .single()

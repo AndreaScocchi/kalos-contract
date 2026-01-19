@@ -269,6 +269,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         body: generatedContent.brief,
         ai_generated_body: generatedContent.brief,
         status: 'generated',
+        sequence_index: 0,
       })
     }
 
@@ -282,6 +283,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         ai_generated_title: generatedContent.push_notification.title,
         ai_generated_body: generatedContent.push_notification.body,
         status: 'generated',
+        sequence_index: 0,
       })
     }
 
@@ -295,6 +297,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         ai_generated_title: generatedContent.newsletter.subject,
         ai_generated_body: generatedContent.newsletter.body,
         status: 'generated',
+        sequence_index: 0,
       })
     }
 
@@ -311,6 +314,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         ai_generated_hashtags: generatedContent.instagram_post.hashtags,
         ai_generated_image_suggestions: generatedContent.instagram_post.imageSuggestions,
         status: 'generated',
+        sequence_index: 0,
       })
     }
 
@@ -325,38 +329,47 @@ Deno.serve(async (req: Request): Promise<Response> => {
         ai_generated_body: generatedContent.instagram_story.body,
         ai_generated_image_suggestions: generatedContent.instagram_story.imageSuggestions,
         status: 'generated',
+        sequence_index: 0,
       })
     }
 
-    // Facebook post
+    // Facebook post (handle both object and string formats from AI)
     if (generatedContent.facebook_post) {
+      const fbPost = generatedContent.facebook_post
+      const fbBody = typeof fbPost === 'string' ? fbPost : fbPost.body
+      const fbImageSuggestions = typeof fbPost === 'string' ? [] : (fbPost.imageSuggestions || [])
       contentRecords.push({
         campaign_id: body.campaignId,
         content_type: 'facebook_post',
         platform: 'facebook',
-        body: generatedContent.facebook_post.body,
-        image_suggestions: generatedContent.facebook_post.imageSuggestions,
-        ai_generated_body: generatedContent.facebook_post.body,
-        ai_generated_image_suggestions: generatedContent.facebook_post.imageSuggestions,
+        body: fbBody,
+        image_suggestions: fbImageSuggestions,
+        ai_generated_body: fbBody,
+        ai_generated_image_suggestions: fbImageSuggestions,
         status: 'generated',
+        sequence_index: 0,
       })
     }
 
     // Upsert contents (delete existing if regenerating)
     if (body.regenerate) {
-      await supabaseAdmin
+      const { error: deleteError } = await supabaseAdmin
         .from('campaign_contents')
         .delete()
         .eq('campaign_id', body.campaignId)
+      if (deleteError) {
+        console.error('Error deleting existing contents:', deleteError)
+      }
     }
 
     const { error: insertError } = await supabaseAdmin
       .from('campaign_contents')
-      .upsert(contentRecords, { onConflict: 'campaign_id,content_type' })
+      .upsert(contentRecords, { onConflict: 'campaign_id,content_type,sequence_index' })
 
     if (insertError) {
       console.error('Error saving contents:', insertError)
-      // Continue anyway, content was generated
+      // Return error instead of silently continuing
+      return jsonResponse({ ok: false, reason: 'DB_INSERT_ERROR', message: insertError.message }, 500)
     }
 
     // Update campaign status and AI metadata

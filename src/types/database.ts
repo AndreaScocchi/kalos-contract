@@ -93,10 +93,21 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          is_recurring: boolean
+          is_test: boolean
+          last_sent_at: string | null
           link_label: string | null
           link_url: string | null
           marketing_campaign_id: string | null
+          next_occurrence_at: string | null
+          recurrence_day_of_month: number | null
+          recurrence_day_of_week: number | null
+          recurrence_frequency:
+            | Database["public"]["Enums"]["announcement_recurrence_frequency"]
+            | null
+          recurrence_time: string | null
           starts_at: string
+          test_client_id: string | null
           title: string
           updated_at: string
         }
@@ -109,10 +120,21 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_recurring?: boolean
+          is_test?: boolean
+          last_sent_at?: string | null
           link_label?: string | null
           link_url?: string | null
           marketing_campaign_id?: string | null
+          next_occurrence_at?: string | null
+          recurrence_day_of_month?: number | null
+          recurrence_day_of_week?: number | null
+          recurrence_frequency?:
+            | Database["public"]["Enums"]["announcement_recurrence_frequency"]
+            | null
+          recurrence_time?: string | null
           starts_at?: string
+          test_client_id?: string | null
           title: string
           updated_at?: string
         }
@@ -125,10 +147,21 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_recurring?: boolean
+          is_test?: boolean
+          last_sent_at?: string | null
           link_label?: string | null
           link_url?: string | null
           marketing_campaign_id?: string | null
+          next_occurrence_at?: string | null
+          recurrence_day_of_month?: number | null
+          recurrence_day_of_week?: number | null
+          recurrence_frequency?:
+            | Database["public"]["Enums"]["announcement_recurrence_frequency"]
+            | null
+          recurrence_time?: string | null
           starts_at?: string
+          test_client_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -138,6 +171,13 @@ export type Database = {
             columns: ["marketing_campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_test_client_id_fkey"
+            columns: ["test_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -432,9 +472,13 @@ export type Database = {
           published_at: string | null
           retry_count: number | null
           scheduled_for: string | null
+          scheduled_offset_days: number | null
           sent_at: string | null
+          sequence_index: number | null
+          slides: Json | null
           social_connection_id: string | null
           status: Database["public"]["Enums"]["content_status"]
+          story_text_overlays: string[] | null
           title: string | null
           updated_at: string
           video_url: string | null
@@ -463,9 +507,13 @@ export type Database = {
           published_at?: string | null
           retry_count?: number | null
           scheduled_for?: string | null
+          scheduled_offset_days?: number | null
           sent_at?: string | null
+          sequence_index?: number | null
+          slides?: Json | null
           social_connection_id?: string | null
           status?: Database["public"]["Enums"]["content_status"]
+          story_text_overlays?: string[] | null
           title?: string | null
           updated_at?: string
           video_url?: string | null
@@ -494,9 +542,13 @@ export type Database = {
           published_at?: string | null
           retry_count?: number | null
           scheduled_for?: string | null
+          scheduled_offset_days?: number | null
           sent_at?: string | null
+          sequence_index?: number | null
+          slides?: Json | null
           social_connection_id?: string | null
           status?: Database["public"]["Enums"]["content_status"]
+          story_text_overlays?: string[] | null
           title?: string | null
           updated_at?: string
           video_url?: string | null
@@ -1981,6 +2033,8 @@ export type Database = {
           custom_price_cents: number | null
           custom_validity_days: number | null
           deleted_at: string | null
+          discount_percent: number | null
+          discount_reason: string | null
           expires_at: string
           id: string
           metadata: Json | null
@@ -1996,6 +2050,8 @@ export type Database = {
           custom_price_cents?: number | null
           custom_validity_days?: number | null
           deleted_at?: string | null
+          discount_percent?: number | null
+          discount_reason?: string | null
           expires_at: string
           id?: string
           metadata?: Json | null
@@ -2011,6 +2067,8 @@ export type Database = {
           custom_price_cents?: number | null
           custom_validity_days?: number | null
           deleted_at?: string | null
+          discount_percent?: number | null
+          discount_reason?: string | null
           expires_at?: string
           id?: string
           metadata?: Json | null
@@ -2334,6 +2392,16 @@ export type Database = {
         Args: { p_lesson_id: string; p_subscription_id?: string }
         Returns: Json
       }
+      calculate_next_announcement_occurrence: {
+        Args: {
+          p_day_of_month: number
+          p_day_of_week: number
+          p_frequency: Database["public"]["Enums"]["announcement_recurrence_frequency"]
+          p_from_date?: string
+          p_time: string
+        }
+        Returns: string
+      }
       calculate_operator_compensation: {
         Args: {
           p_month_end: string
@@ -2477,6 +2545,7 @@ export type Database = {
         Args: { p_client_id: string; p_milestone: number }
         Returns: boolean
       }
+      process_recurring_announcements: { Args: never; Returns: undefined }
       queue_announcement:
         | {
             Args: { p_announcement_id: string; p_body: string; p_title: string }
@@ -2535,6 +2604,11 @@ export type Database = {
       }
     }
     Enums: {
+      announcement_recurrence_frequency:
+        | "daily"
+        | "weekly"
+        | "biweekly"
+        | "monthly"
       booking_status: "booked" | "canceled" | "attended" | "no_show"
       bug_status: "open" | "in_progress" | "resolved" | "closed"
       campaign_content_type:
@@ -2741,6 +2815,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      announcement_recurrence_frequency: [
+        "daily",
+        "weekly",
+        "biweekly",
+        "monthly",
+      ],
       booking_status: ["booked", "canceled", "attended", "no_show"],
       bug_status: ["open", "in_progress", "resolved", "closed"],
       campaign_content_type: [

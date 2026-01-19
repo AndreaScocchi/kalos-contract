@@ -89,10 +89,19 @@ type Database = {
                     id: string;
                     image_url: string | null;
                     is_active: boolean;
+                    is_recurring: boolean;
+                    is_test: boolean;
+                    last_sent_at: string | null;
                     link_label: string | null;
                     link_url: string | null;
                     marketing_campaign_id: string | null;
+                    next_occurrence_at: string | null;
+                    recurrence_day_of_month: number | null;
+                    recurrence_day_of_week: number | null;
+                    recurrence_frequency: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+                    recurrence_time: string | null;
                     starts_at: string;
+                    test_client_id: string | null;
                     title: string;
                     updated_at: string;
                 };
@@ -105,10 +114,19 @@ type Database = {
                     id?: string;
                     image_url?: string | null;
                     is_active?: boolean;
+                    is_recurring?: boolean;
+                    is_test?: boolean;
+                    last_sent_at?: string | null;
                     link_label?: string | null;
                     link_url?: string | null;
                     marketing_campaign_id?: string | null;
+                    next_occurrence_at?: string | null;
+                    recurrence_day_of_month?: number | null;
+                    recurrence_day_of_week?: number | null;
+                    recurrence_frequency?: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+                    recurrence_time?: string | null;
                     starts_at?: string;
+                    test_client_id?: string | null;
                     title: string;
                     updated_at?: string;
                 };
@@ -121,10 +139,19 @@ type Database = {
                     id?: string;
                     image_url?: string | null;
                     is_active?: boolean;
+                    is_recurring?: boolean;
+                    is_test?: boolean;
+                    last_sent_at?: string | null;
                     link_label?: string | null;
                     link_url?: string | null;
                     marketing_campaign_id?: string | null;
+                    next_occurrence_at?: string | null;
+                    recurrence_day_of_month?: number | null;
+                    recurrence_day_of_week?: number | null;
+                    recurrence_frequency?: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+                    recurrence_time?: string | null;
                     starts_at?: string;
+                    test_client_id?: string | null;
                     title?: string;
                     updated_at?: string;
                 };
@@ -134,6 +161,13 @@ type Database = {
                         columns: ["marketing_campaign_id"];
                         isOneToOne: false;
                         referencedRelation: "campaigns";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "announcements_test_client_id_fkey";
+                        columns: ["test_client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
                         referencedColumns: ["id"];
                     }
                 ];
@@ -428,9 +462,13 @@ type Database = {
                     published_at: string | null;
                     retry_count: number | null;
                     scheduled_for: string | null;
+                    scheduled_offset_days: number | null;
                     sent_at: string | null;
+                    sequence_index: number | null;
+                    slides: Json | null;
                     social_connection_id: string | null;
                     status: Database["public"]["Enums"]["content_status"];
+                    story_text_overlays: string[] | null;
                     title: string | null;
                     updated_at: string;
                     video_url: string | null;
@@ -459,9 +497,13 @@ type Database = {
                     published_at?: string | null;
                     retry_count?: number | null;
                     scheduled_for?: string | null;
+                    scheduled_offset_days?: number | null;
                     sent_at?: string | null;
+                    sequence_index?: number | null;
+                    slides?: Json | null;
                     social_connection_id?: string | null;
                     status?: Database["public"]["Enums"]["content_status"];
+                    story_text_overlays?: string[] | null;
                     title?: string | null;
                     updated_at?: string;
                     video_url?: string | null;
@@ -490,9 +532,13 @@ type Database = {
                     published_at?: string | null;
                     retry_count?: number | null;
                     scheduled_for?: string | null;
+                    scheduled_offset_days?: number | null;
                     sent_at?: string | null;
+                    sequence_index?: number | null;
+                    slides?: Json | null;
                     social_connection_id?: string | null;
                     status?: Database["public"]["Enums"]["content_status"];
+                    story_text_overlays?: string[] | null;
                     title?: string | null;
                     updated_at?: string;
                     video_url?: string | null;
@@ -1977,6 +2023,8 @@ type Database = {
                     custom_price_cents: number | null;
                     custom_validity_days: number | null;
                     deleted_at: string | null;
+                    discount_percent: number | null;
+                    discount_reason: string | null;
                     expires_at: string;
                     id: string;
                     metadata: Json | null;
@@ -1992,6 +2040,8 @@ type Database = {
                     custom_price_cents?: number | null;
                     custom_validity_days?: number | null;
                     deleted_at?: string | null;
+                    discount_percent?: number | null;
+                    discount_reason?: string | null;
                     expires_at: string;
                     id?: string;
                     metadata?: Json | null;
@@ -2007,6 +2057,8 @@ type Database = {
                     custom_price_cents?: number | null;
                     custom_validity_days?: number | null;
                     deleted_at?: string | null;
+                    discount_percent?: number | null;
+                    discount_reason?: string | null;
                     expires_at?: string;
                     id?: string;
                     metadata?: Json | null;
@@ -2338,6 +2390,16 @@ type Database = {
                 };
                 Returns: Json;
             };
+            calculate_next_announcement_occurrence: {
+                Args: {
+                    p_day_of_month: number;
+                    p_day_of_week: number;
+                    p_frequency: Database["public"]["Enums"]["announcement_recurrence_frequency"];
+                    p_from_date?: string;
+                    p_time: string;
+                };
+                Returns: string;
+            };
             calculate_operator_compensation: {
                 Args: {
                     p_month_end: string;
@@ -2576,6 +2638,10 @@ type Database = {
                 };
                 Returns: boolean;
             };
+            process_recurring_announcements: {
+                Args: never;
+                Returns: undefined;
+            };
             queue_announcement: {
                 Args: {
                     p_announcement_id: string;
@@ -2675,6 +2741,7 @@ type Database = {
             };
         };
         Enums: {
+            announcement_recurrence_frequency: "daily" | "weekly" | "biweekly" | "monthly";
             booking_status: "booked" | "canceled" | "attended" | "no_show";
             bug_status: "open" | "in_progress" | "resolved" | "closed";
             campaign_content_type: "brief" | "push_notification" | "newsletter" | "instagram_post" | "instagram_story" | "instagram_reel" | "instagram_carousel" | "facebook_post";
@@ -3010,10 +3077,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id: string;
                 image_url: string | null;
                 is_active: boolean;
+                is_recurring: boolean;
+                is_test: boolean;
+                last_sent_at: string | null;
                 link_label: string | null;
                 link_url: string | null;
                 marketing_campaign_id: string | null;
+                next_occurrence_at: string | null;
+                recurrence_day_of_month: number | null;
+                recurrence_day_of_week: number | null;
+                recurrence_frequency: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+                recurrence_time: string | null;
                 starts_at: string;
+                test_client_id: string | null;
                 title: string;
                 updated_at: string;
             };
@@ -3026,10 +3102,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id?: string;
                 image_url?: string | null;
                 is_active?: boolean;
+                is_recurring?: boolean;
+                is_test?: boolean;
+                last_sent_at?: string | null;
                 link_label?: string | null;
                 link_url?: string | null;
                 marketing_campaign_id?: string | null;
+                next_occurrence_at?: string | null;
+                recurrence_day_of_month?: number | null;
+                recurrence_day_of_week?: number | null;
+                recurrence_frequency?: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+                recurrence_time?: string | null;
                 starts_at?: string;
+                test_client_id?: string | null;
                 title: string;
                 updated_at?: string;
             };
@@ -3042,10 +3127,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 id?: string;
                 image_url?: string | null;
                 is_active?: boolean;
+                is_recurring?: boolean;
+                is_test?: boolean;
+                last_sent_at?: string | null;
                 link_label?: string | null;
                 link_url?: string | null;
                 marketing_campaign_id?: string | null;
+                next_occurrence_at?: string | null;
+                recurrence_day_of_month?: number | null;
+                recurrence_day_of_week?: number | null;
+                recurrence_frequency?: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+                recurrence_time?: string | null;
                 starts_at?: string;
+                test_client_id?: string | null;
                 title?: string;
                 updated_at?: string;
             };
@@ -3054,6 +3148,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["marketing_campaign_id"];
                 isOneToOne: false;
                 referencedRelation: "campaigns";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "announcements_test_client_id_fkey";
+                columns: ["test_client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
                 referencedColumns: ["id"];
             }];
         };
@@ -3334,9 +3434,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 published_at: string | null;
                 retry_count: number | null;
                 scheduled_for: string | null;
+                scheduled_offset_days: number | null;
                 sent_at: string | null;
+                sequence_index: number | null;
+                slides: Json | null;
                 social_connection_id: string | null;
                 status: Database["public"]["Enums"]["content_status"];
+                story_text_overlays: string[] | null;
                 title: string | null;
                 updated_at: string;
                 video_url: string | null;
@@ -3365,9 +3469,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 published_at?: string | null;
                 retry_count?: number | null;
                 scheduled_for?: string | null;
+                scheduled_offset_days?: number | null;
                 sent_at?: string | null;
+                sequence_index?: number | null;
+                slides?: Json | null;
                 social_connection_id?: string | null;
                 status?: Database["public"]["Enums"]["content_status"];
+                story_text_overlays?: string[] | null;
                 title?: string | null;
                 updated_at?: string;
                 video_url?: string | null;
@@ -3396,9 +3504,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 published_at?: string | null;
                 retry_count?: number | null;
                 scheduled_for?: string | null;
+                scheduled_offset_days?: number | null;
                 sent_at?: string | null;
+                sequence_index?: number | null;
+                slides?: Json | null;
                 social_connection_id?: string | null;
                 status?: Database["public"]["Enums"]["content_status"];
+                story_text_overlays?: string[] | null;
                 title?: string | null;
                 updated_at?: string;
                 video_url?: string | null;
@@ -4803,6 +4915,8 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 custom_price_cents: number | null;
                 custom_validity_days: number | null;
                 deleted_at: string | null;
+                discount_percent: number | null;
+                discount_reason: string | null;
                 expires_at: string;
                 id: string;
                 metadata: Json | null;
@@ -4818,6 +4932,8 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 custom_price_cents?: number | null;
                 custom_validity_days?: number | null;
                 deleted_at?: string | null;
+                discount_percent?: number | null;
+                discount_reason?: string | null;
                 expires_at: string;
                 id?: string;
                 metadata?: Json | null;
@@ -4833,6 +4949,8 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 custom_price_cents?: number | null;
                 custom_validity_days?: number | null;
                 deleted_at?: string | null;
+                discount_percent?: number | null;
+                discount_reason?: string | null;
                 expires_at?: string;
                 id?: string;
                 metadata?: Json | null;
@@ -5151,6 +5269,16 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             };
             Returns: Json;
         };
+        calculate_next_announcement_occurrence: {
+            Args: {
+                p_day_of_month: number;
+                p_day_of_week: number;
+                p_frequency: Database["public"]["Enums"]["announcement_recurrence_frequency"];
+                p_from_date?: string;
+                p_time: string;
+            };
+            Returns: string;
+        };
         calculate_operator_compensation: {
             Args: {
                 p_month_end: string;
@@ -5389,6 +5517,10 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             };
             Returns: boolean;
         };
+        process_recurring_announcements: {
+            Args: never;
+            Returns: undefined;
+        };
         queue_announcement: {
             Args: {
                 p_announcement_id: string;
@@ -5488,6 +5620,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         };
     };
     Enums: {
+        announcement_recurrence_frequency: "daily" | "weekly" | "biweekly" | "monthly";
         booking_status: "booked" | "canceled" | "attended" | "no_show";
         bug_status: "open" | "in_progress" | "resolved" | "closed";
         campaign_content_type: "brief" | "push_notification" | "newsletter" | "instagram_post" | "instagram_story" | "instagram_reel" | "instagram_carousel" | "facebook_post";
@@ -5584,10 +5717,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id: string;
         image_url: string | null;
         is_active: boolean;
+        is_recurring: boolean;
+        is_test: boolean;
+        last_sent_at: string | null;
         link_label: string | null;
         link_url: string | null;
         marketing_campaign_id: string | null;
+        next_occurrence_at: string | null;
+        recurrence_day_of_month: number | null;
+        recurrence_day_of_week: number | null;
+        recurrence_frequency: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+        recurrence_time: string | null;
         starts_at: string;
+        test_client_id: string | null;
         title: string;
         updated_at: string;
     };
@@ -5600,10 +5742,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id?: string;
         image_url?: string | null;
         is_active?: boolean;
+        is_recurring?: boolean;
+        is_test?: boolean;
+        last_sent_at?: string | null;
         link_label?: string | null;
         link_url?: string | null;
         marketing_campaign_id?: string | null;
+        next_occurrence_at?: string | null;
+        recurrence_day_of_month?: number | null;
+        recurrence_day_of_week?: number | null;
+        recurrence_frequency?: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+        recurrence_time?: string | null;
         starts_at?: string;
+        test_client_id?: string | null;
         title: string;
         updated_at?: string;
     };
@@ -5616,10 +5767,19 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         id?: string;
         image_url?: string | null;
         is_active?: boolean;
+        is_recurring?: boolean;
+        is_test?: boolean;
+        last_sent_at?: string | null;
         link_label?: string | null;
         link_url?: string | null;
         marketing_campaign_id?: string | null;
+        next_occurrence_at?: string | null;
+        recurrence_day_of_month?: number | null;
+        recurrence_day_of_week?: number | null;
+        recurrence_frequency?: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+        recurrence_time?: string | null;
         starts_at?: string;
+        test_client_id?: string | null;
         title?: string;
         updated_at?: string;
     };
@@ -5628,6 +5788,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["marketing_campaign_id"];
         isOneToOne: false;
         referencedRelation: "campaigns";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "announcements_test_client_id_fkey";
+        columns: ["test_client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
         referencedColumns: ["id"];
     }];
 } | {
@@ -5903,9 +6069,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         published_at: string | null;
         retry_count: number | null;
         scheduled_for: string | null;
+        scheduled_offset_days: number | null;
         sent_at: string | null;
+        sequence_index: number | null;
+        slides: Json | null;
         social_connection_id: string | null;
         status: Database["public"]["Enums"]["content_status"];
+        story_text_overlays: string[] | null;
         title: string | null;
         updated_at: string;
         video_url: string | null;
@@ -5934,9 +6104,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         published_at?: string | null;
         retry_count?: number | null;
         scheduled_for?: string | null;
+        scheduled_offset_days?: number | null;
         sent_at?: string | null;
+        sequence_index?: number | null;
+        slides?: Json | null;
         social_connection_id?: string | null;
         status?: Database["public"]["Enums"]["content_status"];
+        story_text_overlays?: string[] | null;
         title?: string | null;
         updated_at?: string;
         video_url?: string | null;
@@ -5965,9 +6139,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         published_at?: string | null;
         retry_count?: number | null;
         scheduled_for?: string | null;
+        scheduled_offset_days?: number | null;
         sent_at?: string | null;
+        sequence_index?: number | null;
+        slides?: Json | null;
         social_connection_id?: string | null;
         status?: Database["public"]["Enums"]["content_status"];
+        story_text_overlays?: string[] | null;
         title?: string | null;
         updated_at?: string;
         video_url?: string | null;
@@ -7347,6 +7525,8 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         custom_price_cents: number | null;
         custom_validity_days: number | null;
         deleted_at: string | null;
+        discount_percent: number | null;
+        discount_reason: string | null;
         expires_at: string;
         id: string;
         metadata: Json | null;
@@ -7362,6 +7542,8 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         custom_price_cents?: number | null;
         custom_validity_days?: number | null;
         deleted_at?: string | null;
+        discount_percent?: number | null;
+        discount_reason?: string | null;
         expires_at: string;
         id?: string;
         metadata?: Json | null;
@@ -7377,6 +7559,8 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         custom_price_cents?: number | null;
         custom_validity_days?: number | null;
         deleted_at?: string | null;
+        discount_percent?: number | null;
+        discount_reason?: string | null;
         expires_at?: string;
         id?: string;
         metadata?: Json | null;
@@ -7452,6 +7636,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["marketing_campaign_id"];
     isOneToOne: false;
     referencedRelation: "campaigns";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "announcements_test_client_id_fkey";
+    columns: ["test_client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
     referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "bookings_client_id_fkey";
@@ -7959,10 +8149,19 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     id: string;
     image_url: string | null;
     is_active: boolean;
+    is_recurring: boolean;
+    is_test: boolean;
+    last_sent_at: string | null;
     link_label: string | null;
     link_url: string | null;
     marketing_campaign_id: string | null;
+    next_occurrence_at: string | null;
+    recurrence_day_of_month: number | null;
+    recurrence_day_of_week: number | null;
+    recurrence_frequency: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+    recurrence_time: string | null;
     starts_at: string;
+    test_client_id: string | null;
     title: string;
     updated_at: string;
 } | {
@@ -8045,9 +8244,13 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     published_at: string | null;
     retry_count: number | null;
     scheduled_for: string | null;
+    scheduled_offset_days: number | null;
     sent_at: string | null;
+    sequence_index: number | null;
+    slides: Json | null;
     social_connection_id: string | null;
     status: Database["public"]["Enums"]["content_status"];
+    story_text_overlays: string[] | null;
     title: string | null;
     updated_at: string;
     video_url: string | null;
@@ -8356,6 +8559,8 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     custom_price_cents: number | null;
     custom_validity_days: number | null;
     deleted_at: string | null;
+    discount_percent: number | null;
+    discount_reason: string | null;
     expires_at: string;
     id: string;
     metadata: Json | null;
@@ -8409,10 +8614,19 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     id: string;
     image_url: string | null;
     is_active: boolean;
+    is_recurring: boolean;
+    is_test: boolean;
+    last_sent_at: string | null;
     link_label: string | null;
     link_url: string | null;
     marketing_campaign_id: string | null;
+    next_occurrence_at: string | null;
+    recurrence_day_of_month: number | null;
+    recurrence_day_of_week: number | null;
+    recurrence_frequency: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+    recurrence_time: string | null;
     starts_at: string;
+    test_client_id: string | null;
     title: string;
     updated_at: string;
 } | {
@@ -8495,9 +8709,13 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     published_at: string | null;
     retry_count: number | null;
     scheduled_for: string | null;
+    scheduled_offset_days: number | null;
     sent_at: string | null;
+    sequence_index: number | null;
+    slides: Json | null;
     social_connection_id: string | null;
     status: Database["public"]["Enums"]["content_status"];
+    story_text_overlays: string[] | null;
     title: string | null;
     updated_at: string;
     video_url: string | null;
@@ -8806,6 +9024,8 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     custom_price_cents: number | null;
     custom_validity_days: number | null;
     deleted_at: string | null;
+    discount_percent: number | null;
+    discount_reason: string | null;
     expires_at: string;
     id: string;
     metadata: Json | null;
@@ -8859,10 +9079,19 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     id: string;
     image_url: string | null;
     is_active: boolean;
+    is_recurring: boolean;
+    is_test: boolean;
+    last_sent_at: string | null;
     link_label: string | null;
     link_url: string | null;
     marketing_campaign_id: string | null;
+    next_occurrence_at: string | null;
+    recurrence_day_of_month: number | null;
+    recurrence_day_of_week: number | null;
+    recurrence_frequency: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+    recurrence_time: string | null;
     starts_at: string;
+    test_client_id: string | null;
     title: string;
     updated_at: string;
 } | {
@@ -8945,9 +9174,13 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     published_at: string | null;
     retry_count: number | null;
     scheduled_for: string | null;
+    scheduled_offset_days: number | null;
     sent_at: string | null;
+    sequence_index: number | null;
+    slides: Json | null;
     social_connection_id: string | null;
     status: Database["public"]["Enums"]["content_status"];
+    story_text_overlays: string[] | null;
     title: string | null;
     updated_at: string;
     video_url: string | null;
@@ -9256,6 +9489,8 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     custom_price_cents: number | null;
     custom_validity_days: number | null;
     deleted_at: string | null;
+    discount_percent: number | null;
+    discount_reason: string | null;
     expires_at: string;
     id: string;
     metadata: Json | null;
@@ -9309,10 +9544,19 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     id: string;
     image_url: string | null;
     is_active: boolean;
+    is_recurring: boolean;
+    is_test: boolean;
+    last_sent_at: string | null;
     link_label: string | null;
     link_url: string | null;
     marketing_campaign_id: string | null;
+    next_occurrence_at: string | null;
+    recurrence_day_of_month: number | null;
+    recurrence_day_of_week: number | null;
+    recurrence_frequency: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+    recurrence_time: string | null;
     starts_at: string;
+    test_client_id: string | null;
     title: string;
     updated_at: string;
 } | {
@@ -9395,9 +9639,13 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     published_at: string | null;
     retry_count: number | null;
     scheduled_for: string | null;
+    scheduled_offset_days: number | null;
     sent_at: string | null;
+    sequence_index: number | null;
+    slides: Json | null;
     social_connection_id: string | null;
     status: Database["public"]["Enums"]["content_status"];
+    story_text_overlays: string[] | null;
     title: string | null;
     updated_at: string;
     video_url: string | null;
@@ -9706,6 +9954,8 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     custom_price_cents: number | null;
     custom_validity_days: number | null;
     deleted_at: string | null;
+    discount_percent: number | null;
+    discount_reason: string | null;
     expires_at: string;
     id: string;
     metadata: Json | null;
@@ -9768,10 +10018,19 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     id: string;
     image_url: string | null;
     is_active: boolean;
+    is_recurring: boolean;
+    is_test: boolean;
+    last_sent_at: string | null;
     link_label: string | null;
     link_url: string | null;
     marketing_campaign_id: string | null;
+    next_occurrence_at: string | null;
+    recurrence_day_of_month: number | null;
+    recurrence_day_of_week: number | null;
+    recurrence_frequency: Database["public"]["Enums"]["announcement_recurrence_frequency"] | null;
+    recurrence_time: string | null;
     starts_at: string;
+    test_client_id: string | null;
     title: string;
     updated_at: string;
 } | {
@@ -9854,9 +10113,13 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     published_at: string | null;
     retry_count: number | null;
     scheduled_for: string | null;
+    scheduled_offset_days: number | null;
     sent_at: string | null;
+    sequence_index: number | null;
+    slides: Json | null;
     social_connection_id: string | null;
     status: Database["public"]["Enums"]["content_status"];
+    story_text_overlays: string[] | null;
     title: string | null;
     updated_at: string;
     video_url: string | null;
@@ -10165,6 +10428,8 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     custom_price_cents: number | null;
     custom_validity_days: number | null;
     deleted_at: string | null;
+    discount_percent: number | null;
+    discount_reason: string | null;
     expires_at: string;
     id: string;
     metadata: Json | null;

@@ -249,14 +249,18 @@ async function executePushNotification(
 ): Promise<void> {
   const testClientId = campaign.test_client_id
 
+  console.log(`[executePushNotification] Campaign ${campaign.id}, test_client_id: ${testClientId || 'NULL (production mode)'}`)
+
   // Get target clients
   let clientIds: string[] = []
 
   if (testClientId) {
     // Test mode: only send to specific client
+    console.log(`[executePushNotification] TEST MODE - sending only to client ${testClientId}`)
     clientIds = [testClientId]
   } else {
     // Production mode: get all active clients
+    console.log(`[executePushNotification] PRODUCTION MODE - sending to all active clients`)
     const { data: clients, error: clientsError } = await supabase
       .from('clients')
       .select('id')
@@ -268,6 +272,7 @@ async function executePushNotification(
     }
 
     clientIds = (clients || []).map((c: { id: string }) => c.id)
+    console.log(`[executePushNotification] Found ${clientIds.length} active clients`)
   }
 
   if (clientIds.length === 0) {
@@ -289,34 +294,37 @@ async function executePushNotification(
   const announcementCategory = categoryMap[campaign.type] || 'general'
 
   // Create an announcement record so it appears in the app's notification list
-  // Only create if not in test mode (to avoid polluting the announcements table)
+  // Test mode announcements are marked with is_test=true for filtering
   let announcementId: string | null = null
-  if (!testClientId) {
-    const { data: announcement, error: announcementError } = await supabase
-      .from('announcements')
-      .insert({
-        title: content.title || 'Notifica',
-        body: content.body || '',
-        category: announcementCategory,
-        image_url: content.image_url,
-        link_url: content.link_url,
-        link_label: content.link_label,
-        is_active: true,
-        starts_at: new Date().toISOString(),
-        ends_at: null, // No expiration - stays visible until manually deactivated
-        marketing_campaign_id: campaign.id, // Link back to marketing campaign
-      })
-      .select('id')
-      .single()
+  const isTestMode = !!testClientId
+  const { data: announcement, error: announcementError } = await supabase
+    .from('announcements')
+    .insert({
+      title: content.title || 'Notifica',
+      body: content.body || '',
+      category: announcementCategory,
+      image_url: content.image_url,
+      link_url: content.link_url,
+      link_label: content.link_label,
+      is_active: true,
+      is_test: isTestMode,
+      test_client_id: testClientId || null, // Filter announcement visibility in test mode
+      starts_at: new Date().toISOString(),
+      ends_at: null, // No expiration - stays visible until manually deactivated
+      marketing_campaign_id: campaign.id, // Link back to marketing campaign
+    })
+    .select('id')
+    .single()
 
-    if (announcementError) {
-      console.error('Failed to create announcement:', announcementError)
-      // Don't throw - push notifications can still be sent without the announcement
-    } else {
-      announcementId = announcement?.id
-      console.log(`Created announcement ${announcementId} for campaign push notification`)
-    }
+  if (announcementError) {
+    console.error('Failed to create announcement:', JSON.stringify(announcementError))
+    // Don't throw - push notifications can still be sent without the announcement
+  } else {
+    announcementId = announcement?.id
+    console.log(`Created announcement ${announcementId} for campaign push notification (test mode: ${isTestMode})`)
   }
+
+  console.log(`Preparing to queue ${clientIds.length} notifications for clients: ${clientIds.join(', ')}`)
 
   // Create notification queue entries for each client
   const now = new Date().toISOString()
@@ -341,10 +349,11 @@ async function executePushNotification(
     .insert(notifications)
 
   if (error) {
+    console.error('Notification queue insert error:', JSON.stringify(error))
     throw new Error(`Failed to queue push notifications: ${error.message}`)
   }
 
-  console.log(`Queued ${notifications.length} push notifications`)
+  console.log(`Queued ${notifications.length} push notifications successfully`)
 
   // Update content status
   await supabase
@@ -415,14 +424,37 @@ async function executeSocialPost(
   supabase: ReturnType<typeof createClient>,
   content: Content
 ): Promise<void> {
-  // Check if we have a media URL (required for Instagram)
-  if (content.platform === 'instagram' && !content.body) {
-    // For Instagram, we need at least a caption
-    // Image would need to be uploaded separately
-    console.warn(`Instagram post ${content.id} has no content, skipping`)
+  // Get full content with image_url (not in the Content interface)
+  const { data: fullContent, error: fetchError } = await supabase
+    .from('campaign_contents')
+    .select('*')
+    .eq('id', content.id)
+    .single()
+
+  if (fetchError || !fullContent) {
+    throw new Error(`Failed to fetch content details: ${fetchError?.message}`)
+  }
+
+  // Validate content based on platform requirements
+  const imageUrl = fullContent.image_url as string | null
+  const body = fullContent.body as string | null
+
+  // Instagram requires an image
+  if (fullContent.platform === 'instagram' && !imageUrl) {
+    console.warn(`Instagram post ${content.id} has no image, skipping`)
     await supabase
       .from('campaign_contents')
-      .update({ status: 'skipped', error_message: 'No content to publish' })
+      .update({ status: 'skipped', error_message: 'Instagram richiede un\'immagine' })
+      .eq('id', content.id)
+    return
+  }
+
+  // Facebook can work with just text, but we should have something
+  if (fullContent.platform === 'facebook' && !body && !imageUrl) {
+    console.warn(`Facebook post ${content.id} has no content, skipping`)
+    await supabase
+      .from('campaign_contents')
+      .update({ status: 'skipped', error_message: 'Il post deve avere testo o immagine' })
       .eq('id', content.id)
     return
   }
@@ -440,9 +472,11 @@ async function executeSocialPost(
     body: JSON.stringify({ contentId: content.id }),
   })
 
-  if (!response.ok) {
-    const err = await response.json()
-    throw new Error(err.message || 'Failed to publish social post')
+  const result = await response.json()
+
+  if (!response.ok || !result.ok) {
+    const errorMessage = result.message || result.reason || 'Failed to publish social post'
+    throw new Error(errorMessage)
   }
 
   // Content status is updated by meta-publish-post

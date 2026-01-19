@@ -90,27 +90,68 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Determine if we should use test or production connection
     const isTest = body.isTest ?? false
 
-    // Get social connection (filtered by is_test flag)
-    // Use limit(1) instead of single() to handle cases where multiple pages exist
-    const { data: connections, error: connError } = await supabaseAdmin
-      .from('social_connections')
-      .select('*')
-      .eq('platform', platform)
-      .eq('is_active', true)
-      .eq('is_test', isTest)
-      .order('last_used_at', { ascending: false, nullsFirst: false })
-      .limit(1)
+    // Check if content has a specific social_connection_id selected
+    let connection: Record<string, unknown> | null = null
 
-    const connection = connections?.[0]
+    if (content.social_connection_id) {
+      // Use the explicitly selected connection
+      const { data: selectedConn, error: selectedConnError } = await supabaseAdmin
+        .from('social_connections')
+        .select('*')
+        .eq('id', content.social_connection_id)
+        .eq('is_active', true)
+        .single()
 
-    if (connError || !connection) {
-      console.error(`No active ${isTest ? 'test' : 'production'} connection found:`, connError)
+      if (selectedConnError || !selectedConn) {
+        console.error('Selected social connection not found or inactive:', selectedConnError)
+        return jsonResponse({
+          ok: false,
+          reason: 'CONNECTION_NOT_FOUND',
+          message: 'La connessione social selezionata non è più disponibile. Seleziona un altro account.'
+        }, 400)
+      }
+
+      // Verify the connection platform matches the content platform
+      if (selectedConn.platform !== platform) {
+        return jsonResponse({
+          ok: false,
+          reason: 'PLATFORM_MISMATCH',
+          message: `La connessione selezionata è per ${selectedConn.platform}, ma il contenuto è per ${platform}.`
+        }, 400)
+      }
+
+      connection = selectedConn
+    } else {
+      // Fallback: Get social connection by platform and is_test flag
+      // Use limit(1) instead of single() to handle cases where multiple pages exist
+      const { data: connections, error: connError } = await supabaseAdmin
+        .from('social_connections')
+        .select('*')
+        .eq('platform', platform)
+        .eq('is_active', true)
+        .eq('is_test', isTest)
+        .order('last_used_at', { ascending: false, nullsFirst: false })
+        .limit(1)
+
+      if (connError || !connections?.[0]) {
+        console.error(`No active ${isTest ? 'test' : 'production'} connection found:`, connError)
+        return jsonResponse({
+          ok: false,
+          reason: 'NO_CONNECTION',
+          message: isTest
+            ? 'Nessun account Meta di test collegato. Collega un account di test nelle impostazioni.'
+            : 'Nessun account Meta di produzione collegato. Collega un account nelle impostazioni.'
+        }, 400)
+      }
+
+      connection = connections[0]
+    }
+
+    if (!connection) {
       return jsonResponse({
         ok: false,
         reason: 'NO_CONNECTION',
-        message: isTest
-          ? 'Nessun account Meta di test collegato. Collega un account di test nelle impostazioni.'
-          : 'Nessun account Meta di produzione collegato. Collega un account nelle impostazioni.'
+        message: 'Nessuna connessione social trovata.'
       }, 400)
     }
 

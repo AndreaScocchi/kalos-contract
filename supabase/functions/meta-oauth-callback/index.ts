@@ -69,13 +69,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const { operator_id, redirect_url, is_test = false } = stateData
 
+    // Helper to redirect with error, preserving the redirect_url
+    const redirectWithErrorAndUrl = (reason: string, message: string) => {
+      return createCallbackPage({
+        success: false,
+        error: reason,
+        error_message: message,
+        redirect_url,
+      })
+    }
+
     // Get app credentials
     const appId = Deno.env.get('META_APP_ID')
     const appSecret = Deno.env.get('META_APP_SECRET')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
 
     if (!appId || !appSecret) {
-      return redirectWithError('CONFIG_ERROR', 'Meta app not configured')
+      return redirectWithErrorAndUrl('CONFIG_ERROR', 'Meta app not configured')
     }
 
     // Exchange code for short-lived token
@@ -90,7 +100,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!tokenRes.ok) {
       const err = await tokenRes.text()
       console.error('Token exchange failed:', err)
-      return redirectWithError('TOKEN_EXCHANGE_FAILED', 'Could not exchange code for token')
+      return redirectWithErrorAndUrl('TOKEN_EXCHANGE_FAILED', 'Could not exchange code for token')
     }
 
     const tokenData: TokenResponse = await tokenRes.json()
@@ -108,9 +118,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // Continue with short-lived token
     }
 
-    const longLivedData: LongLivedTokenResponse = longLivedRes.ok
-      ? await longLivedRes.json()
-      : { access_token: tokenData.access_token, token_type: 'bearer', expires_in: 3600 }
+    let longLivedData: LongLivedTokenResponse
+    if (longLivedRes.ok) {
+      const parsed = await longLivedRes.json()
+      longLivedData = {
+        access_token: parsed.access_token,
+        token_type: parsed.token_type || 'bearer',
+        // Default to 60 days if expires_in is missing
+        expires_in: typeof parsed.expires_in === 'number' ? parsed.expires_in : 60 * 24 * 60 * 60,
+      }
+    } else {
+      // Fallback to short-lived token with 1 hour expiry
+      longLivedData = {
+        access_token: tokenData.access_token,
+        token_type: 'bearer',
+        expires_in: 3600,
+      }
+    }
 
     // Get Facebook pages
     const pagesUrl = `${META_GRAPH_URL}/me/accounts?` +
@@ -120,13 +144,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const pagesRes = await fetch(pagesUrl)
     if (!pagesRes.ok) {
       console.error('Failed to fetch pages')
-      return redirectWithError('PAGES_FETCH_FAILED', 'Could not fetch Facebook pages')
+      return redirectWithErrorAndUrl('PAGES_FETCH_FAILED', 'Could not fetch Facebook pages')
     }
 
     const pagesData: PagesResponse = await pagesRes.json()
 
     if (!pagesData.data || pagesData.data.length === 0) {
-      return redirectWithError('NO_PAGES', 'No Facebook pages found. Please ensure your account manages at least one page.')
+      return redirectWithErrorAndUrl('NO_PAGES', 'No Facebook pages found. Please ensure your account manages at least one page.')
     }
 
     // Create admin client
@@ -185,14 +209,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (upsertError) {
       console.error('Failed to save connections:', upsertError)
-      return redirectWithError('SAVE_FAILED', 'Could not save social connections')
+      return redirectWithErrorAndUrl('SAVE_FAILED', 'Could not save social connections')
     }
 
-    // Return HTML page that communicates with opener and closes
+    // Redirect back to the wizard with success
     return createCallbackPage({
       success: true,
       is_test,
       pages_count: pagesData.data.length,
+      redirect_url,
     })
 
   } catch (error) {
@@ -201,6 +226,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       success: false,
       error: 'INTERNAL_ERROR',
       error_message: (error as Error).message,
+      // No redirect_url available here, will use default
     })
   }
 })
@@ -211,89 +237,35 @@ interface CallbackResult {
   pages_count?: number
   error?: string
   error_message?: string
+  redirect_url?: string
 }
 
 function createCallbackPage(result: CallbackResult): Response {
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Connessione Meta</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+  // Build redirect URL to kalos-management OAuth callback page
+  // Extract base URL from redirect_url or use production default
+  let baseUrl = 'https://gestionale.kalosstudio.it'
+  if (result.redirect_url) {
+    try {
+      const redirectUrlObj = new URL(result.redirect_url)
+      baseUrl = redirectUrlObj.origin
+    } catch {
+      // Keep default if URL parsing fails
     }
-    .container {
-      text-align: center;
-      padding: 40px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 16px;
-      backdrop-filter: blur(10px);
-    }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255,255,255,0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    h2 { margin: 0 0 10px; }
-    p { margin: 0; opacity: 0.9; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="spinner"></div>
-    <h2>${result.success ? 'Connessione riuscita!' : 'Errore di connessione'}</h2>
-    <p>${result.success ? 'Chiusura in corso...' : result.error_message || 'Si è verificato un errore'}</p>
-  </div>
-  <script>
-    const result = ${JSON.stringify(result)};
+  }
 
-    // Send message to opener window
-    if (window.opener) {
-      window.opener.postMessage({
-        type: 'META_OAUTH_CALLBACK',
-        ...result
-      }, '*');
+  const params = new URLSearchParams()
+  params.set('success', result.success ? 'true' : 'false')
+  if (result.error) params.set('error', result.error)
+  if (result.error_message) params.set('error_message', result.error_message)
+  if (result.is_test) params.set('is_test', 'true')
+  if (result.pages_count) params.set('pages_count', String(result.pages_count))
 
-      // Close this window after a short delay
-      setTimeout(() => {
-        window.close();
-      }, 1500);
-    } else {
-      // Fallback: redirect if no opener
-      const baseUrl = '${Deno.env.get('MANAGEMENT_URL') || 'https://gestionale.kalosstudio.it'}';
-      const params = new URLSearchParams();
-      if (result.success) {
-        params.set('meta_connected', 'true');
-        params.set('is_test', String(result.is_test));
-      } else {
-        params.set('meta_error', result.error || 'UNKNOWN');
-        params.set('meta_error_message', result.error_message || '');
-      }
-      window.location.href = baseUrl + '/marketing/wizard?' + params.toString();
-    }
-  </script>
-</body>
-</html>
-  `.trim()
+  const redirectUrl = `${baseUrl}/oauth/callback?${params.toString()}`
 
-  return new Response(html, {
+  return new Response(null, {
+    status: 302,
     headers: {
-      'Content-Type': 'text/html; charset=utf-8',
+      'Location': redirectUrl,
     },
   })
 }

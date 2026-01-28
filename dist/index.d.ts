@@ -2554,6 +2554,21 @@ type Database = {
                     total_sent: number;
                 }[];
             };
+            get_event_booking_count: {
+                Args: {
+                    p_event_id: string;
+                };
+                Returns: number;
+            };
+            get_events_booking_counts: {
+                Args: {
+                    p_event_ids: string[];
+                };
+                Returns: {
+                    event_id: string;
+                    booked_count: number;
+                }[];
+            };
             get_financial_kpis: {
                 Args: {
                     p_month_end?: string;
@@ -5431,6 +5446,21 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 last_sent_at: string;
                 last_status: string;
                 total_sent: number;
+            }[];
+        };
+        get_event_booking_count: {
+            Args: {
+                p_event_id: string;
+            };
+            Returns: number;
+        };
+        get_events_booking_counts: {
+            Args: {
+                p_event_ids: string[];
+            };
+            Returns: {
+                event_id: string;
+                booked_count: number;
             }[];
         };
         get_financial_kpis: {

@@ -2497,6 +2497,17 @@ export type Database = {
           total_sent: number
         }[]
       }
+      get_event_booking_count: {
+        Args: { p_event_id: string }
+        Returns: number
+      }
+      get_events_booking_counts: {
+        Args: { p_event_ids: string[] }
+        Returns: {
+          event_id: string
+          booked_count: number
+        }[]
+      }
       get_financial_kpis: {
         Args: { p_month_end?: string; p_month_start?: string }
         Returns: Json

@@ -13,6 +13,7 @@ interface RequestBody {
   recipients?: Recipient[] // Recipients passed from frontend (optional for marketing campaigns)
   testClientId?: string // When set, send only to this client (for testing marketing campaigns)
   skipAtomicityCheck?: boolean // Skip the pre-flight test (for retry scenarios)
+  skipPushTest?: boolean // Skip push notification test (for standalone newsletters that are email-only)
 }
 
 interface ResponseBody {
@@ -412,65 +413,69 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
       console.log('[Atomicity] Email test PASSED')
 
-      // 2. Test PUSH notification delivery
-      console.log(`[Atomicity] Testing push notification to client ${ATOMICITY_TEST_CLIENT_ID}...`)
+      // 2. Test PUSH notification delivery (skip for standalone newsletters)
+      if (body.skipPushTest) {
+        console.log('[Atomicity] Skipping push test (skipPushTest=true)')
+      } else {
+        console.log(`[Atomicity] Testing push notification to client ${ATOMICITY_TEST_CLIENT_ID}...`)
 
-      // Get admin's push token
-      const { data: adminTokens, error: tokenError } = await supabaseAdmin
-        .from('device_tokens')
-        .select('expo_push_token')
-        .eq('client_id', ATOMICITY_TEST_CLIENT_ID)
-        .eq('is_active', true)
+        // Get admin's push token
+        const { data: adminTokens, error: tokenError } = await supabaseAdmin
+          .from('device_tokens')
+          .select('expo_push_token')
+          .eq('client_id', ATOMICITY_TEST_CLIENT_ID)
+          .eq('is_active', true)
 
-      if (tokenError) {
-        console.error('[Atomicity] Failed to fetch admin tokens:', tokenError)
-        return jsonResponse({
-          ok: false,
-          reason: 'ATOMICITY_PUSH_TOKEN_ERROR',
-          message: `Errore nel recupero token push admin: ${tokenError.message}. Campagna bloccata.`
-        }, 500)
-      }
+        if (tokenError) {
+          console.error('[Atomicity] Failed to fetch admin tokens:', tokenError)
+          return jsonResponse({
+            ok: false,
+            reason: 'ATOMICITY_PUSH_TOKEN_ERROR',
+            message: `Errore nel recupero token push admin: ${tokenError.message}. Campagna bloccata.`
+          }, 500)
+        }
 
-      if (!adminTokens || adminTokens.length === 0) {
-        console.error('[Atomicity] No active push tokens for admin')
-        return jsonResponse({
-          ok: false,
-          reason: 'ATOMICITY_NO_PUSH_TOKEN',
-          message: 'Nessun token push attivo per l\'admin. Registra le notifiche push nell\'app prima di inviare campagne.'
-        }, 500)
-      }
+        if (!adminTokens || adminTokens.length === 0) {
+          console.error('[Atomicity] No active push tokens for admin')
+          return jsonResponse({
+            ok: false,
+            reason: 'ATOMICITY_NO_PUSH_TOKEN',
+            message: 'Nessun token push attivo per l\'admin. Registra le notifiche push nell\'app prima di inviare campagne.'
+          }, 500)
+        }
 
-      // Try to send push to at least one token
-      let pushSuccess = false
-      let pushError = ''
+        // Try to send push to at least one token
+        let pushSuccess = false
+        let pushError = ''
 
-      for (const tokenRecord of adminTokens) {
-        const subscription = isWebPushSubscription(tokenRecord.expo_push_token)
-        if (subscription) {
-          const result = await sendWebPush(subscription, {
-            title: `[TEST] ${campaign.subject}`,
-            body: 'Test di verifica pre-invio campagna',
-            data: { campaignId: body.campaignId, test: true },
-          })
+        for (const tokenRecord of adminTokens) {
+          const subscription = isWebPushSubscription(tokenRecord.expo_push_token)
+          if (subscription) {
+            const result = await sendWebPush(subscription, {
+              title: `[TEST] ${campaign.subject}`,
+              body: 'Test di verifica pre-invio campagna',
+              data: { campaignId: body.campaignId, test: true },
+            })
 
-          if (result.success) {
-            pushSuccess = true
-            break
-          } else {
-            pushError = result.error || 'Unknown push error'
+            if (result.success) {
+              pushSuccess = true
+              break
+            } else {
+              pushError = result.error || 'Unknown push error'
+            }
           }
         }
-      }
 
-      if (!pushSuccess) {
-        console.error('[Atomicity] Push test FAILED:', pushError)
-        return jsonResponse({
-          ok: false,
-          reason: 'ATOMICITY_PUSH_FAILED',
-          message: `Test notifica push fallita: ${pushError}. Campagna bloccata.`
-        }, 500)
+        if (!pushSuccess) {
+          console.error('[Atomicity] Push test FAILED:', pushError)
+          return jsonResponse({
+            ok: false,
+            reason: 'ATOMICITY_PUSH_FAILED',
+            message: `Test notifica push fallita: ${pushError}. Campagna bloccata.`
+          }, 500)
+        }
+        console.log('[Atomicity] Push test PASSED')
       }
-      console.log('[Atomicity] Push test PASSED')
 
       console.log('[Atomicity] All pre-flight checks PASSED. Proceeding with campaign send.')
 

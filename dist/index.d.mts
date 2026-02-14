@@ -2849,6 +2849,12 @@ type SupabaseExpoClientConfig = {
         removeItem: (key: string) => Promise<void> | void;
     };
     storageKey?: string;
+    /**
+     * Se true, rileva automaticamente i token di sessione nell'URL (hash fragment).
+     * Utile per PWA web dove i link di reset password contengono il token nell'URL.
+     * Default: false (non supportato in Expo nativo, ma utile per web).
+     */
+    detectSessionInUrl?: boolean;
 };
 /**
  * Crea un Supabase client per Expo/React Native.

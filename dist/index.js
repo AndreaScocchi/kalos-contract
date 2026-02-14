@@ -54,16 +54,16 @@ function createSupabaseBrowserClient(config) {
   });
 }
 function createSupabaseExpoClient(config) {
-  var _a;
+  var _a, _b;
   const { url, anonKey } = assertSupabaseConfig(config.url, config.anonKey);
   const storageKey = (_a = config.storageKey) != null ? _a : "sb-auth-token";
   const storage = config.storage;
+  const detectSessionInUrl = (_b = config.detectSessionInUrl) != null ? _b : false;
   return supabaseJs.createClient(url, anonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: false,
-      // Non supportato in Expo
+      detectSessionInUrl,
       storage,
       // Supabase accetta storage custom con questa interfaccia
       storageKey

@@ -107,6 +107,12 @@ export type SupabaseExpoClientConfig = {
     removeItem: (key: string) => Promise<void> | void;
   };
   storageKey?: string;
+  /**
+   * Se true, rileva automaticamente i token di sessione nell'URL (hash fragment).
+   * Utile per PWA web dove i link di reset password contengono il token nell'URL.
+   * Default: false (non supportato in Expo nativo, ma utile per web).
+   */
+  detectSessionInUrl?: boolean;
 };
 
 /**
@@ -125,15 +131,17 @@ export function createSupabaseExpoClient(
   config: SupabaseExpoClientConfig
 ): SupabaseClient<Database> {
   const { url, anonKey } = assertSupabaseConfig(config.url, config.anonKey);
-  
+
   const storageKey = config.storageKey ?? 'sb-auth-token';
   const storage = config.storage;
+  // Default false per compatibilità con Expo nativo, ma configurabile per PWA web
+  const detectSessionInUrl = config.detectSessionInUrl ?? false;
 
   return createClient<Database>(url, anonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: false, // Non supportato in Expo
+      detectSessionInUrl,
       storage: storage as any, // Supabase accetta storage custom con questa interfaccia
       storageKey,
     },

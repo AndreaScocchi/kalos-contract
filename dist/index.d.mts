@@ -1542,6 +1542,7 @@ type Database = {
                     deleted_at: string | null;
                     disciplines: string[] | null;
                     id: string;
+                    image_url: string | null;
                     is_active: boolean;
                     is_admin: boolean | null;
                     name: string;
@@ -1554,6 +1555,7 @@ type Database = {
                     deleted_at?: string | null;
                     disciplines?: string[] | null;
                     id?: string;
+                    image_url?: string | null;
                     is_active?: boolean;
                     is_admin?: boolean | null;
                     name: string;
@@ -1566,6 +1568,7 @@ type Database = {
                     deleted_at?: string | null;
                     disciplines?: string[] | null;
                     id?: string;
+                    image_url?: string | null;
                     is_active?: boolean;
                     is_admin?: boolean | null;
                     name?: string;
@@ -2283,7 +2286,7 @@ type Database = {
                     display_order?: never;
                     id?: string | null;
                     image_alt?: never;
-                    image_url?: never;
+                    image_url?: string | null;
                     is_active?: boolean | null;
                     name?: string | null;
                     role?: string | null;
@@ -2293,7 +2296,7 @@ type Database = {
                     display_order?: never;
                     id?: string | null;
                     image_alt?: never;
-                    image_url?: never;
+                    image_url?: string | null;
                     is_active?: boolean | null;
                     name?: string | null;
                     role?: string | null;
@@ -2522,6 +2525,10 @@ type Database = {
                 Args: never;
                 Returns: undefined;
             };
+            cron_update_subscription_statuses: {
+                Args: never;
+                Returns: undefined;
+            };
             delete_campaign: {
                 Args: {
                     campaign_id: string;
@@ -2565,8 +2572,8 @@ type Database = {
                     p_event_ids: string[];
                 };
                 Returns: {
-                    event_id: string;
                     booked_count: number;
+                    event_id: string;
                 }[];
             };
             get_financial_kpis: {
@@ -2672,6 +2679,16 @@ type Database = {
                     p_title: string;
                 };
                 Returns: Json;
+            } | {
+                Args: {
+                    p_announcement_id: string;
+                    p_body: string;
+                    p_is_test?: boolean;
+                    p_scheduled_for?: string;
+                    p_test_client_id?: string;
+                    p_title: string;
+                };
+                Returns: Json;
             };
             queue_birthday: {
                 Args: never;
@@ -2753,6 +2770,15 @@ type Database = {
                     p_status: Database["public"]["Enums"]["booking_status"];
                 };
                 Returns: Json;
+            };
+            update_expired_subscription_statuses: {
+                Args: never;
+                Returns: {
+                    active_to_completed: number;
+                    active_to_expired: number;
+                    completed_to_expired: number;
+                    updated_count: number;
+                }[];
             };
         };
         Enums: {
@@ -4478,6 +4504,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 deleted_at: string | null;
                 disciplines: string[] | null;
                 id: string;
+                image_url: string | null;
                 is_active: boolean;
                 is_admin: boolean | null;
                 name: string;
@@ -4490,6 +4517,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 deleted_at?: string | null;
                 disciplines?: string[] | null;
                 id?: string;
+                image_url?: string | null;
                 is_active?: boolean;
                 is_admin?: boolean | null;
                 name: string;
@@ -4502,6 +4530,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 deleted_at?: string | null;
                 disciplines?: string[] | null;
                 id?: string;
+                image_url?: string | null;
                 is_active?: boolean;
                 is_admin?: boolean | null;
                 name?: string;
@@ -5187,7 +5216,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 display_order?: never;
                 id?: string | null;
                 image_alt?: never;
-                image_url?: never;
+                image_url?: string | null;
                 is_active?: boolean | null;
                 name?: string | null;
                 role?: string | null;
@@ -5197,7 +5226,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 display_order?: never;
                 id?: string | null;
                 image_alt?: never;
-                image_url?: never;
+                image_url?: string | null;
                 is_active?: boolean | null;
                 name?: string | null;
                 role?: string | null;
@@ -5422,6 +5451,10 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Args: never;
             Returns: undefined;
         };
+        cron_update_subscription_statuses: {
+            Args: never;
+            Returns: undefined;
+        };
         delete_campaign: {
             Args: {
                 campaign_id: string;
@@ -5465,8 +5498,8 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 p_event_ids: string[];
             };
             Returns: {
-                event_id: string;
                 booked_count: number;
+                event_id: string;
             }[];
         };
         get_financial_kpis: {
@@ -5572,6 +5605,16 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 p_title: string;
             };
             Returns: Json;
+        } | {
+            Args: {
+                p_announcement_id: string;
+                p_body: string;
+                p_is_test?: boolean;
+                p_scheduled_for?: string;
+                p_test_client_id?: string;
+                p_title: string;
+            };
+            Returns: Json;
         };
         queue_birthday: {
             Args: never;
@@ -5653,6 +5696,15 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 p_status: Database["public"]["Enums"]["booking_status"];
             };
             Returns: Json;
+        };
+        update_expired_subscription_statuses: {
+            Args: never;
+            Returns: {
+                active_to_completed: number;
+                active_to_expired: number;
+                completed_to_expired: number;
+                updated_count: number;
+            }[];
         };
     };
     Enums: {
@@ -7112,6 +7164,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         deleted_at: string | null;
         disciplines: string[] | null;
         id: string;
+        image_url: string | null;
         is_active: boolean;
         is_admin: boolean | null;
         name: string;
@@ -7124,6 +7177,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         deleted_at?: string | null;
         disciplines?: string[] | null;
         id?: string;
+        image_url?: string | null;
         is_active?: boolean;
         is_admin?: boolean | null;
         name: string;
@@ -7136,6 +7190,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         deleted_at?: string | null;
         disciplines?: string[] | null;
         id?: string;
+        image_url?: string | null;
         is_active?: boolean;
         is_admin?: boolean | null;
         name?: string;
@@ -8491,6 +8546,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     deleted_at: string | null;
     disciplines: string[] | null;
     id: string;
+    image_url: string | null;
     is_active: boolean;
     is_admin: boolean | null;
     name: string;
@@ -8956,6 +9012,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     deleted_at: string | null;
     disciplines: string[] | null;
     id: string;
+    image_url: string | null;
     is_active: boolean;
     is_admin: boolean | null;
     name: string;
@@ -9421,6 +9478,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     deleted_at: string | null;
     disciplines: string[] | null;
     id: string;
+    image_url: string | null;
     is_active: boolean;
     is_admin: boolean | null;
     name: string;
@@ -9886,6 +9944,7 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     deleted_at: string | null;
     disciplines: string[] | null;
     id: string;
+    image_url: string | null;
     is_active: boolean;
     is_admin: boolean | null;
     name: string;
@@ -10360,6 +10419,7 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     deleted_at: string | null;
     disciplines: string[] | null;
     id: string;
+    image_url: string | null;
     is_active: boolean;
     is_admin: boolean | null;
     name: string;

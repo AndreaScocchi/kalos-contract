@@ -1552,6 +1552,7 @@ export type Database = {
           deleted_at: string | null
           disciplines: string[] | null
           id: string
+          image_url: string | null
           is_active: boolean
           is_admin: boolean | null
           name: string
@@ -1564,6 +1565,7 @@ export type Database = {
           deleted_at?: string | null
           disciplines?: string[] | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_admin?: boolean | null
           name: string
@@ -1576,6 +1578,7 @@ export type Database = {
           deleted_at?: string | null
           disciplines?: string[] | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_admin?: boolean | null
           name?: string
@@ -2293,7 +2296,7 @@ export type Database = {
           display_order?: never
           id?: string | null
           image_alt?: never
-          image_url?: never
+          image_url?: string | null
           is_active?: boolean | null
           name?: string | null
           role?: string | null
@@ -2303,7 +2306,7 @@ export type Database = {
           display_order?: never
           id?: string | null
           image_alt?: never
-          image_url?: never
+          image_url?: string | null
           is_active?: boolean | null
           name?: string | null
           role?: string | null
@@ -2474,6 +2477,7 @@ export type Database = {
       cron_queue_lesson_reminders: { Args: never; Returns: undefined }
       cron_queue_re_engagement: { Args: never; Returns: undefined }
       cron_queue_subscription_expiry: { Args: never; Returns: undefined }
+      cron_update_subscription_statuses: { Args: never; Returns: undefined }
       delete_campaign: { Args: { campaign_id: string }; Returns: undefined }
       fix_missing_cancel_restore_entries: {
         Args: never
@@ -2497,15 +2501,12 @@ export type Database = {
           total_sent: number
         }[]
       }
-      get_event_booking_count: {
-        Args: { p_event_id: string }
-        Returns: number
-      }
+      get_event_booking_count: { Args: { p_event_id: string }; Returns: number }
       get_events_booking_counts: {
         Args: { p_event_ids: string[] }
         Returns: {
-          event_id: string
           booked_count: number
+          event_id: string
         }[]
       }
       get_financial_kpis: {
@@ -2571,6 +2572,17 @@ export type Database = {
             }
             Returns: Json
           }
+        | {
+            Args: {
+              p_announcement_id: string
+              p_body: string
+              p_is_test?: boolean
+              p_scheduled_for?: string
+              p_test_client_id?: string
+              p_title: string
+            }
+            Returns: Json
+          }
       queue_birthday: { Args: never; Returns: Json }
       queue_entries_low: { Args: never; Returns: Json }
       queue_first_lesson: { Args: { p_client_id: string }; Returns: boolean }
@@ -2612,6 +2624,15 @@ export type Database = {
           p_status: Database["public"]["Enums"]["booking_status"]
         }
         Returns: Json
+      }
+      update_expired_subscription_statuses: {
+        Args: never
+        Returns: {
+          active_to_completed: number
+          active_to_expired: number
+          completed_to_expired: number
+          updated_count: number
+        }[]
       }
     }
     Enums: {

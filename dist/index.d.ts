@@ -3066,7 +3066,7 @@ type Database = {
             newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
             newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
             newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
-            notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement";
+            notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder";
             notification_channel: "push" | "email";
             notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
             practice_block_type: "text" | "image" | "audio" | "video";
@@ -6254,7 +6254,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
         newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
         newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
-        notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement";
+        notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder";
         notification_channel: "push" | "email";
         notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
         practice_block_type: "text" | "image" | "audio" | "video";

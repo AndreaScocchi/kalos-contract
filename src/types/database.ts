@@ -2983,6 +2983,9 @@ export type Database = {
         | "birthday"
         | "new_event"
         | "announcement"
+        | "practice_reminder"
+        | "practice_resume"
+        | "journal_reminder"
       notification_channel: "push" | "email"
       notification_status:
         | "pending"
@@ -3211,6 +3214,9 @@ export const Constants = {
         "birthday",
         "new_event",
         "announcement",
+        "practice_reminder",
+        "practice_resume",
+        "journal_reminder",
       ],
       notification_channel: ["push", "email"],
       notification_status: [

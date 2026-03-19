@@ -1022,6 +1022,51 @@ export type Database = {
           },
         ]
       }
+      journal_entries: {
+        Row: {
+          body: string
+          client_id: string
+          created_at: string
+          id: string
+          practice_id: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          client_id: string
+          created_at?: string
+          id?: string
+          practice_id?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          practice_id?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           activity_id: string
@@ -1551,6 +1596,7 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           disciplines: string[] | null
+          display_order: number | null
           id: string
           image_url: string | null
           is_active: boolean
@@ -1564,6 +1610,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           disciplines?: string[] | null
+          display_order?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -1577,6 +1624,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           disciplines?: string[] | null
+          display_order?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -1806,6 +1854,231 @@ export type Database = {
           name?: string
           price_cents?: number
           validity_days?: number
+        }
+        Relationships: []
+      }
+      practice_activities: {
+        Row: {
+          activity_id: string
+          created_at: string
+          practice_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          practice_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          practice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_activities_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_activities_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_activities_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_schedule"
+            referencedColumns: ["activity_id"]
+          },
+          {
+            foreignKeyName: "practice_activities_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_blocks: {
+        Row: {
+          block_type: Database["public"]["Enums"]["practice_block_type"]
+          caption: string | null
+          content: string
+          created_at: string
+          id: string
+          sort_order: number
+          step_id: string
+        }
+        Insert: {
+          block_type: Database["public"]["Enums"]["practice_block_type"]
+          caption?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          sort_order: number
+          step_id: string
+        }
+        Update: {
+          block_type?: Database["public"]["Enums"]["practice_block_type"]
+          caption?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_blocks_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "practice_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_steps: {
+        Row: {
+          created_at: string
+          id: string
+          practice_id: string
+          sort_order: number
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          practice_id: string
+          sort_order: number
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          practice_id?: string
+          sort_order?: number
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_steps_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_user_state: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          current_step_index: number
+          id: string
+          is_favorite: boolean
+          last_accessed_at: string
+          practice_id: string
+          started_at: string
+          status: Database["public"]["Enums"]["practice_user_status"]
+          time_spent_seconds: number
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          current_step_index?: number
+          id?: string
+          is_favorite?: boolean
+          last_accessed_at?: string
+          practice_id: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["practice_user_status"]
+          time_spent_seconds?: number
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          current_step_index?: number
+          id?: string
+          is_favorite?: boolean
+          last_accessed_at?: string
+          practice_id?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["practice_user_status"]
+          time_spent_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_user_state_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_user_state_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practices: {
+        Row: {
+          category: Database["public"]["Enums"]["practice_category"]
+          cover_image_url: string | null
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          goals: Json | null
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          level: Database["public"]["Enums"]["practice_level"]
+          sort_order: number
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["practice_category"]
+          cover_image_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          goals?: Json | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          level?: Database["public"]["Enums"]["practice_level"]
+          sort_order?: number
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["practice_category"]
+          cover_image_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          goals?: Json | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          level?: Database["public"]["Enums"]["practice_level"]
+          sort_order?: number
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2293,7 +2566,7 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
-          display_order?: never
+          display_order?: number | null
           id?: string | null
           image_alt?: never
           image_url?: string | null
@@ -2303,7 +2576,7 @@ export type Database = {
         }
         Update: {
           bio?: string | null
-          display_order?: never
+          display_order?: number | null
           id?: string | null
           image_alt?: never
           image_url?: string | null
@@ -2717,6 +2990,15 @@ export type Database = {
         | "delivered"
         | "failed"
         | "skipped"
+      practice_block_type: "text" | "image" | "audio" | "video"
+      practice_category:
+        | "meditazione"
+        | "corpo"
+        | "respiro"
+        | "scrittura"
+        | "rilassamento"
+      practice_level: "principiante" | "intermedio" | "avanzato"
+      practice_user_status: "started" | "completed"
       social_platform: "instagram" | "facebook"
       subscription_status: "active" | "completed" | "expired" | "canceled"
       user_role: "user" | "operator" | "admin" | "finance"
@@ -2938,6 +3220,16 @@ export const Constants = {
         "failed",
         "skipped",
       ],
+      practice_block_type: ["text", "image", "audio", "video"],
+      practice_category: [
+        "meditazione",
+        "corpo",
+        "respiro",
+        "scrittura",
+        "rilassamento",
+      ],
+      practice_level: ["principiante", "intermedio", "avanzato"],
+      practice_user_status: ["started", "completed"],
       social_platform: ["instagram", "facebook"],
       subscription_status: ["active", "completed", "expired", "canceled"],
       user_role: ["user", "operator", "admin", "finance"],

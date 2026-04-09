@@ -13,9 +13,14 @@ function assertSupabaseConfig(url, anonKey) {
   return { url, anonKey };
 }
 function createFetchWithTimeout(timeoutMs) {
+  const STORAGE_TIMEOUT_MS = 5 * 60 * 1e3;
   return async (input, init) => {
+    var _a;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const isStorageUpload = url.includes("/storage/") && ((_a = init == null ? void 0 : init.method) == null ? void 0 : _a.toUpperCase()) === "POST";
+    const effectiveTimeout = isStorageUpload ? STORAGE_TIMEOUT_MS : timeoutMs;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
     try {
       const response = await fetch(input, {
         ...init,
@@ -26,7 +31,7 @@ function createFetchWithTimeout(timeoutMs) {
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === "AbortError") {
-        throw new Error(`Request timeout after ${timeoutMs}ms`);
+        throw new Error(`Request timeout after ${effectiveTimeout}ms`);
       }
       throw error;
     }

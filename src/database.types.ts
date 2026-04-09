@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       activities: {
@@ -1022,6 +1047,51 @@ export type Database = {
           },
         ]
       }
+      journal_entries: {
+        Row: {
+          body: string
+          client_id: string
+          created_at: string
+          id: string
+          practice_id: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          client_id: string
+          created_at?: string
+          id?: string
+          practice_id?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          practice_id?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           activity_id: string
@@ -1551,7 +1621,9 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           disciplines: string[] | null
+          display_order: number | null
           id: string
+          image_url: string | null
           is_active: boolean
           is_admin: boolean | null
           name: string
@@ -1563,7 +1635,9 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           disciplines?: string[] | null
+          display_order?: number | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_admin?: boolean | null
           name: string
@@ -1575,7 +1649,9 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           disciplines?: string[] | null
+          display_order?: number | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_admin?: boolean | null
           name?: string
@@ -1806,6 +1882,231 @@ export type Database = {
         }
         Relationships: []
       }
+      practice_activities: {
+        Row: {
+          activity_id: string
+          created_at: string
+          practice_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          practice_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          practice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_activities_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_activities_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_activities_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_schedule"
+            referencedColumns: ["activity_id"]
+          },
+          {
+            foreignKeyName: "practice_activities_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_blocks: {
+        Row: {
+          block_type: Database["public"]["Enums"]["practice_block_type"]
+          caption: string | null
+          content: string
+          created_at: string
+          id: string
+          sort_order: number
+          step_id: string
+        }
+        Insert: {
+          block_type: Database["public"]["Enums"]["practice_block_type"]
+          caption?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          sort_order: number
+          step_id: string
+        }
+        Update: {
+          block_type?: Database["public"]["Enums"]["practice_block_type"]
+          caption?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_blocks_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "practice_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_steps: {
+        Row: {
+          created_at: string
+          id: string
+          practice_id: string
+          sort_order: number
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          practice_id: string
+          sort_order: number
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          practice_id?: string
+          sort_order?: number
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_steps_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_user_state: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          current_step_index: number
+          id: string
+          is_favorite: boolean
+          last_accessed_at: string
+          practice_id: string
+          started_at: string
+          status: Database["public"]["Enums"]["practice_user_status"]
+          time_spent_seconds: number
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          current_step_index?: number
+          id?: string
+          is_favorite?: boolean
+          last_accessed_at?: string
+          practice_id: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["practice_user_status"]
+          time_spent_seconds?: number
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          current_step_index?: number
+          id?: string
+          is_favorite?: boolean
+          last_accessed_at?: string
+          practice_id?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["practice_user_status"]
+          time_spent_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_user_state_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_user_state_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practices: {
+        Row: {
+          category: Database["public"]["Enums"]["practice_category"]
+          cover_image_url: string | null
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          goals: Json | null
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          level: Database["public"]["Enums"]["practice_level"]
+          sort_order: number
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["practice_category"]
+          cover_image_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          goals?: Json | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          level?: Database["public"]["Enums"]["practice_level"]
+          sort_order?: number
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["practice_category"]
+          cover_image_url?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          goals?: Json | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          level?: Database["public"]["Enums"]["practice_level"]
+          sort_order?: number
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           accepted_privacy_at: string | null
@@ -2033,6 +2334,8 @@ export type Database = {
           custom_price_cents: number | null
           custom_validity_days: number | null
           deleted_at: string | null
+          discount_percent: number | null
+          discount_reason: string | null
           expires_at: string
           id: string
           metadata: Json | null
@@ -2048,6 +2351,8 @@ export type Database = {
           custom_price_cents?: number | null
           custom_validity_days?: number | null
           deleted_at?: string | null
+          discount_percent?: number | null
+          discount_reason?: string | null
           expires_at: string
           id?: string
           metadata?: Json | null
@@ -2063,6 +2368,8 @@ export type Database = {
           custom_price_cents?: number | null
           custom_validity_days?: number | null
           deleted_at?: string | null
+          discount_percent?: number | null
+          discount_reason?: string | null
           expires_at?: string
           id?: string
           metadata?: Json | null
@@ -2284,20 +2591,20 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
-          display_order?: never
+          display_order?: number | null
           id?: string | null
           image_alt?: never
-          image_url?: never
+          image_url?: string | null
           is_active?: boolean | null
           name?: string | null
           role?: string | null
         }
         Update: {
           bio?: string | null
-          display_order?: never
+          display_order?: number | null
           id?: string | null
           image_alt?: never
-          image_url?: never
+          image_url?: string | null
           is_active?: boolean | null
           name?: string | null
           role?: string | null
@@ -2465,9 +2772,13 @@ export type Database = {
       cron_process_notification_queue: { Args: never; Returns: undefined }
       cron_queue_birthday: { Args: never; Returns: undefined }
       cron_queue_entries_low: { Args: never; Returns: undefined }
+      cron_queue_journal_reminder: { Args: never; Returns: undefined }
       cron_queue_lesson_reminders: { Args: never; Returns: undefined }
+      cron_queue_practice_reminder: { Args: never; Returns: undefined }
+      cron_queue_practice_resume: { Args: never; Returns: undefined }
       cron_queue_re_engagement: { Args: never; Returns: undefined }
       cron_queue_subscription_expiry: { Args: never; Returns: undefined }
+      cron_update_subscription_statuses: { Args: never; Returns: undefined }
       delete_campaign: { Args: { campaign_id: string }; Returns: undefined }
       fix_missing_cancel_restore_entries: {
         Args: never
@@ -2481,6 +2792,13 @@ export type Database = {
         Args: { discipline_text: string }
         Returns: string
       }
+      get_activity_booking_counts: {
+        Args: never
+        Returns: {
+          activity_id: string
+          booking_count: number
+        }[]
+      }
       get_auth_email_stats: {
         Args: { p_user_id: string }
         Returns: {
@@ -2489,6 +2807,14 @@ export type Database = {
           last_sent_at: string
           last_status: string
           total_sent: number
+        }[]
+      }
+      get_event_booking_count: { Args: { p_event_id: string }; Returns: number }
+      get_events_booking_counts: {
+        Args: { p_event_ids: string[] }
+        Returns: {
+          booked_count: number
+          event_id: string
         }[]
       }
       get_financial_kpis: {
@@ -2554,18 +2880,47 @@ export type Database = {
             }
             Returns: Json
           }
+        | {
+            Args: {
+              p_announcement_id: string
+              p_body: string
+              p_is_test?: boolean
+              p_scheduled_for?: string
+              p_test_client_id?: string
+              p_title: string
+            }
+            Returns: Json
+          }
       queue_birthday: { Args: never; Returns: Json }
       queue_entries_low: { Args: never; Returns: Json }
       queue_first_lesson: { Args: { p_client_id: string }; Returns: boolean }
+      queue_journal_reminder: { Args: never; Returns: Json }
       queue_lesson_reminders: { Args: never; Returns: Json }
       queue_milestone: {
         Args: { p_client_id: string; p_milestone: number }
         Returns: boolean
       }
-      queue_new_event: {
-        Args: { p_event_date: string; p_event_id: string; p_event_name: string }
-        Returns: Json
-      }
+      queue_new_event:
+        | {
+            Args: {
+              p_event_date: string
+              p_event_id: string
+              p_event_name: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_event_date: string
+              p_event_id: string
+              p_event_name: string
+              p_send_email?: boolean
+              p_send_push?: boolean
+            }
+            Returns: Json
+          }
+      queue_practice_reminder: { Args: never; Returns: Json }
+      queue_practice_resume: { Args: never; Returns: Json }
       queue_re_engagement: { Args: never; Returns: Json }
       queue_subscription_expiry: { Args: never; Returns: Json }
       staff_book_event: {
@@ -2595,6 +2950,15 @@ export type Database = {
           p_status: Database["public"]["Enums"]["booking_status"]
         }
         Returns: Json
+      }
+      update_expired_subscription_statuses: {
+        Args: never
+        Returns: {
+          active_to_completed: number
+          active_to_expired: number
+          completed_to_expired: number
+          updated_count: number
+        }[]
       }
     }
     Enums: {
@@ -2672,6 +3036,9 @@ export type Database = {
         | "birthday"
         | "new_event"
         | "announcement"
+        | "practice_reminder"
+        | "practice_resume"
+        | "journal_reminder"
       notification_channel: "push" | "email"
       notification_status:
         | "pending"
@@ -2679,6 +3046,15 @@ export type Database = {
         | "delivered"
         | "failed"
         | "skipped"
+      practice_block_type: "text" | "image" | "audio" | "video"
+      practice_category:
+        | "meditazione"
+        | "corpo"
+        | "respiro"
+        | "scrittura"
+        | "rilassamento"
+      practice_level: "principiante" | "intermedio" | "avanzato"
+      practice_user_status: "started" | "completed"
       social_platform: "instagram" | "facebook"
       subscription_status: "active" | "completed" | "expired" | "canceled"
       user_role: "user" | "operator" | "admin" | "finance"
@@ -2807,6 +3183,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       announcement_recurrence_frequency: [
@@ -2891,6 +3270,9 @@ export const Constants = {
         "birthday",
         "new_event",
         "announcement",
+        "practice_reminder",
+        "practice_resume",
+        "journal_reminder",
       ],
       notification_channel: ["push", "email"],
       notification_status: [
@@ -2900,6 +3282,16 @@ export const Constants = {
         "failed",
         "skipped",
       ],
+      practice_block_type: ["text", "image", "audio", "video"],
+      practice_category: [
+        "meditazione",
+        "corpo",
+        "respiro",
+        "scrittura",
+        "rilassamento",
+      ],
+      practice_level: ["principiante", "intermedio", "avanzato"],
+      practice_user_status: ["started", "completed"],
       social_platform: ["instagram", "facebook"],
       subscription_status: ["active", "completed", "expired", "canceled"],
       user_role: ["user", "operator", "admin", "finance"],

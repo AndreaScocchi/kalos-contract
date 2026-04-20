@@ -30,12 +30,21 @@ export type SupabaseBrowserClientConfig = {
 };
 
 /**
- * Crea un fetch wrapper con timeout usando AbortController
+ * Crea un fetch wrapper con timeout usando AbortController.
+ * Le richieste verso /storage/ (upload file) usano un timeout più lungo (5 minuti)
+ * per evitare che upload di file grandi (audio, video) vengano interrotti.
  */
 function createFetchWithTimeout(timeoutMs: number): typeof fetch {
+  const STORAGE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minuti per upload storage
+
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    // Usa timeout più lungo per richieste storage (upload file)
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const isStorageUpload = url.includes('/storage/') && init?.method?.toUpperCase() === 'POST';
+    const effectiveTimeout = isStorageUpload ? STORAGE_TIMEOUT_MS : timeoutMs;
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
 
     try {
       const response = await fetch(input, {
@@ -47,7 +56,7 @@ function createFetchWithTimeout(timeoutMs: number): typeof fetch {
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error(`Request timeout after ${timeoutMs}ms`);
+        throw new Error(`Request timeout after ${effectiveTimeout}ms`);
       }
       throw error;
     }

@@ -1591,6 +1591,7 @@ type Database = {
                     image_url: string | null;
                     is_active: boolean;
                     is_admin: boolean | null;
+                    is_visible_on_site: boolean;
                     name: string;
                     profile_id: string | null;
                     role: string;
@@ -1605,6 +1606,7 @@ type Database = {
                     image_url?: string | null;
                     is_active?: boolean;
                     is_admin?: boolean | null;
+                    is_visible_on_site?: boolean;
                     name: string;
                     profile_id?: string | null;
                     role: string;
@@ -1619,6 +1621,7 @@ type Database = {
                     image_url?: string | null;
                     is_active?: boolean;
                     is_admin?: boolean | null;
+                    is_visible_on_site?: boolean;
                     name?: string;
                     profile_id?: string | null;
                     role?: string;
@@ -4827,6 +4830,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 image_url: string | null;
                 is_active: boolean;
                 is_admin: boolean | null;
+                is_visible_on_site: boolean;
                 name: string;
                 profile_id: string | null;
                 role: string;
@@ -4841,6 +4845,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 image_url?: string | null;
                 is_active?: boolean;
                 is_admin?: boolean | null;
+                is_visible_on_site?: boolean;
                 name: string;
                 profile_id?: string | null;
                 role: string;
@@ -4855,6 +4860,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 image_url?: string | null;
                 is_active?: boolean;
                 is_admin?: boolean | null;
+                is_visible_on_site?: boolean;
                 name?: string;
                 profile_id?: string | null;
                 role?: string;
@@ -7748,6 +7754,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         image_url: string | null;
         is_active: boolean;
         is_admin: boolean | null;
+        is_visible_on_site: boolean;
         name: string;
         profile_id: string | null;
         role: string;
@@ -7762,6 +7769,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         image_url?: string | null;
         is_active?: boolean;
         is_admin?: boolean | null;
+        is_visible_on_site?: boolean;
         name: string;
         profile_id?: string | null;
         role: string;
@@ -7776,6 +7784,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         image_url?: string | null;
         is_active?: boolean;
         is_admin?: boolean | null;
+        is_visible_on_site?: boolean;
         name?: string;
         profile_id?: string | null;
         role?: string;
@@ -9409,6 +9418,7 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     image_url: string | null;
     is_active: boolean;
     is_admin: boolean | null;
+    is_visible_on_site: boolean;
     name: string;
     profile_id: string | null;
     role: string;
@@ -9929,6 +9939,7 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     image_url: string | null;
     is_active: boolean;
     is_admin: boolean | null;
+    is_visible_on_site: boolean;
     name: string;
     profile_id: string | null;
     role: string;
@@ -10449,6 +10460,7 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     image_url: string | null;
     is_active: boolean;
     is_admin: boolean | null;
+    is_visible_on_site: boolean;
     name: string;
     profile_id: string | null;
     role: string;
@@ -10969,6 +10981,7 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     image_url: string | null;
     is_active: boolean;
     is_admin: boolean | null;
+    is_visible_on_site: boolean;
     name: string;
     profile_id: string | null;
     role: string;
@@ -11498,6 +11511,7 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     image_url: string | null;
     is_active: boolean;
     is_admin: boolean | null;
+    is_visible_on_site: boolean;
     name: string;
     profile_id: string | null;
     role: string;

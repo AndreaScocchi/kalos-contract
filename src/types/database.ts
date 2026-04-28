@@ -1601,6 +1601,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           is_admin: boolean | null
+          is_visible_on_site: boolean
           name: string
           profile_id: string | null
           role: string
@@ -1615,6 +1616,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_admin?: boolean | null
+          is_visible_on_site?: boolean
           name: string
           profile_id?: string | null
           role: string
@@ -1629,6 +1631,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_admin?: boolean | null
+          is_visible_on_site?: boolean
           name?: string
           profile_id?: string | null
           role?: string

@@ -7,7 +7,7 @@
 --     "Primary" tab. Best for personal-feeling invites to events.
 --
 -- from_name_override (used in primary mode) overrides the default sender display
--- name (e.g. "Tommaso da Studio Kalòs"). The email address stays on the verified
+-- name (e.g. "Alice da Studio Kalòs"). The email address stays on the verified
 -- domain (newsletter@kalosstudio.it) to preserve DKIM alignment.
 
 ALTER TABLE "public"."newsletter_campaigns"
@@ -29,4 +29,4 @@ END $$;
 COMMENT ON COLUMN "public"."newsletter_campaigns"."delivery_mode" IS
   'Send strategy: ''promotions'' (branded HTML, bulk headers) or ''primary'' (plain HTML, no bulk headers, aiming for Gmail Primary tab).';
 COMMENT ON COLUMN "public"."newsletter_campaigns"."from_name_override" IS
-  'Optional sender display name override, used in primary mode (e.g. "Tommaso da Studio Kalòs"). Email address stays on the verified domain.';
+  'Optional sender display name override, used in primary mode (e.g. "Alice da Studio Kalòs"). Email address stays on the verified domain.';

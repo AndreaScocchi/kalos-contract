@@ -1192,6 +1192,8 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           delivered_count: number
+          delivery_mode: string
+          from_name_override: string | null
           id: string
           image_url: string | null
           marketing_campaign_id: string | null
@@ -1214,6 +1216,8 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           delivered_count?: number
+          delivery_mode?: string
+          from_name_override?: string | null
           id?: string
           image_url?: string | null
           marketing_campaign_id?: string | null
@@ -1236,6 +1240,8 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           delivered_count?: number
+          delivery_mode?: string
+          from_name_override?: string | null
           id?: string
           image_url?: string | null
           marketing_campaign_id?: string | null

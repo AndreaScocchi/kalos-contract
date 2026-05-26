@@ -1,6 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { sendEmail, replaceTemplateVariables, getFromEmail, getReplyToEmail, buildBulkHeaders, delay } from '../_shared/resend.ts'
+import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay } from '../_shared/resend.ts'
+
+type DeliveryMode = 'promotions' | 'primary'
 
 interface Recipient {
   email: string
@@ -255,6 +257,51 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
 </html>`
 }
 
+// Minimal HTML template for "primary" mode: aims for Gmail Primary tab.
+// No logo, no card, no images, no big footer. Just text + small textual header
+// and a short footer with the unsubscribe link. This format is critical for
+// avoiding the Promotions tab — every visual marketing signal is removed.
+function wrapTextInHtmlPrimary(text: string, unsubscribeUrl: string, previewText: string | null = null): string {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+
+  const formatted = parseMarkdownFormatting(escaped)
+  const htmlContent = formatted.replace(/\n/g, '<br>')
+
+  const primaryColor = '#0F2D3B'
+  const accentColor = '#036257'
+  const footerText = '#6B7280'
+
+  return `<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Kalòs</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; color: ${primaryColor};">
+  ${previewText ? `<div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+    ${previewText}${generatePreviewPadding()}
+  </div>` : ''}
+  <div style="max-width: 560px; margin: 0 auto; padding: 24px 20px; font-size: 15px; line-height: 1.6;">
+    <div style="font-size: 12px; color: ${footerText}; letter-spacing: 1px; margin-bottom: 4px;">STUDIO KALÒS</div>
+    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 0 0 20px 0;">
+    <div style="color: ${primaryColor};">
+      ${htmlContent}
+    </div>
+    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0 12px 0;">
+    <div style="font-size: 11px; color: ${footerText}; line-height: 1.5;">
+      Staranzano (GO) · <a href="${unsubscribeUrl}" style="color: ${footerText}; text-decoration: underline;">annulla iscrizione</a>
+    </div>
+  </div>
+</body>
+</html>`
+}
+
 Deno.serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -415,10 +462,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // We send a test email + push notification to the admin.
     // If either fails, we abort the entire campaign.
     // ============================================================
+    // Resolve delivery mode (defaults to 'promotions' for legacy campaigns)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const deliveryMode: DeliveryMode = ((campaign as any).delivery_mode === 'primary') ? 'primary' : 'promotions'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fromNameOverride: string | null = (campaign as any).from_name_override ?? null
+    const fromEmail = buildFromAddress(deliveryMode === 'primary' ? fromNameOverride : null)
+    console.log(`[Send] delivery_mode=${deliveryMode}, from=${fromEmail}`)
+
     if (!body.skipAtomicityCheck && !body.testClientId) {
       console.log('Running atomicity pre-flight check...')
 
-      const fromEmail = getFromEmail()
       const imagePublicUrl = getImagePublicUrl(campaign.image_url)
 
       // Prepare test email content
@@ -430,7 +484,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const testToken = await generateUnsubscribeToken(ATOMICITY_TEST_EMAIL)
       const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
       const testUnsubscribeUrl = `${supabaseUrl}/functions/v1/unsubscribe-newsletter?email=${encodeURIComponent(ATOMICITY_TEST_EMAIL)}&token=${testToken}`
-      const testHtml = wrapTextInHtml(testPersonalizedText, testUnsubscribeUrl, imagePublicUrl, campaign.preview_text)
+
+      // Primary mode: minimal HTML, neutral headers (no Precedence/Feedback-ID).
+      // Promotions mode: branded HTML + full bulk headers.
+      const testHtml = deliveryMode === 'primary'
+        ? wrapTextInHtmlPrimary(testPersonalizedText, testUnsubscribeUrl, campaign.preview_text)
+        : wrapTextInHtml(testPersonalizedText, testUnsubscribeUrl, imagePublicUrl, campaign.preview_text)
+      const testHeaders = deliveryMode === 'primary'
+        ? buildPrimaryHeaders({ unsubscribeUrl: testUnsubscribeUrl })
+        : buildBulkHeaders({ unsubscribeUrl: testUnsubscribeUrl, campaignId: body.campaignId })
 
       // 1. Test EMAIL delivery
       console.log(`[Atomicity] Testing email to ${ATOMICITY_TEST_EMAIL}...`)
@@ -445,10 +507,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
           { name: 'campaign_id', value: body.campaignId },
           { name: 'atomicity_test', value: 'true' },
         ],
-        headers: buildBulkHeaders({
-          unsubscribeUrl: testUnsubscribeUrl,
-          campaignId: body.campaignId,
-        }),
+        headers: testHeaders,
       })
 
       if (testEmailError) {
@@ -574,9 +633,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Send emails sequentially to respect Resend rate limit (2 req/sec)
     let sentCount = 0
     let failedCount = 0
-    const fromEmail = getFromEmail()
 
-    // Generate public URL for newsletter image (if present)
+    // Generate public URL for newsletter image (if present; only used in promotions mode)
     const imagePublicUrl = getImagePublicUrl(campaign.image_url)
 
     for (let i = 0; i < pendingEmails.length; i++) {
@@ -594,11 +652,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
       const unsubscribeUrl = `${supabaseUrl}/functions/v1/unsubscribe-newsletter?email=${encodeURIComponent(emailRecord.email_address)}&token=${token}`
 
-      // Convert plain text to HTML (with image and preview text if present)
-      const personalizedHtml = wrapTextInHtml(personalizedText, unsubscribeUrl, imagePublicUrl, campaign.preview_text)
+      // Pick HTML template + headers based on delivery mode:
+      //  - 'primary'    → minimal HTML, no Precedence/Feedback-ID (looks personal)
+      //  - 'promotions' → branded HTML + bulk-sender headers (correct for newsletter)
+      const personalizedHtml = deliveryMode === 'primary'
+        ? wrapTextInHtmlPrimary(personalizedText, unsubscribeUrl, campaign.preview_text)
+        : wrapTextInHtml(personalizedText, unsubscribeUrl, imagePublicUrl, campaign.preview_text)
+      const messageHeaders = deliveryMode === 'primary'
+        ? buildPrimaryHeaders({ unsubscribeUrl })
+        : buildBulkHeaders({ unsubscribeUrl, campaignId: body.campaignId })
 
-      // Send email with full bulk-sender deliverability headers (List-Unsubscribe
-      // mailto+URL, One-Click POST, Precedence, Feedback-ID) and a real Reply-To.
       const { data, error } = await sendEmail({
         from: fromEmail,
         to: emailRecord.email_address,
@@ -609,11 +672,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
         tags: [
           { name: 'campaign_id', value: body.campaignId },
           { name: 'email_id', value: emailRecord.id },
+          { name: 'delivery_mode', value: deliveryMode },
         ],
-        headers: buildBulkHeaders({
-          unsubscribeUrl,
-          campaignId: body.campaignId,
-        }),
+        headers: messageHeaders,
       })
 
       if (error) {

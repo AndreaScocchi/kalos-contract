@@ -37,39 +37,69 @@ Deno.serve(async (req: Request): Promise<Response> => {
   )
 
   try {
-    // Find the client by email and update newsletter_subscribed to false
-    const { data: client, error: findError } = await supabaseAdmin
+    // Two storage paths for newsletter recipients:
+    //  - clients table (regular CRM clients) → unsubscribe = newsletter_subscribed=false
+    //  - newsletter_extra_emails (manual addresses added from the management UI)
+    //    → unsubscribe = soft-delete (set deleted_at)
+    // We update whichever exists; both can theoretically match the same address.
+    let unsubscribedAnything = false
+    let displayName = ''
+
+    const { data: client, error: clientFindError } = await supabaseAdmin
       .from('clients')
       .select('id, full_name')
       .eq('email', email)
-      .single()
+      .maybeSingle()
 
-    if (findError || !client) {
-      // Client not found - might be a manual email, just show success anyway
-      return htmlResponse(`
-        <h1>Disiscrizione completata</h1>
-        <p>L'indirizzo <strong>${escapeHtml(email)}</strong> è stato rimosso dalla newsletter di Studio Kalòs.</p>
-        <p>Non riceverai più comunicazioni da noi.</p>
-      `, primaryColor, accentColor, accentOrange, backgroundColor)
+    if (clientFindError) {
+      console.error('Error looking up client:', clientFindError)
+    } else if (client) {
+      const { error: updateError } = await supabaseAdmin
+        .from('clients')
+        .update({ newsletter_subscribed: false })
+        .eq('id', client.id)
+
+      if (updateError) {
+        console.error('Error updating client:', updateError)
+        return htmlResponse(`
+          <h1>Errore</h1>
+          <p>Si è verificato un errore durante la disiscrizione. Riprova più tardi.</p>
+        `, primaryColor, accentColor, accentOrange, backgroundColor)
+      }
+      unsubscribedAnything = true
+      displayName = client.full_name || ''
     }
 
-    // Update client to unsubscribe from newsletter
-    const { error: updateError } = await supabaseAdmin
-      .from('clients')
-      .update({ newsletter_subscribed: false })
-      .eq('id', client.id)
+    const { data: extraRows } = await supabaseAdmin
+      .from('newsletter_extra_emails')
+      .select('id')
+      .eq('email', email)
+      .is('deleted_at', null)
 
-    if (updateError) {
-      console.error('Error updating client:', updateError)
-      return htmlResponse(`
-        <h1>Errore</h1>
-        <p>Si è verificato un errore durante la disiscrizione. Riprova più tardi.</p>
-      `, primaryColor, accentColor, accentOrange, backgroundColor)
+    if (extraRows && extraRows.length > 0) {
+      const { error: extraUpdateError } = await supabaseAdmin
+        .from('newsletter_extra_emails')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('email', email)
+        .is('deleted_at', null)
+
+      if (extraUpdateError) {
+        console.error('Error soft-deleting extra email:', extraUpdateError)
+      } else {
+        unsubscribedAnything = true
+      }
     }
 
+    // Even if we didn't find the address in either table, we don't reveal that
+    // (anti-enumeration) — but we log it so we can investigate stale links.
+    if (!unsubscribedAnything) {
+      console.warn(`Unsubscribe requested for unknown address: ${email}`)
+    }
+
+    const greeting = displayName ? `<p>Ciao ${escapeHtml(displayName)},</p>` : ''
     return htmlResponse(`
       <h1>Disiscrizione completata</h1>
-      <p>Ciao ${escapeHtml(client.full_name || '')},</p>
+      ${greeting}
       <p>L'indirizzo <strong>${escapeHtml(email)}</strong> è stato rimosso dalla newsletter di Studio Kalòs.</p>
       <p>Non riceverai più comunicazioni da noi.</p>
       <p style="margin-top: 24px; font-size: 14px; color: #6B7280;">Se hai cambiato idea, contattaci a <a href="mailto:info.studiokalos@gmail.com" style="color: ${accentColor};">info.studiokalos@gmail.com</a></p>

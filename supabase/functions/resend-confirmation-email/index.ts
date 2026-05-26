@@ -100,7 +100,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // Send email via Resend for better deliverability
     const { data: resendData, error: resendError } = await sendEmail({
-      from: `Kalos Studio <${getFromEmail()}>`,
+      from: getFromEmail(),
       to: userEmail,
       subject: 'Conferma il tuo account Kalos Studio',
       html: generateConfirmationEmailHtml(confirmationLink),

@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay } from '../_shared/resend.ts'
+import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, PRIMARY_DEFAULT_FROM_NAME } from '../_shared/resend.ts'
 
 type DeliveryMode = 'promotions' | 'primary'
 
@@ -321,7 +321,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const deliveryMode: DeliveryMode = ((campaign as any).delivery_mode === 'primary') ? 'primary' : 'promotions'
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fromNameOverride: string | null = (campaign as any).from_name_override ?? null
-    const fromEmail = buildFromAddress(deliveryMode === 'primary' ? fromNameOverride : null)
+    const primaryFromName = (fromNameOverride && fromNameOverride.trim()) || PRIMARY_DEFAULT_FROM_NAME
+    const fromEmail = buildFromAddress(deliveryMode === 'primary' ? primaryFromName : null)
     console.log(`[Retry] delivery_mode=${deliveryMode}, from=${fromEmail}`)
 
     // Send emails sequentially to respect Resend rate limit (2 req/sec)

@@ -149,13 +149,20 @@ export function buildPrimaryHeaders(opts: {
 }
 
 /**
+ * Default display name used when sending in "primary" mode and no per-campaign
+ * override is provided. Primary mode is meant to feel like a personal email from
+ * a specific person at the studio.
+ */
+export const PRIMARY_DEFAULT_FROM_NAME = 'Alice da Studio Kalòs'
+
+/**
  * Build a "From" address with an optional display-name override. The email
  * portion is always the configured sender (verified domain for DKIM).
  * If `overrideDisplayName` is non-empty, it replaces the default display name.
  *
  * Examples:
  *   buildFromAddress()                     → "Studio Kalòs <newsletter@kalosstudio.it>"
- *   buildFromAddress("Tommaso da Kalòs")   → "Tommaso da Kalòs <newsletter@kalosstudio.it>"
+ *   buildFromAddress("Alice da Kalòs")   → "Alice da Kalòs <newsletter@kalosstudio.it>"
  */
 export function buildFromAddress(overrideDisplayName?: string | null): string {
   const configured = getFromEmail()

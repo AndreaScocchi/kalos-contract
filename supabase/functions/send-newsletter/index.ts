@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { sendEmail, replaceTemplateVariables, getFromEmail, delay } from '../_shared/resend.ts'
+import { sendEmail, replaceTemplateVariables, getFromEmail, getReplyToEmail, buildBulkHeaders, delay } from '../_shared/resend.ts'
 
 interface Recipient {
   email: string
@@ -225,7 +225,7 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
                 <tr>
                   <td style="text-align: center;">
                     <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: ${primaryColor};">Studio Kalòs</p>
-                    <p style="margin: 0; font-size: 13px; color: ${footerText};">
+                    <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">
                       <a href="mailto:info.studiokalos@gmail.com" style="color: ${accentColor}; text-decoration: none;">info.studiokalos@gmail.com</a>
                     </p>
                     <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">Località Casello Ferroviario, 3 - 34079 Staranzano (GO)</p>
@@ -329,6 +329,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         .not('email', 'is', null)
         .is('deleted_at', null)
         .eq('email_bounced', false)
+        .eq('newsletter_subscribed', true)
 
       if (clientsError || !clients) {
         return jsonResponse({ ok: false, reason: 'CLIENTS_FETCH_ERROR' }, 500)
@@ -341,6 +342,48 @@ Deno.serve(async (req: Request): Promise<Response> => {
           name: c.full_name || 'Cliente',
           clientId: c.id,
         }))
+    } else if (!body.testClientId) {
+      // Recipients were provided explicitly by the frontend. Cross-check them against
+      // the DB so we never email anyone who has unsubscribed, hard-bounced, or whose
+      // extra-email entry has been soft-deleted. The UI may be stale; the backend is
+      // the source of truth for opt-out compliance.
+      const clientIds = recipients.map(r => r.clientId).filter((id): id is string => !!id)
+      const externalEmails = recipients.filter(r => !r.clientId).map(r => r.email)
+
+      const blockedClientIds = new Set<string>()
+      if (clientIds.length > 0) {
+        const { data: blockedClients } = await supabaseAdmin
+          .from('clients')
+          .select('id, newsletter_subscribed, email_bounced, deleted_at')
+          .in('id', clientIds)
+        for (const c of blockedClients ?? []) {
+          if (c.newsletter_subscribed === false || c.email_bounced === true || c.deleted_at !== null) {
+            blockedClientIds.add(c.id)
+          }
+        }
+      }
+
+      const blockedExtraEmails = new Set<string>()
+      if (externalEmails.length > 0) {
+        const { data: deletedExtras } = await supabaseAdmin
+          .from('newsletter_extra_emails')
+          .select('email, deleted_at')
+          .in('email', externalEmails)
+          .not('deleted_at', 'is', null)
+        for (const e of deletedExtras ?? []) {
+          blockedExtraEmails.add(e.email)
+        }
+      }
+
+      const beforeCount = recipients.length
+      recipients = recipients.filter(r => {
+        if (r.clientId) return !blockedClientIds.has(r.clientId)
+        return !blockedExtraEmails.has(r.email)
+      })
+      const blockedCount = beforeCount - recipients.length
+      if (blockedCount > 0) {
+        console.log(`[Opt-out filter] Removed ${blockedCount} recipients (unsubscribed / bounced / deleted)`)
+      }
     }
 
     if (recipients.length === 0) {
@@ -397,10 +440,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
         subject: `[TEST] ${campaign.subject}`,
         html: testHtml,
         text: testPersonalizedText,
+        replyTo: getReplyToEmail(),
         tags: [
           { name: 'campaign_id', value: body.campaignId },
           { name: 'atomicity_test', value: 'true' },
         ],
+        headers: buildBulkHeaders({
+          unsubscribeUrl: testUnsubscribeUrl,
+          campaignId: body.campaignId,
+        }),
       })
 
       if (testEmailError) {
@@ -549,21 +597,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // Convert plain text to HTML (with image and preview text if present)
       const personalizedHtml = wrapTextInHtml(personalizedText, unsubscribeUrl, imagePublicUrl, campaign.preview_text)
 
-      // Send email with List-Unsubscribe headers for better deliverability
+      // Send email with full bulk-sender deliverability headers (List-Unsubscribe
+      // mailto+URL, One-Click POST, Precedence, Feedback-ID) and a real Reply-To.
       const { data, error } = await sendEmail({
         from: fromEmail,
         to: emailRecord.email_address,
         subject: campaign.subject,
         html: personalizedHtml,
         text: personalizedText,
+        replyTo: getReplyToEmail(),
         tags: [
           { name: 'campaign_id', value: body.campaignId },
           { name: 'email_id', value: emailRecord.id },
         ],
-        headers: {
-          'List-Unsubscribe': `<${unsubscribeUrl}>`,
-          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        },
+        headers: buildBulkHeaders({
+          unsubscribeUrl,
+          campaignId: body.campaignId,
+        }),
       })
 
       if (error) {

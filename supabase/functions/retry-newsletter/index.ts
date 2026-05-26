@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { sendEmail, replaceTemplateVariables, getFromEmail, delay } from '../_shared/resend.ts'
+import { sendEmail, replaceTemplateVariables, getFromEmail, getReplyToEmail, buildBulkHeaders, delay } from '../_shared/resend.ts'
 
 interface RequestBody {
   campaignId: string
@@ -118,7 +118,7 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
                 <tr>
                   <td style="text-align: center;">
                     <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: ${primaryColor};">Studio Kalos</p>
-                    <p style="margin: 0; font-size: 13px; color: ${footerText};">
+                    <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">
                       <a href="mailto:info.studiokalos@gmail.com" style="color: ${accentColor}; text-decoration: none;">info.studiokalos@gmail.com</a>
                     </p>
                     <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">Localita Casello Ferroviario, 3 - 34079 Staranzano (GO)</p>
@@ -200,7 +200,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // Get all failed emails for this campaign
-    const { data: failedEmails, error: failedError } = await supabaseAdmin
+    const { data: failedEmailsRaw, error: failedError } = await supabaseAdmin
       .from('newsletter_emails')
       .select('*')
       .eq('campaign_id', body.campaignId)
@@ -211,13 +211,66 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: false, reason: 'FAILED_EMAILS_FETCH_ERROR' }, 500)
     }
 
-    if (!failedEmails || failedEmails.length === 0) {
+    if (!failedEmailsRaw || failedEmailsRaw.length === 0) {
       return jsonResponse({
         ok: true,
         sentCount: 0,
         failedCount: 0,
         totalRetried: 0,
         message: 'No failed emails to retry',
+      }, 200)
+    }
+
+    // Re-check opt-out state before retrying: a client may have unsubscribed (or
+    // hard-bounced) between the original send and this retry. Drop those records.
+    const clientIds = failedEmailsRaw
+      .map((e: { client_id: string | null }) => e.client_id)
+      .filter((id: string | null): id is string => !!id)
+    const externalEmails = failedEmailsRaw
+      .filter((e: { client_id: string | null }) => !e.client_id)
+      .map((e: { email_address: string }) => e.email_address)
+
+    const blockedClientIds = new Set<string>()
+    if (clientIds.length > 0) {
+      const { data: blockedClients } = await supabaseAdmin
+        .from('clients')
+        .select('id, newsletter_subscribed, email_bounced, deleted_at')
+        .in('id', clientIds)
+      for (const c of blockedClients ?? []) {
+        if (c.newsletter_subscribed === false || c.email_bounced === true || c.deleted_at !== null) {
+          blockedClientIds.add(c.id)
+        }
+      }
+    }
+
+    const blockedExtraEmails = new Set<string>()
+    if (externalEmails.length > 0) {
+      const { data: deletedExtras } = await supabaseAdmin
+        .from('newsletter_extra_emails')
+        .select('email, deleted_at')
+        .in('email', externalEmails)
+        .not('deleted_at', 'is', null)
+      for (const e of deletedExtras ?? []) {
+        blockedExtraEmails.add(e.email)
+      }
+    }
+
+    const failedEmails = failedEmailsRaw.filter((e: { client_id: string | null; email_address: string }) => {
+      if (e.client_id) return !blockedClientIds.has(e.client_id)
+      return !blockedExtraEmails.has(e.email_address)
+    })
+
+    if (failedEmails.length < failedEmailsRaw.length) {
+      console.log(`[Retry opt-out filter] Skipped ${failedEmailsRaw.length - failedEmails.length} retries (unsubscribed / bounced / deleted)`)
+    }
+
+    if (failedEmails.length === 0) {
+      return jsonResponse({
+        ok: true,
+        sentCount: 0,
+        failedCount: 0,
+        totalRetried: 0,
+        message: 'No failed emails to retry (all skipped due to opt-out)',
       }, 200)
     }
 
@@ -262,18 +315,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // Convert plain text to HTML (with image if present)
       const personalizedHtml = wrapTextInHtml(personalizedText, unsubscribeUrl, imagePublicUrl)
 
-      // Send email
+      // Send email with full bulk-sender deliverability headers + Reply-To.
       const { data, error } = await sendEmail({
         from: fromEmail,
         to: emailRecord.email_address,
         subject: campaign.subject,
         html: personalizedHtml,
         text: personalizedText,
+        replyTo: getReplyToEmail(),
         tags: [
           { name: 'campaign_id', value: body.campaignId },
           { name: 'email_id', value: emailRecord.id },
           { name: 'retry', value: 'true' },
         ],
+        headers: buildBulkHeaders({
+          unsubscribeUrl,
+          campaignId: body.campaignId,
+        }),
       })
 
       if (error) {

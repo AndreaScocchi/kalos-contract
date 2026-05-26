@@ -6,6 +6,7 @@ export interface ResendEmailOptions {
   subject: string
   html: string
   text?: string
+  replyTo?: string
   tags?: { name: string; value: string }[]
   headers?: Record<string, string>
 }
@@ -42,6 +43,7 @@ export async function sendEmail(options: ResendEmailOptions): Promise<{ data: Re
         subject: options.subject,
         html: options.html,
         text: options.text,
+        reply_to: options.replyTo,
         tags: options.tags,
         headers: options.headers,
       }),
@@ -70,10 +72,62 @@ export function replaceTemplateVariables(template: string, variables: Record<str
 }
 
 /**
- * Get the configured "from" email address
+ * Get the configured "from" email address.
+ * Returns an RFC 5322 address with display name, e.g.
+ *   Studio Kalòs <newsletter@kalosstudio.it>
+ * The full value can be overridden by RESEND_FROM_EMAIL (which may be either a bare
+ * address or an already-formatted "Name <email>" string).
  */
 export function getFromEmail(): string {
-  return Deno.env.get('RESEND_FROM_EMAIL') || 'newsletter@kalosstudio.it'
+  const configured = Deno.env.get('RESEND_FROM_EMAIL')
+  if (configured && configured.trim().length > 0) {
+    // If already includes a display name (contains "<"), use as-is.
+    if (configured.includes('<')) return configured
+    return `Studio Kalòs <${configured}>`
+  }
+  return 'Studio Kalòs <newsletter@kalosstudio.it>'
+}
+
+/**
+ * Get the Reply-To address. Must be a real, monitored mailbox so user replies don't bounce.
+ * Override via RESEND_REPLY_TO env var. Default points to the Gmail mailbox actually in use
+ * (kalosstudio.it inbound receiving is currently disabled on Resend).
+ */
+export function getReplyToEmail(): string {
+  return Deno.env.get('RESEND_REPLY_TO') || 'info.studiokalos@gmail.com'
+}
+
+/**
+ * Get the mailto address used in the List-Unsubscribe header. Some inbox providers
+ * (notably Yahoo) treat the mailto form as a stronger signal than the URL form.
+ * Must point to a mailbox that actually receives, otherwise the unsubscribe request
+ * bounces and the signal is wasted.
+ * Override via RESEND_UNSUBSCRIBE_MAILTO.
+ */
+export function getUnsubscribeMailto(): string {
+  return Deno.env.get('RESEND_UNSUBSCRIBE_MAILTO') || 'info.studiokalos@gmail.com'
+}
+
+/**
+ * Build the standard set of deliverability headers for a bulk marketing email.
+ *
+ *  - List-Unsubscribe: both mailto and https (RFC 8058 + Gmail/Yahoo 2024 bulk-sender)
+ *  - List-Unsubscribe-Post: enables one-click POST unsubscribe
+ *  - Precedence: bulk → helps providers classify as bulk rather than transactional
+ *  - Feedback-ID: per-campaign FBL identifier consumed by Gmail Postmaster
+ */
+export function buildBulkHeaders(opts: {
+  unsubscribeUrl: string
+  campaignId: string
+  mailto?: string
+}): Record<string, string> {
+  const mailto = opts.mailto ?? getUnsubscribeMailto()
+  return {
+    'List-Unsubscribe': `<mailto:${mailto}?subject=Unsubscribe>, <${opts.unsubscribeUrl}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    'Precedence': 'bulk',
+    'Feedback-ID': `${opts.campaignId}:newsletter:kalosstudio:resend`,
+  }
 }
 
 /**

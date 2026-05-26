@@ -1,6 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { sendEmail, replaceTemplateVariables, getFromEmail, getReplyToEmail, buildBulkHeaders, delay } from '../_shared/resend.ts'
+import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay } from '../_shared/resend.ts'
+
+type DeliveryMode = 'promotions' | 'primary'
 
 interface RequestBody {
   campaignId: string
@@ -148,6 +150,40 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
 </html>`
 }
 
+// Minimal HTML template for "primary" mode — see send-newsletter for design rationale.
+function wrapTextInHtmlPrimary(text: string, unsubscribeUrl: string): string {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+  const htmlContent = escaped.replace(/\n/g, '<br>')
+
+  const primaryColor = '#0F2D3B'
+  const footerText = '#6B7280'
+
+  return `<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Kalos</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; color: ${primaryColor};">
+  <div style="max-width: 560px; margin: 0 auto; padding: 24px 20px; font-size: 15px; line-height: 1.6;">
+    <div style="font-size: 12px; color: ${footerText}; letter-spacing: 1px; margin-bottom: 4px;">STUDIO KALOS</div>
+    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 0 0 20px 0;">
+    <div style="color: ${primaryColor};">${htmlContent}</div>
+    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0 12px 0;">
+    <div style="font-size: 11px; color: ${footerText}; line-height: 1.5;">
+      Staranzano (GO) &middot; <a href="${unsubscribeUrl}" style="color: ${footerText}; text-decoration: underline;">annulla iscrizione</a>
+    </div>
+  </div>
+</body>
+</html>`
+}
+
 Deno.serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -280,12 +316,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .update({ status: 'sending' })
       .eq('id', body.campaignId)
 
+    // Resolve delivery mode (defaults to 'promotions' for legacy campaigns)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const deliveryMode: DeliveryMode = ((campaign as any).delivery_mode === 'primary') ? 'primary' : 'promotions'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fromNameOverride: string | null = (campaign as any).from_name_override ?? null
+    const fromEmail = buildFromAddress(deliveryMode === 'primary' ? fromNameOverride : null)
+    console.log(`[Retry] delivery_mode=${deliveryMode}, from=${fromEmail}`)
+
     // Send emails sequentially to respect Resend rate limit (2 req/sec)
     let sentCount = 0
     let failedCount = 0
-    const fromEmail = getFromEmail()
 
-    // Generate public URL for newsletter image (if present)
+    // Generate public URL for newsletter image (only used in promotions mode)
     const imagePublicUrl = getImagePublicUrl(campaign.image_url)
 
     for (let i = 0; i < failedEmails.length; i++) {
@@ -312,10 +355,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
       const unsubscribeUrl = `${supabaseUrl}/functions/v1/unsubscribe-newsletter?email=${encodeURIComponent(emailRecord.email_address)}&token=${token}`
 
-      // Convert plain text to HTML (with image if present)
-      const personalizedHtml = wrapTextInHtml(personalizedText, unsubscribeUrl, imagePublicUrl)
+      const personalizedHtml = deliveryMode === 'primary'
+        ? wrapTextInHtmlPrimary(personalizedText, unsubscribeUrl)
+        : wrapTextInHtml(personalizedText, unsubscribeUrl, imagePublicUrl)
+      const messageHeaders = deliveryMode === 'primary'
+        ? buildPrimaryHeaders({ unsubscribeUrl })
+        : buildBulkHeaders({ unsubscribeUrl, campaignId: body.campaignId })
 
-      // Send email with full bulk-sender deliverability headers + Reply-To.
       const { data, error } = await sendEmail({
         from: fromEmail,
         to: emailRecord.email_address,
@@ -327,11 +373,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
           { name: 'campaign_id', value: body.campaignId },
           { name: 'email_id', value: emailRecord.id },
           { name: 'retry', value: 'true' },
+          { name: 'delivery_mode', value: deliveryMode },
         ],
-        headers: buildBulkHeaders({
-          unsubscribeUrl,
-          campaignId: body.campaignId,
-        }),
+        headers: messageHeaders,
       })
 
       if (error) {

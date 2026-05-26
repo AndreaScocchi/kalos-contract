@@ -131,6 +131,44 @@ export function buildBulkHeaders(opts: {
 }
 
 /**
+ * Build neutral headers for "primary mode" sends. Deliberately omits
+ * `Precedence: bulk` and `Feedback-ID` (which are strong "this is broadcast"
+ * signals to Gmail) so the message reads as a personal email. We keep
+ * `List-Unsubscribe` and the one-click POST because they are still required
+ * for any list mail under Gmail/Yahoo 2024 bulk-sender rules.
+ */
+export function buildPrimaryHeaders(opts: {
+  unsubscribeUrl: string
+  mailto?: string
+}): Record<string, string> {
+  const mailto = opts.mailto ?? getUnsubscribeMailto()
+  return {
+    'List-Unsubscribe': `<mailto:${mailto}?subject=Unsubscribe>, <${opts.unsubscribeUrl}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+  }
+}
+
+/**
+ * Build a "From" address with an optional display-name override. The email
+ * portion is always the configured sender (verified domain for DKIM).
+ * If `overrideDisplayName` is non-empty, it replaces the default display name.
+ *
+ * Examples:
+ *   buildFromAddress()                     → "Studio Kalòs <newsletter@kalosstudio.it>"
+ *   buildFromAddress("Tommaso da Kalòs")   → "Tommaso da Kalòs <newsletter@kalosstudio.it>"
+ */
+export function buildFromAddress(overrideDisplayName?: string | null): string {
+  const configured = getFromEmail()
+  const trimmed = (overrideDisplayName ?? '').trim()
+  if (!trimmed) return configured
+
+  // Extract the bare email out of the configured "Name <email>" string.
+  const match = configured.match(/<([^>]+)>/)
+  const bareEmail = match ? match[1] : configured
+  return `${trimmed} <${bareEmail}>`
+}
+
+/**
  * Delay helper for rate limiting
  */
 export function delay(ms: number): Promise<void> {

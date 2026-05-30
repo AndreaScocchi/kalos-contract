@@ -1,0 +1,31 @@
+name: Migration Lint
+
+# Blocca operazioni distruttive / non-additive nelle migrazioni nuove.
+# Vedi scripts/migration-lint.mjs e CONTRACT_DISCIPLINE.md (monorepo kalos-studio).
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/migration-lint.mjs'
+      - 'scripts/migration-lint-baseline.json'
+      - '.github/workflows/migration-lint.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/migration-lint.mjs'
+      - 'scripts/migration-lint-baseline.json'
+
+jobs:
+  lint:
+    name: Lint migrazioni (additività)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Nessun npm install: il linter usa solo i moduli builtin di Node.
+      - name: migration-lint
+        run: node scripts/migration-lint.mjs

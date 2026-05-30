@@ -1,0 +1,67 @@
+name: Codegen Drift Check
+
+# Garantisce che tipi TS e modelli Kotlin siano SEMPRE in sync con lo schema (le migrazioni).
+# Pipeline ermetica: migrazioni → Supabase locale → gen tipi TS + schema.json → modelli Kotlin → drift-check.
+# Se i file generati e committati non combaciano con lo schema, la build FALLISCE.
+# Vedi codegen/README.md e CONTRACT_DISCIPLINE.md.
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/introspect-schema.mjs'
+      - 'scripts/gen-kotlin-models.mjs'
+      - 'codegen/**'
+      - 'src/types/database.ts'
+      - '.github/workflows/codegen.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/introspect-schema.mjs'
+      - 'scripts/gen-kotlin-models.mjs'
+
+jobs:
+  codegen:
+    name: Codegen TS + Kotlin (drift-check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase + apply migrations
+        run: |
+          supabase start
+          supabase db reset --local   # riapplica le migrazioni in modo pulito
+
+      - name: Generate TypeScript types
+        run: supabase gen types typescript --local > src/types/database.ts
+
+      - name: Introspect schema → codegen/schema.json
+        run: node scripts/introspect-schema.mjs
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+      - name: Generate Kotlin models
+        run: node scripts/gen-kotlin-models.mjs
+
+      - name: Drift check (i file generati devono essere già committati e aggiornati)
+        run: |
+          if ! git diff --exit-code -- src/types/database.ts codegen/schema.json codegen/kotlin; then
+            echo "::error::DRIFT: i tipi TS / lo schema.json / i modelli Kotlin non sono allineati allo schema."
+            echo "Rigenera in locale con 'npm run codegen' (richiede Docker) e committa i file aggiornati."
+            exit 1
+          fi
+          echo "✅ Nessun drift: TS e Kotlin allineati allo schema."

@@ -1,0 +1,4 @@
+{
+  "grandfatheredThroughTimestamp": "20260526120000",
+  "note": "Migrazioni con timestamp <= questo valore sono storiche (forward-only, già applicate in prod) e non vengono analizzate dal migration-lint. Le migrazioni NUOVE (timestamp maggiore) sono soggette al lint. Aggiorna con: node scripts/migration-lint.mjs --init (solo se sai cosa stai facendo)."
+}

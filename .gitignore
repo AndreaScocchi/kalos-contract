@@ -47,3 +47,6 @@ backups/
 
 # Seed anonimizzato locale (generato da prod, solo per lo staging locale)
 supabase/seed-anon.sql
+
+# Supabase local branch state
+supabase/.branches/

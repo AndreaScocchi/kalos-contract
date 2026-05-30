@@ -101,7 +101,10 @@ port = 54324
 # sender_name = "Admin"
 
 [storage]
-enabled = true
+# Disabilitato in locale: il CLI fallisce le migrazioni interne di Storage
+# ("Migration buckets-objects-grants-postgres not found", incompatibilità di versione)
+# e Storage non serve per schema/codegen. Lo Storage di PROD non è toccato.
+enabled = false
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 

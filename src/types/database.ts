@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -678,6 +698,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          newsletter_subscribed: boolean
           notes: string | null
           phone: string | null
           profile_id: string | null
@@ -693,6 +714,7 @@ export type Database = {
           full_name: string
           id?: string
           is_active?: boolean
+          newsletter_subscribed?: boolean
           notes?: string | null
           phone?: string | null
           profile_id?: string | null
@@ -708,6 +730,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          newsletter_subscribed?: boolean
           notes?: string | null
           phone?: string | null
           profile_id?: string | null
@@ -1021,6 +1044,33 @@ export type Database = {
             referencedColumns: ["operator_id"]
           },
         ]
+      }
+      feature_flags: {
+        Row: {
+          description: string | null
+          enabled: boolean
+          key: string
+          payload: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          enabled?: boolean
+          key: string
+          payload?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          enabled?: boolean
+          key?: string
+          payload?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       journal_entries: {
         Row: {
@@ -2756,7 +2806,10 @@ export type Database = {
       cron_process_notification_queue: { Args: never; Returns: undefined }
       cron_queue_birthday: { Args: never; Returns: undefined }
       cron_queue_entries_low: { Args: never; Returns: undefined }
+      cron_queue_journal_reminder: { Args: never; Returns: undefined }
       cron_queue_lesson_reminders: { Args: never; Returns: undefined }
+      cron_queue_practice_reminder: { Args: never; Returns: undefined }
+      cron_queue_practice_resume: { Args: never; Returns: undefined }
       cron_queue_re_engagement: { Args: never; Returns: undefined }
       cron_queue_subscription_expiry: { Args: never; Returns: undefined }
       cron_update_subscription_statuses: { Args: never; Returns: undefined }
@@ -2772,6 +2825,13 @@ export type Database = {
       generate_slug_from_discipline: {
         Args: { discipline_text: string }
         Returns: string
+      }
+      get_activity_booking_counts: {
+        Args: never
+        Returns: {
+          activity_id: string
+          booking_count: number
+        }[]
       }
       get_auth_email_stats: {
         Args: { p_user_id: string }
@@ -2842,16 +2902,16 @@ export type Database = {
       process_recurring_announcements: { Args: never; Returns: undefined }
       queue_announcement:
         | {
-            Args: { p_announcement_id: string; p_body: string; p_title: string }
-            Returns: Json
-          }
-        | {
             Args: {
               p_announcement_id: string
               p_body: string
               p_scheduled_for?: string
               p_title: string
             }
+            Returns: Json
+          }
+        | {
+            Args: { p_announcement_id: string; p_body: string; p_title: string }
             Returns: Json
           }
         | {
@@ -2868,15 +2928,33 @@ export type Database = {
       queue_birthday: { Args: never; Returns: Json }
       queue_entries_low: { Args: never; Returns: Json }
       queue_first_lesson: { Args: { p_client_id: string }; Returns: boolean }
+      queue_journal_reminder: { Args: never; Returns: Json }
       queue_lesson_reminders: { Args: never; Returns: Json }
       queue_milestone: {
         Args: { p_client_id: string; p_milestone: number }
         Returns: boolean
       }
-      queue_new_event: {
-        Args: { p_event_date: string; p_event_id: string; p_event_name: string }
-        Returns: Json
-      }
+      queue_new_event:
+        | {
+            Args: {
+              p_event_date: string
+              p_event_id: string
+              p_event_name: string
+              p_send_email?: boolean
+              p_send_push?: boolean
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_event_date: string
+              p_event_id: string
+              p_event_name: string
+            }
+            Returns: Json
+          }
+      queue_practice_reminder: { Args: never; Returns: Json }
+      queue_practice_resume: { Args: never; Returns: Json }
       queue_re_engagement: { Args: never; Returns: Json }
       queue_subscription_expiry: { Args: never; Returns: Json }
       staff_book_event: {
@@ -2906,6 +2984,10 @@ export type Database = {
           p_status: Database["public"]["Enums"]["booking_status"]
         }
         Returns: Json
+      }
+      subscription_covers_activity: {
+        Args: { p_activity_id: string; p_subscription_id: string }
+        Returns: boolean
       }
       update_expired_subscription_statuses: {
         Args: never
@@ -3139,6 +3221,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       announcement_recurrence_frequency: [
@@ -3251,3 +3336,4 @@ export const Constants = {
     },
   },
 } as const
+

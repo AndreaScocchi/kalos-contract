@@ -41,3 +41,9 @@ supabase/_remote/*
 # Temporary import directories
 _tmp*/
 _tmp_import/
+
+# Snapshot/backup pre-push della prod — MAI committare (contengono dati reali)
+backups/
+
+# Seed anonimizzato locale (generato da prod, solo per lo staging locale)
+supabase/seed-anon.sql

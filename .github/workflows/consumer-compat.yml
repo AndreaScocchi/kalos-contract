@@ -1,0 +1,101 @@
+name: Consumer Compat (early warning)
+
+# ALLERTA PRECOCE, NON BLOCCANTE: compila (type-check) website, gestionale e webapp-old contro
+# la versione CANDIDATA del contract (il working-tree di questo PR/commit), così scopriamo in
+# anticipo se un cambiamento dello schema/tipi romperebbe un consumer — PRIMA di taggare e fare
+# l'upgrade opt-in. Non blocca il merge (continue-on-error + non va messo tra i required checks).
+#
+# PREREQUISITO: secret `CONSUMER_REPOS_TOKEN` = PAT (fine-grained, sola lettura) con accesso ai
+# repo privati AndreaScocchi/Kalos, kalos-app-management, kalos-webapp. Senza il token i checkout
+# falliscono ma il workflow resta verde (è solo informativo).
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'supabase/migrations/**'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+
+jobs:
+  pack-contract:
+    name: Build & pack contract candidato
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: npm pack (tarball del candidato)
+        run: |
+          npm pack
+          mkdir -p _pack && mv kalos-contract-*.tgz _pack/contract.tgz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: contract-candidate
+          path: _pack/contract.tgz
+
+  compat:
+    name: Type-check ${{ matrix.name }}
+    needs: pack-contract
+    runs-on: ubuntu-latest
+    continue-on-error: true   # ← non bloccante
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: website
+            repo: AndreaScocchi/Kalos
+            dir: kalos-react
+            cmd: npm run type-check
+          - name: management
+            repo: AndreaScocchi/kalos-app-management
+            dir: .
+            cmd: npx --yes tsc --noEmit
+          - name: webapp
+            repo: AndreaScocchi/kalos-webapp
+            dir: .
+            cmd: npx --yes tsc --noEmit
+    steps:
+      - name: Checkout ${{ matrix.name }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          token: ${{ secrets.CONSUMER_REPOS_TOKEN }}
+          path: consumer
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: contract-candidate
+          path: _pack
+
+      - name: Install deps + override @kalos/contract col candidato
+        working-directory: consumer/${{ matrix.dir }}
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save "$GITHUB_WORKSPACE/_pack/contract.tgz"
+
+      - name: Type-check contro il contract candidato
+        working-directory: consumer/${{ matrix.dir }}
+        run: ${{ matrix.cmd }}
+
+      - name: Esito nel job summary
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ **${{ matrix.name }}** compila contro il contract candidato." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "⚠️ **${{ matrix.name }}** NON compila contro il contract candidato — possibile rottura, verifica prima di taggare/upgrade." >> "$GITHUB_STEP_SUMMARY"
+          fi

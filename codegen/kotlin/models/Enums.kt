@@ -5,6 +5,14 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+enum class ActivityCategory {
+    @SerialName("comunita") COMUNITA,
+    @SerialName("partners") PARTNERS,
+    @SerialName("core") CORE,
+    @SerialName("esperienze") ESPERIENZE,
+}
+
+@Serializable
 enum class AnnouncementRecurrenceFrequency {
     @SerialName("daily") DAILY,
     @SerialName("weekly") WEEKLY,

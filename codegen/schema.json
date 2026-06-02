@@ -2,6 +2,12 @@
   "$comment": "GENERATO da scripts/introspect-schema.mjs — NON modificare a mano. Fonte: schema Postgres applicando le migrazioni.",
   "schema": "public",
   "enums": {
+    "activity_category": [
+      "comunita",
+      "partners",
+      "core",
+      "esperienze"
+    ],
     "announcement_recurrence_frequency": [
       "daily",
       "weekly",
@@ -336,6 +342,15 @@
           "isArray": false,
           "nullable": true,
           "hasDefault": false
+        },
+        {
+          "name": "category",
+          "dataType": "activity_category",
+          "udtName": "activity_category",
+          "isEnum": true,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
         }
       ]
     },

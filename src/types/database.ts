@@ -37,6 +37,7 @@ export type Database = {
       activities: {
         Row: {
           active_months: Json | null
+          category: Database["public"]["Enums"]["activity_category"]
           color: string | null
           created_at: string | null
           deleted_at: string | null
@@ -59,6 +60,7 @@ export type Database = {
         }
         Insert: {
           active_months?: Json | null
+          category?: Database["public"]["Enums"]["activity_category"]
           color?: string | null
           created_at?: string | null
           deleted_at?: string | null
@@ -81,6 +83,7 @@ export type Database = {
         }
         Update: {
           active_months?: Json | null
+          category?: Database["public"]["Enums"]["activity_category"]
           color?: string | null
           created_at?: string | null
           deleted_at?: string | null
@@ -2882,6 +2885,7 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["notification_channel"]
       }
+      get_practice_metrics: { Args: never; Returns: Json }
       get_revenue_breakdown: {
         Args: { p_month_end?: string; p_month_start?: string }
         Returns: Json
@@ -3000,6 +3004,7 @@ export type Database = {
       }
     }
     Enums: {
+      activity_category: "comunita" | "partners" | "core" | "esperienze"
       announcement_recurrence_frequency:
         | "daily"
         | "weekly"
@@ -3226,6 +3231,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      activity_category: ["comunita", "partners", "core", "esperienze"],
       announcement_recurrence_frequency: [
         "daily",
         "weekly",

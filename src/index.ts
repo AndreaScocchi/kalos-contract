@@ -34,6 +34,8 @@ export {
   cancelEventBooking,
   staffBookEvent,
   staffCancelEventBooking,
+  submitFeedback,
+  queueFeedbackRequest,
 } from './rpc';
 export type {
   BookLessonResult,
@@ -46,6 +48,11 @@ export type {
   CancelEventBookingParams,
   StaffBookEventParams,
   StaffCancelEventBookingParams,
+  FeedbackKind,
+  SubmitFeedbackParams,
+  SubmitFeedbackResult,
+  QueueFeedbackRequestParams,
+  QueueFeedbackRequestResult,
 } from './rpc';
 
 // Public queries

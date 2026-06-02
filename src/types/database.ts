@@ -1075,6 +1075,101 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback: {
+        Row: {
+          client_id: string
+          comment: string | null
+          created_at: string
+          event_id: string | null
+          id: string
+          kind: Database["public"]["Enums"]["feedback_kind"]
+          lesson_id: string | null
+          metadata: Json | null
+          practice_id: string | null
+          rating: number | null
+          status: Database["public"]["Enums"]["feedback_status"]
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          comment?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["feedback_kind"]
+          lesson_id?: string | null
+          metadata?: Json | null
+          practice_id?: string | null
+          rating?: number | null
+          status?: Database["public"]["Enums"]["feedback_status"]
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          comment?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["feedback_kind"]
+          lesson_id?: string | null
+          metadata?: Json | null
+          practice_id?: string | null
+          rating?: number | null
+          status?: Database["public"]["Enums"]["feedback_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_occupancy"
+            referencedColumns: ["lesson_id"]
+          },
+          {
+            foreignKeyName: "feedback_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           body: string
@@ -2931,6 +3026,15 @@ export type Database = {
           }
       queue_birthday: { Args: never; Returns: Json }
       queue_entries_low: { Args: never; Returns: Json }
+      queue_feedback_request: {
+        Args: {
+          p_client_id: string
+          p_kind: Database["public"]["Enums"]["feedback_kind"]
+          p_scheduled_for?: string
+          p_target_id?: string
+        }
+        Returns: Json
+      }
       queue_first_lesson: { Args: { p_client_id: string }; Returns: boolean }
       queue_journal_reminder: { Args: never; Returns: Json }
       queue_lesson_reminders: { Args: never; Returns: Json }
@@ -2989,6 +3093,15 @@ export type Database = {
         }
         Returns: Json
       }
+      submit_feedback: {
+        Args: {
+          p_comment?: string
+          p_kind: Database["public"]["Enums"]["feedback_kind"]
+          p_rating?: number
+          p_target_id?: string
+        }
+        Returns: Json
+      }
       subscription_covers_activity: {
         Args: { p_activity_id: string; p_subscription_id: string }
         Returns: boolean
@@ -3040,6 +3153,8 @@ export type Database = {
         | "published"
         | "failed"
         | "skipped"
+      feedback_kind: "practice" | "lesson" | "onboarding" | "event"
+      feedback_status: "new" | "reviewed" | "archived"
       marketing_campaign_status:
         | "draft"
         | "ai_generating"
@@ -3082,6 +3197,7 @@ export type Database = {
         | "practice_reminder"
         | "practice_resume"
         | "journal_reminder"
+        | "feedback_request"
       notification_channel: "push" | "email"
       notification_status:
         | "pending"
@@ -3271,6 +3387,8 @@ export const Constants = {
         "failed",
         "skipped",
       ],
+      feedback_kind: ["practice", "lesson", "onboarding", "event"],
+      feedback_status: ["new", "reviewed", "archived"],
       marketing_campaign_status: [
         "draft",
         "ai_generating",
@@ -3317,6 +3435,7 @@ export const Constants = {
         "practice_reminder",
         "practice_resume",
         "journal_reminder",
+        "feedback_request",
       ],
       notification_channel: ["push", "email"],
       notification_status: [

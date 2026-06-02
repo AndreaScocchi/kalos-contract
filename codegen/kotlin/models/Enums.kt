@@ -81,6 +81,21 @@ enum class ContentStatus {
 }
 
 @Serializable
+enum class FeedbackKind {
+    @SerialName("practice") PRACTICE,
+    @SerialName("lesson") LESSON,
+    @SerialName("onboarding") ONBOARDING,
+    @SerialName("event") EVENT,
+}
+
+@Serializable
+enum class FeedbackStatus {
+    @SerialName("new") NEW,
+    @SerialName("reviewed") REVIEWED,
+    @SerialName("archived") ARCHIVED,
+}
+
+@Serializable
 enum class MarketingCampaignStatus {
     @SerialName("draft") DRAFT,
     @SerialName("ai_generating") AI_GENERATING,
@@ -135,6 +150,7 @@ enum class NotificationCategory {
     @SerialName("practice_reminder") PRACTICE_REMINDER,
     @SerialName("practice_resume") PRACTICE_RESUME,
     @SerialName("journal_reminder") JOURNAL_REMINDER,
+    @SerialName("feedback_request") FEEDBACK_REQUEST,
 }
 
 @Serializable

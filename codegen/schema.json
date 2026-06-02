@@ -62,6 +62,17 @@
       "failed",
       "skipped"
     ],
+    "feedback_kind": [
+      "practice",
+      "lesson",
+      "onboarding",
+      "event"
+    ],
+    "feedback_status": [
+      "new",
+      "reviewed",
+      "archived"
+    ],
     "marketing_campaign_status": [
       "draft",
       "ai_generating",
@@ -107,7 +118,8 @@
       "announcement",
       "practice_reminder",
       "practice_resume",
-      "journal_reminder"
+      "journal_reminder",
+      "feedback_request"
     ],
     "notification_channel": [
       "push",
@@ -2189,6 +2201,119 @@
           "isArray": false,
           "nullable": true,
           "hasDefault": false
+        }
+      ]
+    },
+    {
+      "name": "feedback",
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "client_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "kind",
+          "dataType": "feedback_kind",
+          "udtName": "feedback_kind",
+          "isEnum": true,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "lesson_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "practice_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "event_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "rating",
+          "dataType": "smallint",
+          "udtName": "int2",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "comment",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "status",
+          "dataType": "feedback_status",
+          "udtName": "feedback_status",
+          "isEnum": true,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "metadata",
+          "dataType": "jsonb",
+          "udtName": "jsonb",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": true
+        },
+        {
+          "name": "created_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "updated_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
         }
       ]
     },

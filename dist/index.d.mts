@@ -1067,6 +1067,101 @@ type Database = {
                 };
                 Relationships: [];
             };
+            feedback: {
+                Row: {
+                    client_id: string;
+                    comment: string | null;
+                    created_at: string;
+                    event_id: string | null;
+                    id: string;
+                    kind: Database["public"]["Enums"]["feedback_kind"];
+                    lesson_id: string | null;
+                    metadata: Json | null;
+                    practice_id: string | null;
+                    rating: number | null;
+                    status: Database["public"]["Enums"]["feedback_status"];
+                    updated_at: string;
+                };
+                Insert: {
+                    client_id: string;
+                    comment?: string | null;
+                    created_at?: string;
+                    event_id?: string | null;
+                    id?: string;
+                    kind: Database["public"]["Enums"]["feedback_kind"];
+                    lesson_id?: string | null;
+                    metadata?: Json | null;
+                    practice_id?: string | null;
+                    rating?: number | null;
+                    status?: Database["public"]["Enums"]["feedback_status"];
+                    updated_at?: string;
+                };
+                Update: {
+                    client_id?: string;
+                    comment?: string | null;
+                    created_at?: string;
+                    event_id?: string | null;
+                    id?: string;
+                    kind?: Database["public"]["Enums"]["feedback_kind"];
+                    lesson_id?: string | null;
+                    metadata?: Json | null;
+                    practice_id?: string | null;
+                    rating?: number | null;
+                    status?: Database["public"]["Enums"]["feedback_status"];
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "feedback_client_id_fkey";
+                        columns: ["client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "feedback_event_id_fkey";
+                        columns: ["event_id"];
+                        isOneToOne: false;
+                        referencedRelation: "events";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "feedback_event_id_fkey";
+                        columns: ["event_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_events";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "feedback_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "lesson_occupancy";
+                        referencedColumns: ["lesson_id"];
+                    },
+                    {
+                        foreignKeyName: "feedback_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "lessons";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "feedback_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "feedback_practice_id_fkey";
+                        columns: ["practice_id"];
+                        isOneToOne: false;
+                        referencedRelation: "practices";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             journal_entries: {
                 Row: {
                     body: string;
@@ -3058,6 +3153,15 @@ type Database = {
                 Args: never;
                 Returns: Json;
             };
+            queue_feedback_request: {
+                Args: {
+                    p_client_id: string;
+                    p_kind: Database["public"]["Enums"]["feedback_kind"];
+                    p_scheduled_for?: string;
+                    p_target_id?: string;
+                };
+                Returns: Json;
+            };
             queue_first_lesson: {
                 Args: {
                     p_client_id: string;
@@ -3152,6 +3256,15 @@ type Database = {
                 };
                 Returns: Json;
             };
+            submit_feedback: {
+                Args: {
+                    p_comment?: string;
+                    p_kind: Database["public"]["Enums"]["feedback_kind"];
+                    p_rating?: number;
+                    p_target_id?: string;
+                };
+                Returns: Json;
+            };
             subscription_covers_activity: {
                 Args: {
                     p_activity_id: string;
@@ -3178,11 +3291,13 @@ type Database = {
             campaign_tone: "formale" | "amichevole" | "urgente" | "entusiasta" | "professionale" | "empatico" | "diretto" | "esclusivo";
             campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo";
             content_status: "pending" | "generated" | "edited" | "scheduled" | "sent" | "published" | "failed" | "skipped";
+            feedback_kind: "practice" | "lesson" | "onboarding" | "event";
+            feedback_status: "new" | "reviewed" | "archived";
             marketing_campaign_status: "draft" | "ai_generating" | "pending_review" | "scheduled" | "executing" | "completed" | "failed";
             newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
             newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
             newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
-            notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder";
+            notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder" | "feedback_request";
             notification_channel: "push" | "email";
             notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
             practice_block_type: "text" | "image" | "audio" | "video";
@@ -4427,6 +4542,93 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 updated_by?: string | null;
             };
             Relationships: [];
+        };
+        feedback: {
+            Row: {
+                client_id: string;
+                comment: string | null;
+                created_at: string;
+                event_id: string | null;
+                id: string;
+                kind: Database["public"]["Enums"]["feedback_kind"];
+                lesson_id: string | null;
+                metadata: Json | null;
+                practice_id: string | null;
+                rating: number | null;
+                status: Database["public"]["Enums"]["feedback_status"];
+                updated_at: string;
+            };
+            Insert: {
+                client_id: string;
+                comment?: string | null;
+                created_at?: string;
+                event_id?: string | null;
+                id?: string;
+                kind: Database["public"]["Enums"]["feedback_kind"];
+                lesson_id?: string | null;
+                metadata?: Json | null;
+                practice_id?: string | null;
+                rating?: number | null;
+                status?: Database["public"]["Enums"]["feedback_status"];
+                updated_at?: string;
+            };
+            Update: {
+                client_id?: string;
+                comment?: string | null;
+                created_at?: string;
+                event_id?: string | null;
+                id?: string;
+                kind?: Database["public"]["Enums"]["feedback_kind"];
+                lesson_id?: string | null;
+                metadata?: Json | null;
+                practice_id?: string | null;
+                rating?: number | null;
+                status?: Database["public"]["Enums"]["feedback_status"];
+                updated_at?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "feedback_client_id_fkey";
+                columns: ["client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "feedback_event_id_fkey";
+                columns: ["event_id"];
+                isOneToOne: false;
+                referencedRelation: "events";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "feedback_event_id_fkey";
+                columns: ["event_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_events";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "feedback_lesson_id_fkey";
+                columns: ["lesson_id"];
+                isOneToOne: false;
+                referencedRelation: "lesson_occupancy";
+                referencedColumns: ["lesson_id"];
+            }, {
+                foreignKeyName: "feedback_lesson_id_fkey";
+                columns: ["lesson_id"];
+                isOneToOne: false;
+                referencedRelation: "lessons";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "feedback_lesson_id_fkey";
+                columns: ["lesson_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_schedule";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "feedback_practice_id_fkey";
+                columns: ["practice_id"];
+                isOneToOne: false;
+                referencedRelation: "practices";
+                referencedColumns: ["id"];
+            }];
         };
         journal_entries: {
             Row: {
@@ -6340,6 +6542,15 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Args: never;
             Returns: Json;
         };
+        queue_feedback_request: {
+            Args: {
+                p_client_id: string;
+                p_kind: Database["public"]["Enums"]["feedback_kind"];
+                p_scheduled_for?: string;
+                p_target_id?: string;
+            };
+            Returns: Json;
+        };
         queue_first_lesson: {
             Args: {
                 p_client_id: string;
@@ -6434,6 +6645,15 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             };
             Returns: Json;
         };
+        submit_feedback: {
+            Args: {
+                p_comment?: string;
+                p_kind: Database["public"]["Enums"]["feedback_kind"];
+                p_rating?: number;
+                p_target_id?: string;
+            };
+            Returns: Json;
+        };
         subscription_covers_activity: {
             Args: {
                 p_activity_id: string;
@@ -6460,11 +6680,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         campaign_tone: "formale" | "amichevole" | "urgente" | "entusiasta" | "professionale" | "empatico" | "diretto" | "esclusivo";
         campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo";
         content_status: "pending" | "generated" | "edited" | "scheduled" | "sent" | "published" | "failed" | "skipped";
+        feedback_kind: "practice" | "lesson" | "onboarding" | "event";
+        feedback_status: "new" | "reviewed" | "archived";
         marketing_campaign_status: "draft" | "ai_generating" | "pending_review" | "scheduled" | "executing" | "completed" | "failed";
         newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
         newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
         newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
-        notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder";
+        notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder" | "feedback_request";
         notification_channel: "push" | "email";
         notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
         practice_block_type: "text" | "image" | "audio" | "video";
@@ -7452,6 +7674,92 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         updated_by?: string | null;
     };
     Relationships: [];
+} | {
+    Row: {
+        client_id: string;
+        comment: string | null;
+        created_at: string;
+        event_id: string | null;
+        id: string;
+        kind: Database["public"]["Enums"]["feedback_kind"];
+        lesson_id: string | null;
+        metadata: Json | null;
+        practice_id: string | null;
+        rating: number | null;
+        status: Database["public"]["Enums"]["feedback_status"];
+        updated_at: string;
+    };
+    Insert: {
+        client_id: string;
+        comment?: string | null;
+        created_at?: string;
+        event_id?: string | null;
+        id?: string;
+        kind: Database["public"]["Enums"]["feedback_kind"];
+        lesson_id?: string | null;
+        metadata?: Json | null;
+        practice_id?: string | null;
+        rating?: number | null;
+        status?: Database["public"]["Enums"]["feedback_status"];
+        updated_at?: string;
+    };
+    Update: {
+        client_id?: string;
+        comment?: string | null;
+        created_at?: string;
+        event_id?: string | null;
+        id?: string;
+        kind?: Database["public"]["Enums"]["feedback_kind"];
+        lesson_id?: string | null;
+        metadata?: Json | null;
+        practice_id?: string | null;
+        rating?: number | null;
+        status?: Database["public"]["Enums"]["feedback_status"];
+        updated_at?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "feedback_client_id_fkey";
+        columns: ["client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "feedback_event_id_fkey";
+        columns: ["event_id"];
+        isOneToOne: false;
+        referencedRelation: "events";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "feedback_event_id_fkey";
+        columns: ["event_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_events";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "feedback_lesson_id_fkey";
+        columns: ["lesson_id"];
+        isOneToOne: false;
+        referencedRelation: "lesson_occupancy";
+        referencedColumns: ["lesson_id"];
+    }, {
+        foreignKeyName: "feedback_lesson_id_fkey";
+        columns: ["lesson_id"];
+        isOneToOne: false;
+        referencedRelation: "lessons";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "feedback_lesson_id_fkey";
+        columns: ["lesson_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_schedule";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "feedback_practice_id_fkey";
+        columns: ["practice_id"];
+        isOneToOne: false;
+        referencedRelation: "practices";
+        referencedColumns: ["id"];
+    }];
 } | {
     Row: {
         body: string;
@@ -8764,7 +9072,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "profiles";
         referencedColumns: ["id"];
     }];
-}, "campaigns" | "clients" | "lessons" | "subscriptions" | "profiles" | "campaign_contents" | "newsletter_campaigns" | "social_connections" | "events" | "activities" | "operators" | "practices" | "newsletter_emails" | "announcements" | "notification_logs" | "plans" | "practice_steps" | "auth_email_logs" | "bookings" | "bug_reports" | "campaign_analytics" | "device_tokens" | "event_bookings" | "expenses" | "feature_flags" | "journal_entries" | "newsletter_extra_emails" | "newsletter_tracking_events" | "notification_preferences" | "notification_queue" | "notification_reads" | "payout_rules" | "payouts" | "plan_activities" | "practice_activities" | "practice_blocks" | "practice_user_state" | "promotions" | "subscription_usages" | "waitlist", [] | [{
+}, "campaigns" | "clients" | "lessons" | "subscriptions" | "profiles" | "campaign_contents" | "newsletter_campaigns" | "social_connections" | "events" | "activities" | "operators" | "practices" | "newsletter_emails" | "announcements" | "notification_logs" | "plans" | "practice_steps" | "auth_email_logs" | "bookings" | "bug_reports" | "campaign_analytics" | "device_tokens" | "event_bookings" | "expenses" | "feature_flags" | "feedback" | "journal_entries" | "newsletter_extra_emails" | "newsletter_tracking_events" | "notification_preferences" | "notification_queue" | "notification_reads" | "payout_rules" | "payouts" | "plan_activities" | "practice_activities" | "practice_blocks" | "practice_user_state" | "promotions" | "subscription_usages" | "waitlist", [] | [{
     foreignKeyName: "announcements_marketing_campaign_id_fkey";
     columns: ["marketing_campaign_id"];
     isOneToOne: false;
@@ -8974,6 +9282,48 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     isOneToOne: false;
     referencedRelation: "public_site_schedule";
     referencedColumns: ["operator_id"];
+}] | [{
+    foreignKeyName: "feedback_client_id_fkey";
+    columns: ["client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "feedback_event_id_fkey";
+    columns: ["event_id"];
+    isOneToOne: false;
+    referencedRelation: "events";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "feedback_event_id_fkey";
+    columns: ["event_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_events";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "feedback_lesson_id_fkey";
+    columns: ["lesson_id"];
+    isOneToOne: false;
+    referencedRelation: "lesson_occupancy";
+    referencedColumns: ["lesson_id"];
+}, {
+    foreignKeyName: "feedback_lesson_id_fkey";
+    columns: ["lesson_id"];
+    isOneToOne: false;
+    referencedRelation: "lessons";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "feedback_lesson_id_fkey";
+    columns: ["lesson_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_schedule";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "feedback_practice_id_fkey";
+    columns: ["practice_id"];
+    isOneToOne: false;
+    referencedRelation: "practices";
+    referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "journal_entries_client_id_fkey";
     columns: ["client_id"];
@@ -9545,6 +9895,19 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     updated_at: string;
     updated_by: string | null;
 } | {
+    client_id: string;
+    comment: string | null;
+    created_at: string;
+    event_id: string | null;
+    id: string;
+    kind: Database["public"]["Enums"]["feedback_kind"];
+    lesson_id: string | null;
+    metadata: Json | null;
+    practice_id: string | null;
+    rating: number | null;
+    status: Database["public"]["Enums"]["feedback_status"];
+    updated_at: string;
+} | {
     body: string;
     client_id: string;
     created_at: string;
@@ -10076,6 +10439,19 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     payload: Json;
     updated_at: string;
     updated_by: string | null;
+} | {
+    client_id: string;
+    comment: string | null;
+    created_at: string;
+    event_id: string | null;
+    id: string;
+    kind: Database["public"]["Enums"]["feedback_kind"];
+    lesson_id: string | null;
+    metadata: Json | null;
+    practice_id: string | null;
+    rating: number | null;
+    status: Database["public"]["Enums"]["feedback_status"];
+    updated_at: string;
 } | {
     body: string;
     client_id: string;
@@ -10609,6 +10985,19 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     updated_at: string;
     updated_by: string | null;
 } | {
+    client_id: string;
+    comment: string | null;
+    created_at: string;
+    event_id: string | null;
+    id: string;
+    kind: Database["public"]["Enums"]["feedback_kind"];
+    lesson_id: string | null;
+    metadata: Json | null;
+    practice_id: string | null;
+    rating: number | null;
+    status: Database["public"]["Enums"]["feedback_status"];
+    updated_at: string;
+} | {
     body: string;
     client_id: string;
     created_at: string;
@@ -11140,6 +11529,19 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     payload: Json;
     updated_at: string;
     updated_by: string | null;
+} | {
+    client_id: string;
+    comment: string | null;
+    created_at: string;
+    event_id: string | null;
+    id: string;
+    kind: Database["public"]["Enums"]["feedback_kind"];
+    lesson_id: string | null;
+    metadata: Json | null;
+    practice_id: string | null;
+    rating: number | null;
+    status: Database["public"]["Enums"]["feedback_status"];
+    updated_at: string;
 } | {
     body: string;
     client_id: string;
@@ -11681,6 +12083,19 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     payload: Json;
     updated_at: string;
     updated_by: string | null;
+} | {
+    client_id: string;
+    comment: string | null;
+    created_at: string;
+    event_id: string | null;
+    id: string;
+    kind: Database["public"]["Enums"]["feedback_kind"];
+    lesson_id: string | null;
+    metadata: Json | null;
+    practice_id: string | null;
+    rating: number | null;
+    status: Database["public"]["Enums"]["feedback_status"];
+    updated_at: string;
 } | {
     body: string;
     client_id: string;

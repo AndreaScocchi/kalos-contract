@@ -270,3 +270,108 @@ export async function staffCancelEventBooking(
   return data as CancelEventBookingResult;
 }
 
+/**
+ * Tipo di feedback (Fase 5 nuova app): momento/oggetto a cui si riferisce.
+ */
+export type FeedbackKind = 'practice' | 'lesson' | 'onboarding' | 'event';
+
+/**
+ * Parametri per submitFeedback.
+ * `targetId` è obbligatorio per tutti i kind tranne `onboarding`.
+ */
+export type SubmitFeedbackParams = {
+  kind: FeedbackKind;
+  targetId?: string;
+  rating?: number;
+  comment?: string;
+};
+
+/**
+ * Risultato della RPC submit_feedback.
+ */
+export type SubmitFeedbackResult = {
+  ok: boolean;
+  reason?: string;
+  feedback_id?: string;
+};
+
+/**
+ * Parametri per queueFeedbackRequest (raccolta automatica).
+ */
+export type QueueFeedbackRequestParams = {
+  clientId: string;
+  kind: FeedbackKind;
+  targetId?: string;
+  scheduledFor?: string;
+};
+
+/**
+ * Risultato della RPC queue_feedback_request.
+ */
+export type QueueFeedbackRequestResult = {
+  ok: boolean;
+  reason?: string;
+  notification_id?: string;
+};
+
+/**
+ * Wrapper tipizzato per la RPC submit_feedback.
+ * Invia (o aggiorna) un feedback dell'utente autenticato: voto 1–5 e/o commento.
+ * Valida lato DB che l'azione su cui si dà feedback sia avvenuta (pratica completata,
+ * lezione attended, evento prenotato). Upsert: un feedback per target.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param params - kind, targetId (tranne onboarding), rating?, comment?
+ * @returns Promise<SubmitFeedbackResult> con ok, reason opzionale, feedback_id se successo
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function submitFeedback(
+  client: SupabaseClient<Database>,
+  params: SubmitFeedbackParams
+): Promise<SubmitFeedbackResult> {
+  const { kind, targetId, rating, comment } = params;
+
+  const { data, error } = await client.rpc('submit_feedback', {
+    p_kind: kind,
+    p_target_id: targetId,
+    p_rating: rating,
+    p_comment: comment,
+  });
+
+  if (error) {
+    handleRpcError(error, 'submit_feedback');
+  }
+
+  return data as SubmitFeedbackResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC queue_feedback_request.
+ * Accoda una richiesta di feedback (notifica `feedback_request`) per un cliente.
+ * Pensata per automazioni e staff; rispetta le preferenze di canale.
+ *
+ * @param client - Il client Supabase autenticato (staff/service o il cliente stesso)
+ * @param params - clientId, kind, targetId?, scheduledFor?
+ * @returns Promise<QueueFeedbackRequestResult> con ok, reason opzionale, notification_id se successo
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function queueFeedbackRequest(
+  client: SupabaseClient<Database>,
+  params: QueueFeedbackRequestParams
+): Promise<QueueFeedbackRequestResult> {
+  const { clientId, kind, targetId, scheduledFor } = params;
+
+  const { data, error } = await client.rpc('queue_feedback_request', {
+    p_client_id: clientId,
+    p_kind: kind,
+    p_target_id: targetId,
+    p_scheduled_for: scheduledFor,
+  });
+
+  if (error) {
+    handleRpcError(error, 'queue_feedback_request');
+  }
+
+  return data as QueueFeedbackRequestResult;
+}
+

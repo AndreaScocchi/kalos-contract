@@ -158,6 +158,82 @@ async function staffCancelEventBooking(client, params) {
   }
   return data;
 }
+async function submitFeedback(client, params) {
+  const { kind, targetId, rating, comment } = params;
+  const { data, error } = await client.rpc("submit_feedback", {
+    p_kind: kind,
+    p_target_id: targetId,
+    p_rating: rating,
+    p_comment: comment
+  });
+  if (error) {
+    handleRpcError(error, "submit_feedback");
+  }
+  return data;
+}
+async function queueFeedbackRequest(client, params) {
+  const { clientId, kind, targetId, scheduledFor } = params;
+  const { data, error } = await client.rpc("queue_feedback_request", {
+    p_client_id: clientId,
+    p_kind: kind,
+    p_target_id: targetId,
+    p_scheduled_for: scheduledFor
+  });
+  if (error) {
+    handleRpcError(error, "queue_feedback_request");
+  }
+  return data;
+}
+async function getMyMembership(client) {
+  const { data, error } = await client.rpc("get_my_membership");
+  if (error) {
+    handleRpcError(error, "get_my_membership");
+  }
+  return data;
+}
+async function assignMembership(client, params) {
+  const { clientId, tierId, startedAt, priceCents, note } = params;
+  const { data, error } = await client.rpc("assign_membership", {
+    p_client_id: clientId,
+    p_tier_id: tierId,
+    p_started_at: startedAt,
+    p_price_cents: priceCents,
+    p_note: note
+  });
+  if (error) {
+    handleRpcError(error, "assign_membership");
+  }
+  return data;
+}
+async function cancelMembership(client, membershipId) {
+  const { data, error } = await client.rpc("cancel_membership", {
+    p_membership_id: membershipId
+  });
+  if (error) {
+    handleRpcError(error, "cancel_membership");
+  }
+  return data;
+}
+async function requestBussola(client, params = {}) {
+  const { preferredAt, note } = params;
+  const { data, error } = await client.rpc("request_bussola", {
+    p_preferred_at: preferredAt,
+    p_note: note
+  });
+  if (error) {
+    handleRpcError(error, "request_bussola");
+  }
+  return data;
+}
+async function cancelBussolaRequest(client, requestId) {
+  const { data, error } = await client.rpc("cancel_bussola_request", {
+    p_request_id: requestId
+  });
+  if (error) {
+    handleRpcError(error, "cancel_bussola_request");
+  }
+  return data;
+}
 
 // src/queries/public.ts
 function fromPublic(client, view) {
@@ -274,6 +350,6 @@ async function getEventsWithAvailability(client, params) {
   return result;
 }
 
-export { assertSupabaseConfig, bookEvent, bookLesson, cancelBooking, cancelEventBooking, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, staffBookEvent, staffCancelEventBooking };
+export { assertSupabaseConfig, assignMembership, bookEvent, bookLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMembership, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

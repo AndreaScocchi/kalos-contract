@@ -36,6 +36,11 @@ export {
   staffCancelEventBooking,
   submitFeedback,
   queueFeedbackRequest,
+  getMyMembership,
+  assignMembership,
+  cancelMembership,
+  requestBussola,
+  cancelBussolaRequest,
 } from './rpc';
 export type {
   BookLessonResult,
@@ -53,6 +58,14 @@ export type {
   SubmitFeedbackResult,
   QueueFeedbackRequestParams,
   QueueFeedbackRequestResult,
+  PassBenefitType,
+  MembershipBenefit,
+  GetMyMembershipResult,
+  AssignMembershipParams,
+  AssignMembershipResult,
+  PassActionResult,
+  RequestBussolaParams,
+  RequestBussolaResult,
 } from './rpc';
 
 // Public queries

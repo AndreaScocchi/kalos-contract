@@ -363,6 +363,74 @@ type Database = {
                     }
                 ];
             };
+            bussola_requests: {
+                Row: {
+                    client_id: string;
+                    created_at: string;
+                    handled_by: string | null;
+                    id: string;
+                    lesson_id: string | null;
+                    metadata: Json | null;
+                    note: string | null;
+                    preferred_at: string | null;
+                    status: Database["public"]["Enums"]["bussola_request_status"];
+                    updated_at: string;
+                };
+                Insert: {
+                    client_id: string;
+                    created_at?: string;
+                    handled_by?: string | null;
+                    id?: string;
+                    lesson_id?: string | null;
+                    metadata?: Json | null;
+                    note?: string | null;
+                    preferred_at?: string | null;
+                    status?: Database["public"]["Enums"]["bussola_request_status"];
+                    updated_at?: string;
+                };
+                Update: {
+                    client_id?: string;
+                    created_at?: string;
+                    handled_by?: string | null;
+                    id?: string;
+                    lesson_id?: string | null;
+                    metadata?: Json | null;
+                    note?: string | null;
+                    preferred_at?: string | null;
+                    status?: Database["public"]["Enums"]["bussola_request_status"];
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "bussola_requests_client_id_fkey";
+                        columns: ["client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "bussola_requests_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "lesson_occupancy";
+                        referencedColumns: ["lesson_id"];
+                    },
+                    {
+                        foreignKeyName: "bussola_requests_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "lessons";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "bussola_requests_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             campaign_analytics: {
                 Row: {
                     campaign_id: string;
@@ -1322,6 +1390,69 @@ type Database = {
                     }
                 ];
             };
+            memberships: {
+                Row: {
+                    client_id: string;
+                    created_at: string;
+                    created_by: string | null;
+                    deleted_at: string | null;
+                    expires_at: string;
+                    id: string;
+                    metadata: Json | null;
+                    note: string | null;
+                    price_cents_paid: number | null;
+                    started_at: string;
+                    status: Database["public"]["Enums"]["membership_status"];
+                    tier_id: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    client_id: string;
+                    created_at?: string;
+                    created_by?: string | null;
+                    deleted_at?: string | null;
+                    expires_at: string;
+                    id?: string;
+                    metadata?: Json | null;
+                    note?: string | null;
+                    price_cents_paid?: number | null;
+                    started_at?: string;
+                    status?: Database["public"]["Enums"]["membership_status"];
+                    tier_id: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    client_id?: string;
+                    created_at?: string;
+                    created_by?: string | null;
+                    deleted_at?: string | null;
+                    expires_at?: string;
+                    id?: string;
+                    metadata?: Json | null;
+                    note?: string | null;
+                    price_cents_paid?: number | null;
+                    started_at?: string;
+                    status?: Database["public"]["Enums"]["membership_status"];
+                    tier_id?: string;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "memberships_client_id_fkey";
+                        columns: ["client_id"];
+                        isOneToOne: false;
+                        referencedRelation: "clients";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "memberships_tier_id_fkey";
+                        columns: ["tier_id"];
+                        isOneToOne: false;
+                        referencedRelation: "pass_tiers";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             newsletter_campaigns: {
                 Row: {
                     archived: boolean;
@@ -1791,6 +1922,98 @@ type Database = {
                         referencedColumns: ["id"];
                     }
                 ];
+            };
+            pass_tier_benefits: {
+                Row: {
+                    benefit_type: Database["public"]["Enums"]["pass_benefit_type"];
+                    created_at: string;
+                    description: string | null;
+                    display_order: number;
+                    id: string;
+                    is_active: boolean;
+                    label: string | null;
+                    tier_id: string;
+                    updated_at: string;
+                    value_int: number | null;
+                    value_percent: number | null;
+                };
+                Insert: {
+                    benefit_type: Database["public"]["Enums"]["pass_benefit_type"];
+                    created_at?: string;
+                    description?: string | null;
+                    display_order?: number;
+                    id?: string;
+                    is_active?: boolean;
+                    label?: string | null;
+                    tier_id: string;
+                    updated_at?: string;
+                    value_int?: number | null;
+                    value_percent?: number | null;
+                };
+                Update: {
+                    benefit_type?: Database["public"]["Enums"]["pass_benefit_type"];
+                    created_at?: string;
+                    description?: string | null;
+                    display_order?: number;
+                    id?: string;
+                    is_active?: boolean;
+                    label?: string | null;
+                    tier_id?: string;
+                    updated_at?: string;
+                    value_int?: number | null;
+                    value_percent?: number | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "pass_tier_benefits_tier_id_fkey";
+                        columns: ["tier_id"];
+                        isOneToOne: false;
+                        referencedRelation: "pass_tiers";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            pass_tiers: {
+                Row: {
+                    created_at: string;
+                    currency: string;
+                    deleted_at: string | null;
+                    description: string | null;
+                    display_order: number;
+                    id: string;
+                    is_active: boolean;
+                    name: string;
+                    price_cents: number;
+                    updated_at: string;
+                    validity_days: number;
+                };
+                Insert: {
+                    created_at?: string;
+                    currency?: string;
+                    deleted_at?: string | null;
+                    description?: string | null;
+                    display_order?: number;
+                    id?: string;
+                    is_active?: boolean;
+                    name: string;
+                    price_cents?: number;
+                    updated_at?: string;
+                    validity_days?: number;
+                };
+                Update: {
+                    created_at?: string;
+                    currency?: string;
+                    deleted_at?: string | null;
+                    description?: string | null;
+                    display_order?: number;
+                    id?: string;
+                    is_active?: boolean;
+                    name?: string;
+                    price_cents?: number;
+                    updated_at?: string;
+                    validity_days?: number;
+                };
+                Relationships: [];
             };
             payout_rules: {
                 Row: {
@@ -2812,6 +3035,16 @@ type Database = {
             };
         };
         Functions: {
+            assign_membership: {
+                Args: {
+                    p_client_id: string;
+                    p_note?: string;
+                    p_price_cents?: number;
+                    p_started_at?: string;
+                    p_tier_id: string;
+                };
+                Returns: Json;
+            };
             book_event: {
                 Args: {
                     p_event_id: string;
@@ -2880,9 +3113,21 @@ type Database = {
                 };
                 Returns: Json;
             };
+            cancel_bussola_request: {
+                Args: {
+                    p_request_id: string;
+                };
+                Returns: Json;
+            };
             cancel_event_booking: {
                 Args: {
                     p_booking_id: string;
+                };
+                Returns: Json;
+            };
+            cancel_membership: {
+                Args: {
+                    p_membership_id: string;
                 };
                 Returns: Json;
             };
@@ -3063,6 +3308,10 @@ type Database = {
                 Args: never;
                 Returns: string;
             };
+            get_my_membership: {
+                Args: never;
+                Returns: Json;
+            };
             get_notification_channel: {
                 Args: {
                     p_category: Database["public"]["Enums"]["notification_category"];
@@ -3216,6 +3465,13 @@ type Database = {
                 Args: never;
                 Returns: Json;
             };
+            request_bussola: {
+                Args: {
+                    p_note?: string;
+                    p_preferred_at?: string;
+                };
+                Returns: Json;
+            };
             staff_book_event: {
                 Args: {
                     p_client_id: string;
@@ -3287,6 +3543,7 @@ type Database = {
             announcement_recurrence_frequency: "daily" | "weekly" | "biweekly" | "monthly";
             booking_status: "booked" | "canceled" | "attended" | "no_show";
             bug_status: "open" | "in_progress" | "resolved" | "closed";
+            bussola_request_status: "pending" | "scheduled" | "completed" | "cancelled";
             campaign_content_type: "brief" | "push_notification" | "newsletter" | "instagram_post" | "instagram_story" | "instagram_reel" | "instagram_carousel" | "facebook_post";
             campaign_tone: "formale" | "amichevole" | "urgente" | "entusiasta" | "professionale" | "empatico" | "diretto" | "esclusivo";
             campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo";
@@ -3294,12 +3551,14 @@ type Database = {
             feedback_kind: "practice" | "lesson" | "onboarding" | "event";
             feedback_status: "new" | "reviewed" | "archived";
             marketing_campaign_status: "draft" | "ai_generating" | "pending_review" | "scheduled" | "executing" | "completed" | "failed";
+            membership_status: "active" | "expired" | "cancelled";
             newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
             newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
             newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
             notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder" | "feedback_request";
             notification_channel: "push" | "email";
             notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
+            pass_benefit_type: "subscription_discount" | "event_discount" | "bussola" | "community_access" | "priority_booking" | "other";
             practice_block_type: "text" | "image" | "audio" | "video";
             practice_category: "meditazione" | "corpo" | "respiro" | "scrittura" | "rilassamento";
             practice_level: "principiante" | "intermedio" | "avanzato";
@@ -3532,6 +3791,203 @@ declare function staffBookEvent(client: SupabaseClient<Database>, params: StaffB
  * @throws Error se la chiamata RPC fallisce
  */
 declare function staffCancelEventBooking(client: SupabaseClient<Database>, params: StaffCancelEventBookingParams): Promise<CancelEventBookingResult>;
+/**
+ * Tipo di feedback (Fase 5 nuova app): momento/oggetto a cui si riferisce.
+ */
+type FeedbackKind = 'practice' | 'lesson' | 'onboarding' | 'event';
+/**
+ * Parametri per submitFeedback.
+ * `targetId` è obbligatorio per tutti i kind tranne `onboarding`.
+ */
+type SubmitFeedbackParams = {
+    kind: FeedbackKind;
+    targetId?: string;
+    rating?: number;
+    comment?: string;
+};
+/**
+ * Risultato della RPC submit_feedback.
+ */
+type SubmitFeedbackResult = {
+    ok: boolean;
+    reason?: string;
+    feedback_id?: string;
+};
+/**
+ * Parametri per queueFeedbackRequest (raccolta automatica).
+ */
+type QueueFeedbackRequestParams = {
+    clientId: string;
+    kind: FeedbackKind;
+    targetId?: string;
+    scheduledFor?: string;
+};
+/**
+ * Risultato della RPC queue_feedback_request.
+ */
+type QueueFeedbackRequestResult = {
+    ok: boolean;
+    reason?: string;
+    notification_id?: string;
+};
+/**
+ * Wrapper tipizzato per la RPC submit_feedback.
+ * Invia (o aggiorna) un feedback dell'utente autenticato: voto 1–5 e/o commento.
+ * Valida lato DB che l'azione su cui si dà feedback sia avvenuta (pratica completata,
+ * lezione attended, evento prenotato). Upsert: un feedback per target.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param params - kind, targetId (tranne onboarding), rating?, comment?
+ * @returns Promise<SubmitFeedbackResult> con ok, reason opzionale, feedback_id se successo
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function submitFeedback(client: SupabaseClient<Database>, params: SubmitFeedbackParams): Promise<SubmitFeedbackResult>;
+/**
+ * Wrapper tipizzato per la RPC queue_feedback_request.
+ * Accoda una richiesta di feedback (notifica `feedback_request`) per un cliente.
+ * Pensata per automazioni e staff; rispetta le preferenze di canale.
+ *
+ * @param client - Il client Supabase autenticato (staff/service o il cliente stesso)
+ * @param params - clientId, kind, targetId?, scheduledFor?
+ * @returns Promise<QueueFeedbackRequestResult> con ok, reason opzionale, notification_id se successo
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function queueFeedbackRequest(client: SupabaseClient<Database>, params: QueueFeedbackRequestParams): Promise<QueueFeedbackRequestResult>;
+/**
+ * Tipo di vantaggio del Pass (allineato all'enum DB pass_benefit_type).
+ */
+type PassBenefitType = 'subscription_discount' | 'event_discount' | 'bussola' | 'community_access' | 'priority_booking' | 'other';
+/**
+ * Vantaggio del Pass come restituito da get_my_membership.
+ */
+type MembershipBenefit = {
+    benefit_type: PassBenefitType;
+    value_percent: number | null;
+    value_int: number | null;
+    label: string | null;
+    description: string | null;
+};
+/**
+ * Risultato della RPC get_my_membership: stato del Pass dell'utente autenticato.
+ * `has_pass` è true solo se la membership è attiva e non scaduta.
+ */
+type GetMyMembershipResult = {
+    ok: boolean;
+    reason?: string;
+    has_pass?: boolean;
+    membership?: {
+        id: string;
+        status: 'active' | 'expired' | 'cancelled';
+        started_at: string;
+        expires_at: string;
+    };
+    tier?: {
+        id: string;
+        name: string;
+        description: string | null;
+        price_cents: number;
+        currency: string;
+        validity_days: number;
+    };
+    benefits?: MembershipBenefit[];
+};
+/**
+ * Parametri per assignMembership (staff).
+ */
+type AssignMembershipParams = {
+    clientId: string;
+    tierId: string;
+    /** Data di attivazione (default: oggi lato DB). */
+    startedAt?: string;
+    /** Prezzo effettivamente pagato in centesimi (default: prezzo del tier). */
+    priceCents?: number;
+    note?: string;
+};
+/**
+ * Risultato della RPC assign_membership.
+ */
+type AssignMembershipResult = {
+    ok: boolean;
+    reason?: string;
+    membership_id?: string;
+    expires_at?: string;
+};
+/**
+ * Risultato generico delle RPC di gestione Pass/Bussola con solo esito.
+ */
+type PassActionResult = {
+    ok: boolean;
+    reason?: string;
+};
+/**
+ * Parametri per requestBussola (cliente tesserato).
+ */
+type RequestBussolaParams = {
+    /** Preferenza di data/ora (ISO 8601), opzionale. */
+    preferredAt?: string;
+    /** Cosa vorrebbe affrontare, opzionale. */
+    note?: string;
+};
+/**
+ * Risultato della RPC request_bussola.
+ */
+type RequestBussolaResult = {
+    ok: boolean;
+    reason?: string;
+    request_id?: string;
+};
+/**
+ * Wrapper tipizzato per la RPC get_my_membership.
+ * Ritorna stato del Community Pass dell'utente autenticato: has_pass (attivo e non scaduto),
+ * membership, tier e vantaggi.
+ *
+ * @param client - Il client Supabase autenticato
+ * @returns Promise<GetMyMembershipResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function getMyMembership(client: SupabaseClient<Database>): Promise<GetMyMembershipResult>;
+/**
+ * Wrapper tipizzato per la RPC assign_membership (staff).
+ * Assegna il Community Pass a un cliente, calcola la scadenza dal tier e chiude
+ * l'eventuale Pass attivo precedente. Usato dal gestionale (assegnazione manuale).
+ *
+ * @param client - Il client Supabase autenticato (staff)
+ * @param params - clientId, tierId, startedAt?, priceCents?, note?
+ * @returns Promise<AssignMembershipResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function assignMembership(client: SupabaseClient<Database>, params: AssignMembershipParams): Promise<AssignMembershipResult>;
+/**
+ * Wrapper tipizzato per la RPC cancel_membership (staff).
+ * Annulla un Community Pass.
+ *
+ * @param client - Il client Supabase autenticato (staff)
+ * @param membershipId - id della membership da annullare
+ * @returns Promise<PassActionResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function cancelMembership(client: SupabaseClient<Database>, membershipId: string): Promise<PassActionResult>;
+/**
+ * Wrapper tipizzato per la RPC request_bussola.
+ * Il cliente tesserato (Pass attivo) richiede una consulenza Bussola 15'.
+ * Una sola richiesta aperta per volta; lo staff la trasforma in una lezione individuale.
+ *
+ * @param client - Il client Supabase autenticato (cliente)
+ * @param params - preferredAt?, note?
+ * @returns Promise<RequestBussolaResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function requestBussola(client: SupabaseClient<Database>, params?: RequestBussolaParams): Promise<RequestBussolaResult>;
+/**
+ * Wrapper tipizzato per la RPC cancel_bussola_request.
+ * Annulla una richiesta Bussola aperta (cliente proprietario o staff).
+ *
+ * @param client - Il client Supabase autenticato
+ * @param requestId - id della richiesta da annullare
+ * @returns Promise<PassActionResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function cancelBussolaRequest(client: SupabaseClient<Database>, requestId: string): Promise<PassActionResult>;
 
 /**
  * Tipo per i nomi delle views pubbliche del sito.
@@ -3868,6 +4324,69 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 columns: ["created_by_user_id"];
                 isOneToOne: false;
                 referencedRelation: "profiles";
+                referencedColumns: ["id"];
+            }];
+        };
+        bussola_requests: {
+            Row: {
+                client_id: string;
+                created_at: string;
+                handled_by: string | null;
+                id: string;
+                lesson_id: string | null;
+                metadata: Json | null;
+                note: string | null;
+                preferred_at: string | null;
+                status: Database["public"]["Enums"]["bussola_request_status"];
+                updated_at: string;
+            };
+            Insert: {
+                client_id: string;
+                created_at?: string;
+                handled_by?: string | null;
+                id?: string;
+                lesson_id?: string | null;
+                metadata?: Json | null;
+                note?: string | null;
+                preferred_at?: string | null;
+                status?: Database["public"]["Enums"]["bussola_request_status"];
+                updated_at?: string;
+            };
+            Update: {
+                client_id?: string;
+                created_at?: string;
+                handled_by?: string | null;
+                id?: string;
+                lesson_id?: string | null;
+                metadata?: Json | null;
+                note?: string | null;
+                preferred_at?: string | null;
+                status?: Database["public"]["Enums"]["bussola_request_status"];
+                updated_at?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "bussola_requests_client_id_fkey";
+                columns: ["client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "bussola_requests_lesson_id_fkey";
+                columns: ["lesson_id"];
+                isOneToOne: false;
+                referencedRelation: "lesson_occupancy";
+                referencedColumns: ["lesson_id"];
+            }, {
+                foreignKeyName: "bussola_requests_lesson_id_fkey";
+                columns: ["lesson_id"];
+                isOneToOne: false;
+                referencedRelation: "lessons";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "bussola_requests_lesson_id_fkey";
+                columns: ["lesson_id"];
+                isOneToOne: false;
+                referencedRelation: "public_site_schedule";
                 referencedColumns: ["id"];
             }];
         };
@@ -4777,6 +5296,66 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedColumns: ["operator_id"];
             }];
         };
+        memberships: {
+            Row: {
+                client_id: string;
+                created_at: string;
+                created_by: string | null;
+                deleted_at: string | null;
+                expires_at: string;
+                id: string;
+                metadata: Json | null;
+                note: string | null;
+                price_cents_paid: number | null;
+                started_at: string;
+                status: Database["public"]["Enums"]["membership_status"];
+                tier_id: string;
+                updated_at: string;
+            };
+            Insert: {
+                client_id: string;
+                created_at?: string;
+                created_by?: string | null;
+                deleted_at?: string | null;
+                expires_at: string;
+                id?: string;
+                metadata?: Json | null;
+                note?: string | null;
+                price_cents_paid?: number | null;
+                started_at?: string;
+                status?: Database["public"]["Enums"]["membership_status"];
+                tier_id: string;
+                updated_at?: string;
+            };
+            Update: {
+                client_id?: string;
+                created_at?: string;
+                created_by?: string | null;
+                deleted_at?: string | null;
+                expires_at?: string;
+                id?: string;
+                metadata?: Json | null;
+                note?: string | null;
+                price_cents_paid?: number | null;
+                started_at?: string;
+                status?: Database["public"]["Enums"]["membership_status"];
+                tier_id?: string;
+                updated_at?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "memberships_client_id_fkey";
+                columns: ["client_id"];
+                isOneToOne: false;
+                referencedRelation: "clients";
+                referencedColumns: ["id"];
+            }, {
+                foreignKeyName: "memberships_tier_id_fkey";
+                columns: ["tier_id"];
+                isOneToOne: false;
+                referencedRelation: "pass_tiers";
+                referencedColumns: ["id"];
+            }];
+        };
         newsletter_campaigns: {
             Row: {
                 archived: boolean;
@@ -5226,6 +5805,96 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedRelation: "profiles";
                 referencedColumns: ["id"];
             }];
+        };
+        pass_tier_benefits: {
+            Row: {
+                benefit_type: Database["public"]["Enums"]["pass_benefit_type"];
+                created_at: string;
+                description: string | null;
+                display_order: number;
+                id: string;
+                is_active: boolean;
+                label: string | null;
+                tier_id: string;
+                updated_at: string;
+                value_int: number | null;
+                value_percent: number | null;
+            };
+            Insert: {
+                benefit_type: Database["public"]["Enums"]["pass_benefit_type"];
+                created_at?: string;
+                description?: string | null;
+                display_order?: number;
+                id?: string;
+                is_active?: boolean;
+                label?: string | null;
+                tier_id: string;
+                updated_at?: string;
+                value_int?: number | null;
+                value_percent?: number | null;
+            };
+            Update: {
+                benefit_type?: Database["public"]["Enums"]["pass_benefit_type"];
+                created_at?: string;
+                description?: string | null;
+                display_order?: number;
+                id?: string;
+                is_active?: boolean;
+                label?: string | null;
+                tier_id?: string;
+                updated_at?: string;
+                value_int?: number | null;
+                value_percent?: number | null;
+            };
+            Relationships: [{
+                foreignKeyName: "pass_tier_benefits_tier_id_fkey";
+                columns: ["tier_id"];
+                isOneToOne: false;
+                referencedRelation: "pass_tiers";
+                referencedColumns: ["id"];
+            }];
+        };
+        pass_tiers: {
+            Row: {
+                created_at: string;
+                currency: string;
+                deleted_at: string | null;
+                description: string | null;
+                display_order: number;
+                id: string;
+                is_active: boolean;
+                name: string;
+                price_cents: number;
+                updated_at: string;
+                validity_days: number;
+            };
+            Insert: {
+                created_at?: string;
+                currency?: string;
+                deleted_at?: string | null;
+                description?: string | null;
+                display_order?: number;
+                id?: string;
+                is_active?: boolean;
+                name: string;
+                price_cents?: number;
+                updated_at?: string;
+                validity_days?: number;
+            };
+            Update: {
+                created_at?: string;
+                currency?: string;
+                deleted_at?: string | null;
+                description?: string | null;
+                display_order?: number;
+                id?: string;
+                is_active?: boolean;
+                name?: string;
+                price_cents?: number;
+                updated_at?: string;
+                validity_days?: number;
+            };
+            Relationships: [];
         };
         payout_rules: {
             Row: {
@@ -6201,6 +6870,16 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         };
     };
     Functions: {
+        assign_membership: {
+            Args: {
+                p_client_id: string;
+                p_note?: string;
+                p_price_cents?: number;
+                p_started_at?: string;
+                p_tier_id: string;
+            };
+            Returns: Json;
+        };
         book_event: {
             Args: {
                 p_event_id: string;
@@ -6269,9 +6948,21 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             };
             Returns: Json;
         };
+        cancel_bussola_request: {
+            Args: {
+                p_request_id: string;
+            };
+            Returns: Json;
+        };
         cancel_event_booking: {
             Args: {
                 p_booking_id: string;
+            };
+            Returns: Json;
+        };
+        cancel_membership: {
+            Args: {
+                p_membership_id: string;
             };
             Returns: Json;
         };
@@ -6452,6 +7143,10 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Args: never;
             Returns: string;
         };
+        get_my_membership: {
+            Args: never;
+            Returns: Json;
+        };
         get_notification_channel: {
             Args: {
                 p_category: Database["public"]["Enums"]["notification_category"];
@@ -6605,6 +7300,13 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Args: never;
             Returns: Json;
         };
+        request_bussola: {
+            Args: {
+                p_note?: string;
+                p_preferred_at?: string;
+            };
+            Returns: Json;
+        };
         staff_book_event: {
             Args: {
                 p_client_id: string;
@@ -6676,6 +7378,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         announcement_recurrence_frequency: "daily" | "weekly" | "biweekly" | "monthly";
         booking_status: "booked" | "canceled" | "attended" | "no_show";
         bug_status: "open" | "in_progress" | "resolved" | "closed";
+        bussola_request_status: "pending" | "scheduled" | "completed" | "cancelled";
         campaign_content_type: "brief" | "push_notification" | "newsletter" | "instagram_post" | "instagram_story" | "instagram_reel" | "instagram_carousel" | "facebook_post";
         campaign_tone: "formale" | "amichevole" | "urgente" | "entusiasta" | "professionale" | "empatico" | "diretto" | "esclusivo";
         campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo";
@@ -6683,12 +7386,14 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         feedback_kind: "practice" | "lesson" | "onboarding" | "event";
         feedback_status: "new" | "reviewed" | "archived";
         marketing_campaign_status: "draft" | "ai_generating" | "pending_review" | "scheduled" | "executing" | "completed" | "failed";
+        membership_status: "active" | "expired" | "cancelled";
         newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
         newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
         newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
         notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder" | "feedback_request";
         notification_channel: "push" | "email";
         notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
+        pass_benefit_type: "subscription_discount" | "event_discount" | "bussola" | "community_access" | "priority_booking" | "other";
         practice_block_type: "text" | "image" | "audio" | "video";
         practice_category: "meditazione" | "corpo" | "respiro" | "scrittura" | "rilassamento";
         practice_level: "principiante" | "intermedio" | "avanzato";
@@ -7009,6 +7714,68 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         columns: ["created_by_user_id"];
         isOneToOne: false;
         referencedRelation: "profiles";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
+        client_id: string;
+        created_at: string;
+        handled_by: string | null;
+        id: string;
+        lesson_id: string | null;
+        metadata: Json | null;
+        note: string | null;
+        preferred_at: string | null;
+        status: Database["public"]["Enums"]["bussola_request_status"];
+        updated_at: string;
+    };
+    Insert: {
+        client_id: string;
+        created_at?: string;
+        handled_by?: string | null;
+        id?: string;
+        lesson_id?: string | null;
+        metadata?: Json | null;
+        note?: string | null;
+        preferred_at?: string | null;
+        status?: Database["public"]["Enums"]["bussola_request_status"];
+        updated_at?: string;
+    };
+    Update: {
+        client_id?: string;
+        created_at?: string;
+        handled_by?: string | null;
+        id?: string;
+        lesson_id?: string | null;
+        metadata?: Json | null;
+        note?: string | null;
+        preferred_at?: string | null;
+        status?: Database["public"]["Enums"]["bussola_request_status"];
+        updated_at?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "bussola_requests_client_id_fkey";
+        columns: ["client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "bussola_requests_lesson_id_fkey";
+        columns: ["lesson_id"];
+        isOneToOne: false;
+        referencedRelation: "lesson_occupancy";
+        referencedColumns: ["lesson_id"];
+    }, {
+        foreignKeyName: "bussola_requests_lesson_id_fkey";
+        columns: ["lesson_id"];
+        isOneToOne: false;
+        referencedRelation: "lessons";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "bussola_requests_lesson_id_fkey";
+        columns: ["lesson_id"];
+        isOneToOne: false;
+        referencedRelation: "public_site_schedule";
         referencedColumns: ["id"];
     }];
 } | {
@@ -7907,6 +8674,65 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     }];
 } | {
     Row: {
+        client_id: string;
+        created_at: string;
+        created_by: string | null;
+        deleted_at: string | null;
+        expires_at: string;
+        id: string;
+        metadata: Json | null;
+        note: string | null;
+        price_cents_paid: number | null;
+        started_at: string;
+        status: Database["public"]["Enums"]["membership_status"];
+        tier_id: string;
+        updated_at: string;
+    };
+    Insert: {
+        client_id: string;
+        created_at?: string;
+        created_by?: string | null;
+        deleted_at?: string | null;
+        expires_at: string;
+        id?: string;
+        metadata?: Json | null;
+        note?: string | null;
+        price_cents_paid?: number | null;
+        started_at?: string;
+        status?: Database["public"]["Enums"]["membership_status"];
+        tier_id: string;
+        updated_at?: string;
+    };
+    Update: {
+        client_id?: string;
+        created_at?: string;
+        created_by?: string | null;
+        deleted_at?: string | null;
+        expires_at?: string;
+        id?: string;
+        metadata?: Json | null;
+        note?: string | null;
+        price_cents_paid?: number | null;
+        started_at?: string;
+        status?: Database["public"]["Enums"]["membership_status"];
+        tier_id?: string;
+        updated_at?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "memberships_client_id_fkey";
+        columns: ["client_id"];
+        isOneToOne: false;
+        referencedRelation: "clients";
+        referencedColumns: ["id"];
+    }, {
+        foreignKeyName: "memberships_tier_id_fkey";
+        columns: ["tier_id"];
+        isOneToOne: false;
+        referencedRelation: "pass_tiers";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
         archived: boolean;
         bounced_count: number;
         clicked_count: number;
@@ -8346,6 +9172,94 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "profiles";
         referencedColumns: ["id"];
     }];
+} | {
+    Row: {
+        benefit_type: Database["public"]["Enums"]["pass_benefit_type"];
+        created_at: string;
+        description: string | null;
+        display_order: number;
+        id: string;
+        is_active: boolean;
+        label: string | null;
+        tier_id: string;
+        updated_at: string;
+        value_int: number | null;
+        value_percent: number | null;
+    };
+    Insert: {
+        benefit_type: Database["public"]["Enums"]["pass_benefit_type"];
+        created_at?: string;
+        description?: string | null;
+        display_order?: number;
+        id?: string;
+        is_active?: boolean;
+        label?: string | null;
+        tier_id: string;
+        updated_at?: string;
+        value_int?: number | null;
+        value_percent?: number | null;
+    };
+    Update: {
+        benefit_type?: Database["public"]["Enums"]["pass_benefit_type"];
+        created_at?: string;
+        description?: string | null;
+        display_order?: number;
+        id?: string;
+        is_active?: boolean;
+        label?: string | null;
+        tier_id?: string;
+        updated_at?: string;
+        value_int?: number | null;
+        value_percent?: number | null;
+    };
+    Relationships: [{
+        foreignKeyName: "pass_tier_benefits_tier_id_fkey";
+        columns: ["tier_id"];
+        isOneToOne: false;
+        referencedRelation: "pass_tiers";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
+        created_at: string;
+        currency: string;
+        deleted_at: string | null;
+        description: string | null;
+        display_order: number;
+        id: string;
+        is_active: boolean;
+        name: string;
+        price_cents: number;
+        updated_at: string;
+        validity_days: number;
+    };
+    Insert: {
+        created_at?: string;
+        currency?: string;
+        deleted_at?: string | null;
+        description?: string | null;
+        display_order?: number;
+        id?: string;
+        is_active?: boolean;
+        name: string;
+        price_cents?: number;
+        updated_at?: string;
+        validity_days?: number;
+    };
+    Update: {
+        created_at?: string;
+        currency?: string;
+        deleted_at?: string | null;
+        description?: string | null;
+        display_order?: number;
+        id?: string;
+        is_active?: boolean;
+        name?: string;
+        price_cents?: number;
+        updated_at?: string;
+        validity_days?: number;
+    };
+    Relationships: [];
 } | {
     Row: {
         cash_reserve_pct: number;
@@ -9072,7 +9986,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "profiles";
         referencedColumns: ["id"];
     }];
-}, "campaigns" | "clients" | "lessons" | "subscriptions" | "profiles" | "campaign_contents" | "newsletter_campaigns" | "social_connections" | "events" | "activities" | "operators" | "practices" | "newsletter_emails" | "announcements" | "notification_logs" | "plans" | "practice_steps" | "auth_email_logs" | "bookings" | "bug_reports" | "campaign_analytics" | "device_tokens" | "event_bookings" | "expenses" | "feature_flags" | "feedback" | "journal_entries" | "newsletter_extra_emails" | "newsletter_tracking_events" | "notification_preferences" | "notification_queue" | "notification_reads" | "payout_rules" | "payouts" | "plan_activities" | "practice_activities" | "practice_blocks" | "practice_user_state" | "promotions" | "subscription_usages" | "waitlist", [] | [{
+}, "campaigns" | "clients" | "lessons" | "subscriptions" | "profiles" | "campaign_contents" | "newsletter_campaigns" | "social_connections" | "events" | "activities" | "operators" | "practices" | "pass_tiers" | "newsletter_emails" | "announcements" | "notification_logs" | "plans" | "practice_steps" | "auth_email_logs" | "bookings" | "bug_reports" | "bussola_requests" | "campaign_analytics" | "device_tokens" | "event_bookings" | "expenses" | "feature_flags" | "feedback" | "journal_entries" | "memberships" | "newsletter_extra_emails" | "newsletter_tracking_events" | "notification_preferences" | "notification_queue" | "notification_reads" | "pass_tier_benefits" | "payout_rules" | "payouts" | "plan_activities" | "practice_activities" | "practice_blocks" | "practice_user_state" | "promotions" | "subscription_usages" | "waitlist", [] | [{
     foreignKeyName: "announcements_marketing_campaign_id_fkey";
     columns: ["marketing_campaign_id"];
     isOneToOne: false;
@@ -9131,6 +10045,30 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["created_by_user_id"];
     isOneToOne: false;
     referencedRelation: "profiles";
+    referencedColumns: ["id"];
+}] | [{
+    foreignKeyName: "bussola_requests_client_id_fkey";
+    columns: ["client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "bussola_requests_lesson_id_fkey";
+    columns: ["lesson_id"];
+    isOneToOne: false;
+    referencedRelation: "lesson_occupancy";
+    referencedColumns: ["lesson_id"];
+}, {
+    foreignKeyName: "bussola_requests_lesson_id_fkey";
+    columns: ["lesson_id"];
+    isOneToOne: false;
+    referencedRelation: "lessons";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "bussola_requests_lesson_id_fkey";
+    columns: ["lesson_id"];
+    isOneToOne: false;
+    referencedRelation: "public_site_schedule";
     referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "campaign_analytics_campaign_id_fkey";
@@ -9391,6 +10329,18 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     referencedRelation: "public_site_schedule";
     referencedColumns: ["operator_id"];
 }] | [{
+    foreignKeyName: "memberships_client_id_fkey";
+    columns: ["client_id"];
+    isOneToOne: false;
+    referencedRelation: "clients";
+    referencedColumns: ["id"];
+}, {
+    foreignKeyName: "memberships_tier_id_fkey";
+    columns: ["tier_id"];
+    isOneToOne: false;
+    referencedRelation: "pass_tiers";
+    referencedColumns: ["id"];
+}] | [{
     foreignKeyName: "newsletter_campaigns_created_by_fkey";
     columns: ["created_by"];
     isOneToOne: false;
@@ -9461,6 +10411,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["profile_id"];
     isOneToOne: false;
     referencedRelation: "profiles";
+    referencedColumns: ["id"];
+}] | [{
+    foreignKeyName: "pass_tier_benefits_tier_id_fkey";
+    columns: ["tier_id"];
+    isOneToOne: false;
+    referencedRelation: "pass_tiers";
     referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "payout_rules_created_by_fkey";
@@ -9739,6 +10695,17 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     title: string;
     updated_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    handled_by: string | null;
+    id: string;
+    lesson_id: string | null;
+    metadata: Json | null;
+    note: string | null;
+    preferred_at: string | null;
+    status: Database["public"]["Enums"]["bussola_request_status"];
+    updated_at: string;
+} | {
     campaign_id: string;
     channel: string;
     clicks: number | null;
@@ -9931,6 +10898,20 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    created_by: string | null;
+    deleted_at: string | null;
+    expires_at: string;
+    id: string;
+    metadata: Json | null;
+    note: string | null;
+    price_cents_paid: number | null;
+    started_at: string;
+    status: Database["public"]["Enums"]["membership_status"];
+    tier_id: string;
+    updated_at: string;
+} | {
     archived: boolean;
     bounced_count: number;
     clicked_count: number;
@@ -10038,6 +11019,30 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     name: string;
     profile_id: string | null;
     role: string;
+} | {
+    benefit_type: Database["public"]["Enums"]["pass_benefit_type"];
+    created_at: string;
+    description: string | null;
+    display_order: number;
+    id: string;
+    is_active: boolean;
+    label: string | null;
+    tier_id: string;
+    updated_at: string;
+    value_int: number | null;
+    value_percent: number | null;
+} | {
+    created_at: string;
+    currency: string;
+    deleted_at: string | null;
+    description: string | null;
+    display_order: number;
+    id: string;
+    is_active: boolean;
+    name: string;
+    price_cents: number;
+    updated_at: string;
+    validity_days: number;
 } | {
     cash_reserve_pct: number;
     created_at: string;
@@ -10284,6 +11289,17 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     title: string;
     updated_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    handled_by: string | null;
+    id: string;
+    lesson_id: string | null;
+    metadata: Json | null;
+    note: string | null;
+    preferred_at: string | null;
+    status: Database["public"]["Enums"]["bussola_request_status"];
+    updated_at: string;
+} | {
     campaign_id: string;
     channel: string;
     clicks: number | null;
@@ -10476,6 +11492,20 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    created_by: string | null;
+    deleted_at: string | null;
+    expires_at: string;
+    id: string;
+    metadata: Json | null;
+    note: string | null;
+    price_cents_paid: number | null;
+    started_at: string;
+    status: Database["public"]["Enums"]["membership_status"];
+    tier_id: string;
+    updated_at: string;
+} | {
     archived: boolean;
     bounced_count: number;
     clicked_count: number;
@@ -10583,6 +11613,30 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     name: string;
     profile_id: string | null;
     role: string;
+} | {
+    benefit_type: Database["public"]["Enums"]["pass_benefit_type"];
+    created_at: string;
+    description: string | null;
+    display_order: number;
+    id: string;
+    is_active: boolean;
+    label: string | null;
+    tier_id: string;
+    updated_at: string;
+    value_int: number | null;
+    value_percent: number | null;
+} | {
+    created_at: string;
+    currency: string;
+    deleted_at: string | null;
+    description: string | null;
+    display_order: number;
+    id: string;
+    is_active: boolean;
+    name: string;
+    price_cents: number;
+    updated_at: string;
+    validity_days: number;
 } | {
     cash_reserve_pct: number;
     created_at: string;
@@ -10829,6 +11883,17 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     title: string;
     updated_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    handled_by: string | null;
+    id: string;
+    lesson_id: string | null;
+    metadata: Json | null;
+    note: string | null;
+    preferred_at: string | null;
+    status: Database["public"]["Enums"]["bussola_request_status"];
+    updated_at: string;
+} | {
     campaign_id: string;
     channel: string;
     clicks: number | null;
@@ -11021,6 +12086,20 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    created_by: string | null;
+    deleted_at: string | null;
+    expires_at: string;
+    id: string;
+    metadata: Json | null;
+    note: string | null;
+    price_cents_paid: number | null;
+    started_at: string;
+    status: Database["public"]["Enums"]["membership_status"];
+    tier_id: string;
+    updated_at: string;
+} | {
     archived: boolean;
     bounced_count: number;
     clicked_count: number;
@@ -11128,6 +12207,30 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     name: string;
     profile_id: string | null;
     role: string;
+} | {
+    benefit_type: Database["public"]["Enums"]["pass_benefit_type"];
+    created_at: string;
+    description: string | null;
+    display_order: number;
+    id: string;
+    is_active: boolean;
+    label: string | null;
+    tier_id: string;
+    updated_at: string;
+    value_int: number | null;
+    value_percent: number | null;
+} | {
+    created_at: string;
+    currency: string;
+    deleted_at: string | null;
+    description: string | null;
+    display_order: number;
+    id: string;
+    is_active: boolean;
+    name: string;
+    price_cents: number;
+    updated_at: string;
+    validity_days: number;
 } | {
     cash_reserve_pct: number;
     created_at: string;
@@ -11374,6 +12477,17 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     title: string;
     updated_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    handled_by: string | null;
+    id: string;
+    lesson_id: string | null;
+    metadata: Json | null;
+    note: string | null;
+    preferred_at: string | null;
+    status: Database["public"]["Enums"]["bussola_request_status"];
+    updated_at: string;
+} | {
     campaign_id: string;
     channel: string;
     clicks: number | null;
@@ -11566,6 +12680,20 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    created_by: string | null;
+    deleted_at: string | null;
+    expires_at: string;
+    id: string;
+    metadata: Json | null;
+    note: string | null;
+    price_cents_paid: number | null;
+    started_at: string;
+    status: Database["public"]["Enums"]["membership_status"];
+    tier_id: string;
+    updated_at: string;
+} | {
     archived: boolean;
     bounced_count: number;
     clicked_count: number;
@@ -11673,6 +12801,30 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     name: string;
     profile_id: string | null;
     role: string;
+} | {
+    benefit_type: Database["public"]["Enums"]["pass_benefit_type"];
+    created_at: string;
+    description: string | null;
+    display_order: number;
+    id: string;
+    is_active: boolean;
+    label: string | null;
+    tier_id: string;
+    updated_at: string;
+    value_int: number | null;
+    value_percent: number | null;
+} | {
+    created_at: string;
+    currency: string;
+    deleted_at: string | null;
+    description: string | null;
+    display_order: number;
+    id: string;
+    is_active: boolean;
+    name: string;
+    price_cents: number;
+    updated_at: string;
+    validity_days: number;
 } | {
     cash_reserve_pct: number;
     created_at: string;
@@ -11928,6 +13080,17 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     title: string;
     updated_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    handled_by: string | null;
+    id: string;
+    lesson_id: string | null;
+    metadata: Json | null;
+    note: string | null;
+    preferred_at: string | null;
+    status: Database["public"]["Enums"]["bussola_request_status"];
+    updated_at: string;
+} | {
     campaign_id: string;
     channel: string;
     clicks: number | null;
@@ -12120,6 +13283,20 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     recurring_series_id: string | null;
     starts_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    created_by: string | null;
+    deleted_at: string | null;
+    expires_at: string;
+    id: string;
+    metadata: Json | null;
+    note: string | null;
+    price_cents_paid: number | null;
+    started_at: string;
+    status: Database["public"]["Enums"]["membership_status"];
+    tier_id: string;
+    updated_at: string;
+} | {
     archived: boolean;
     bounced_count: number;
     clicked_count: number;
@@ -12227,6 +13404,30 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     name: string;
     profile_id: string | null;
     role: string;
+} | {
+    benefit_type: Database["public"]["Enums"]["pass_benefit_type"];
+    created_at: string;
+    description: string | null;
+    display_order: number;
+    id: string;
+    is_active: boolean;
+    label: string | null;
+    tier_id: string;
+    updated_at: string;
+    value_int: number | null;
+    value_percent: number | null;
+} | {
+    created_at: string;
+    currency: string;
+    deleted_at: string | null;
+    description: string | null;
+    display_order: number;
+    id: string;
+    is_active: boolean;
+    name: string;
+    price_cents: number;
+    updated_at: string;
+    validity_days: number;
 } | {
     cash_reserve_pct: number;
     created_at: string;
@@ -12427,4 +13628,4 @@ type GetEventsWithAvailabilityParams = {
  */
 declare function getEventsWithAvailability(client: SupabaseClient<Database>, params?: GetEventsWithAvailabilityParams): Promise<EventWithAvailability[]>;
 
-export { type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, type Enums, type EventWithAvailability, type GetEventsWithAvailabilityParams, type GetPublicEventsParams, type GetPublicScheduleParams, type PublicViewName, type StaffBookEventParams, type StaffCancelEventBookingParams, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, type Tables, type TablesInsert, type TablesUpdate, type Views, assertSupabaseConfig, bookEvent, bookLesson, cancelBooking, cancelEventBooking, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, staffBookEvent, staffCancelEventBooking };
+export { type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMembershipResult, type GetPublicEventsParams, type GetPublicScheduleParams, type MembershipBenefit, type PassActionResult, type PassBenefitType, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, type Tables, type TablesInsert, type TablesUpdate, type Views, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMembership, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback };

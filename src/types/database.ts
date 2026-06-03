@@ -371,6 +371,74 @@ export type Database = {
           },
         ]
       }
+      bussola_requests: {
+        Row: {
+          client_id: string
+          created_at: string
+          handled_by: string | null
+          id: string
+          lesson_id: string | null
+          metadata: Json | null
+          note: string | null
+          preferred_at: string | null
+          status: Database["public"]["Enums"]["bussola_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          handled_by?: string | null
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          note?: string | null
+          preferred_at?: string | null
+          status?: Database["public"]["Enums"]["bussola_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          handled_by?: string | null
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          note?: string | null
+          preferred_at?: string | null
+          status?: Database["public"]["Enums"]["bussola_request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bussola_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bussola_requests_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_occupancy"
+            referencedColumns: ["lesson_id"]
+          },
+          {
+            foreignKeyName: "bussola_requests_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bussola_requests_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_schedule"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_analytics: {
         Row: {
           campaign_id: string
@@ -1330,6 +1398,69 @@ export type Database = {
           },
         ]
       }
+      memberships: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          metadata: Json | null
+          note: string | null
+          price_cents_paid: number | null
+          started_at: string
+          status: Database["public"]["Enums"]["membership_status"]
+          tier_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at: string
+          id?: string
+          metadata?: Json | null
+          note?: string | null
+          price_cents_paid?: number | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["membership_status"]
+          tier_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          note?: string | null
+          price_cents_paid?: number | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["membership_status"]
+          tier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "pass_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_campaigns: {
         Row: {
           archived: boolean
@@ -1799,6 +1930,98 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pass_tier_benefits: {
+        Row: {
+          benefit_type: Database["public"]["Enums"]["pass_benefit_type"]
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          label: string | null
+          tier_id: string
+          updated_at: string
+          value_int: number | null
+          value_percent: number | null
+        }
+        Insert: {
+          benefit_type: Database["public"]["Enums"]["pass_benefit_type"]
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          tier_id: string
+          updated_at?: string
+          value_int?: number | null
+          value_percent?: number | null
+        }
+        Update: {
+          benefit_type?: Database["public"]["Enums"]["pass_benefit_type"]
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          tier_id?: string
+          updated_at?: string
+          value_int?: number | null
+          value_percent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pass_tier_benefits_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "pass_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pass_tiers: {
+        Row: {
+          created_at: string
+          currency: string
+          deleted_at: string | null
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number
+          updated_at: string
+          validity_days: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          deleted_at?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents?: number
+          updated_at?: string
+          validity_days?: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          deleted_at?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          updated_at?: string
+          validity_days?: number
+        }
+        Relationships: []
       }
       payout_rules: {
         Row: {
@@ -2820,6 +3043,16 @@ export type Database = {
       }
     }
     Functions: {
+      assign_membership: {
+        Args: {
+          p_client_id: string
+          p_note?: string
+          p_price_cents?: number
+          p_started_at?: string
+          p_tier_id: string
+        }
+        Returns: Json
+      }
       book_event: { Args: { p_event_id: string }; Returns: Json }
       book_lesson: {
         Args: { p_lesson_id: string; p_subscription_id?: string }
@@ -2866,7 +3099,9 @@ export type Database = {
         Returns: boolean
       }
       cancel_booking: { Args: { p_booking_id: string }; Returns: Json }
+      cancel_bussola_request: { Args: { p_request_id: string }; Returns: Json }
       cancel_event_booking: { Args: { p_booking_id: string }; Returns: Json }
+      cancel_membership: { Args: { p_membership_id: string }; Returns: Json }
       client_has_active_push_tokens: {
         Args: { p_client_id: string }
         Returns: boolean
@@ -2973,6 +3208,7 @@ export type Database = {
         }[]
       }
       get_my_client_id: { Args: never; Returns: string }
+      get_my_membership: { Args: never; Returns: Json }
       get_notification_channel: {
         Args: {
           p_category: Database["public"]["Enums"]["notification_category"]
@@ -3065,6 +3301,10 @@ export type Database = {
       queue_practice_resume: { Args: never; Returns: Json }
       queue_re_engagement: { Args: never; Returns: Json }
       queue_subscription_expiry: { Args: never; Returns: Json }
+      request_bussola: {
+        Args: { p_note?: string; p_preferred_at?: string }
+        Returns: Json
+      }
       staff_book_event: {
         Args: { p_client_id: string; p_event_id: string }
         Returns: Json
@@ -3125,6 +3365,11 @@ export type Database = {
         | "monthly"
       booking_status: "booked" | "canceled" | "attended" | "no_show"
       bug_status: "open" | "in_progress" | "resolved" | "closed"
+      bussola_request_status:
+        | "pending"
+        | "scheduled"
+        | "completed"
+        | "cancelled"
       campaign_content_type:
         | "brief"
         | "push_notification"
@@ -3163,6 +3408,7 @@ export type Database = {
         | "executing"
         | "completed"
         | "failed"
+      membership_status: "active" | "expired" | "cancelled"
       newsletter_campaign_status:
         | "draft"
         | "scheduled"
@@ -3205,6 +3451,13 @@ export type Database = {
         | "delivered"
         | "failed"
         | "skipped"
+      pass_benefit_type:
+        | "subscription_discount"
+        | "event_discount"
+        | "bussola"
+        | "community_access"
+        | "priority_booking"
+        | "other"
       practice_block_type: "text" | "image" | "audio" | "video"
       practice_category:
         | "meditazione"
@@ -3356,6 +3609,12 @@ export const Constants = {
       ],
       booking_status: ["booked", "canceled", "attended", "no_show"],
       bug_status: ["open", "in_progress", "resolved", "closed"],
+      bussola_request_status: [
+        "pending",
+        "scheduled",
+        "completed",
+        "cancelled",
+      ],
       campaign_content_type: [
         "brief",
         "push_notification",
@@ -3398,6 +3657,7 @@ export const Constants = {
         "completed",
         "failed",
       ],
+      membership_status: ["active", "expired", "cancelled"],
       newsletter_campaign_status: [
         "draft",
         "scheduled",
@@ -3444,6 +3704,14 @@ export const Constants = {
         "delivered",
         "failed",
         "skipped",
+      ],
+      pass_benefit_type: [
+        "subscription_discount",
+        "event_discount",
+        "bussola",
+        "community_access",
+        "priority_booking",
+        "other",
       ],
       practice_block_type: ["text", "image", "audio", "video"],
       practice_category: [

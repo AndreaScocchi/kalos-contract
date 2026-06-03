@@ -26,6 +26,12 @@
       "resolved",
       "closed"
     ],
+    "bussola_request_status": [
+      "pending",
+      "scheduled",
+      "completed",
+      "cancelled"
+    ],
     "campaign_content_type": [
       "brief",
       "push_notification",
@@ -82,6 +88,11 @@
       "completed",
       "failed"
     ],
+    "membership_status": [
+      "active",
+      "expired",
+      "cancelled"
+    ],
     "newsletter_campaign_status": [
       "draft",
       "scheduled",
@@ -131,6 +142,14 @@
       "delivered",
       "failed",
       "skipped"
+    ],
+    "pass_benefit_type": [
+      "subscription_discount",
+      "event_discount",
+      "bussola",
+      "community_access",
+      "priority_booking",
+      "other"
     ],
     "practice_block_type": [
       "text",
@@ -833,6 +852,101 @@
           "isArray": false,
           "nullable": true,
           "hasDefault": false
+        }
+      ]
+    },
+    {
+      "name": "bussola_requests",
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "client_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "status",
+          "dataType": "bussola_request_status",
+          "udtName": "bussola_request_status",
+          "isEnum": true,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "preferred_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "note",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "lesson_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "handled_by",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "metadata",
+          "dataType": "jsonb",
+          "udtName": "jsonb",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": true
+        },
+        {
+          "name": "created_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "updated_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
         }
       ]
     },
@@ -2517,6 +2631,128 @@
       ]
     },
     {
+      "name": "memberships",
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "client_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "tier_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "status",
+          "dataType": "membership_status",
+          "udtName": "membership_status",
+          "isEnum": true,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "started_at",
+          "dataType": "date",
+          "udtName": "date",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "expires_at",
+          "dataType": "date",
+          "udtName": "date",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "price_cents_paid",
+          "dataType": "integer",
+          "udtName": "int4",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "note",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "created_by",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "metadata",
+          "dataType": "jsonb",
+          "udtName": "jsonb",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": true
+        },
+        {
+          "name": "created_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "updated_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "deleted_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        }
+      ]
+    },
+    {
       "name": "newsletter_campaigns",
       "columns": [
         {
@@ -3449,6 +3685,214 @@
           "isArray": false,
           "nullable": false,
           "hasDefault": true
+        }
+      ]
+    },
+    {
+      "name": "pass_tier_benefits",
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "tier_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "benefit_type",
+          "dataType": "pass_benefit_type",
+          "udtName": "pass_benefit_type",
+          "isEnum": true,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "value_percent",
+          "dataType": "numeric",
+          "udtName": "numeric",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "value_int",
+          "dataType": "integer",
+          "udtName": "int4",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "label",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "description",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "display_order",
+          "dataType": "integer",
+          "udtName": "int4",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "is_active",
+          "dataType": "boolean",
+          "udtName": "bool",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "created_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "updated_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        }
+      ]
+    },
+    {
+      "name": "pass_tiers",
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "name",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "description",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "price_cents",
+          "dataType": "integer",
+          "udtName": "int4",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "currency",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "validity_days",
+          "dataType": "integer",
+          "udtName": "int4",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "is_active",
+          "dataType": "boolean",
+          "udtName": "bool",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "display_order",
+          "dataType": "integer",
+          "udtName": "int4",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "created_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "updated_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "deleted_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
         }
       ]
     },

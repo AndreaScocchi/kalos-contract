@@ -37,6 +37,14 @@ enum class BugStatus {
 }
 
 @Serializable
+enum class BussolaRequestStatus {
+    @SerialName("pending") PENDING,
+    @SerialName("scheduled") SCHEDULED,
+    @SerialName("completed") COMPLETED,
+    @SerialName("cancelled") CANCELLED,
+}
+
+@Serializable
 enum class CampaignContentType {
     @SerialName("brief") BRIEF,
     @SerialName("push_notification") PUSH_NOTIFICATION,
@@ -107,6 +115,13 @@ enum class MarketingCampaignStatus {
 }
 
 @Serializable
+enum class MembershipStatus {
+    @SerialName("active") ACTIVE,
+    @SerialName("expired") EXPIRED,
+    @SerialName("cancelled") CANCELLED,
+}
+
+@Serializable
 enum class NewsletterCampaignStatus {
     @SerialName("draft") DRAFT,
     @SerialName("scheduled") SCHEDULED,
@@ -166,6 +181,16 @@ enum class NotificationStatus {
     @SerialName("delivered") DELIVERED,
     @SerialName("failed") FAILED,
     @SerialName("skipped") SKIPPED,
+}
+
+@Serializable
+enum class PassBenefitType {
+    @SerialName("subscription_discount") SUBSCRIPTION_DISCOUNT,
+    @SerialName("event_discount") EVENT_DISCOUNT,
+    @SerialName("bussola") BUSSOLA,
+    @SerialName("community_access") COMMUNITY_ACCESS,
+    @SerialName("priority_booking") PRIORITY_BOOKING,
+    @SerialName("other") OTHER,
 }
 
 @Serializable

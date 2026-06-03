@@ -375,3 +375,232 @@ export async function queueFeedbackRequest(
   return data as QueueFeedbackRequestResult;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Kalòs Community Pass (tesseramento) + Bussola — Fase 6 (item B / F)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Tipo di vantaggio del Pass (allineato all'enum DB pass_benefit_type).
+ */
+export type PassBenefitType =
+  | 'subscription_discount'
+  | 'event_discount'
+  | 'bussola'
+  | 'community_access'
+  | 'priority_booking'
+  | 'other';
+
+/**
+ * Vantaggio del Pass come restituito da get_my_membership.
+ */
+export type MembershipBenefit = {
+  benefit_type: PassBenefitType;
+  value_percent: number | null;
+  value_int: number | null;
+  label: string | null;
+  description: string | null;
+};
+
+/**
+ * Risultato della RPC get_my_membership: stato del Pass dell'utente autenticato.
+ * `has_pass` è true solo se la membership è attiva e non scaduta.
+ */
+export type GetMyMembershipResult = {
+  ok: boolean;
+  reason?: string;
+  has_pass?: boolean;
+  membership?: {
+    id: string;
+    status: 'active' | 'expired' | 'cancelled';
+    started_at: string;
+    expires_at: string;
+  };
+  tier?: {
+    id: string;
+    name: string;
+    description: string | null;
+    price_cents: number;
+    currency: string;
+    validity_days: number;
+  };
+  benefits?: MembershipBenefit[];
+};
+
+/**
+ * Parametri per assignMembership (staff).
+ */
+export type AssignMembershipParams = {
+  clientId: string;
+  tierId: string;
+  /** Data di attivazione (default: oggi lato DB). */
+  startedAt?: string;
+  /** Prezzo effettivamente pagato in centesimi (default: prezzo del tier). */
+  priceCents?: number;
+  note?: string;
+};
+
+/**
+ * Risultato della RPC assign_membership.
+ */
+export type AssignMembershipResult = {
+  ok: boolean;
+  reason?: string;
+  membership_id?: string;
+  expires_at?: string;
+};
+
+/**
+ * Risultato generico delle RPC di gestione Pass/Bussola con solo esito.
+ */
+export type PassActionResult = {
+  ok: boolean;
+  reason?: string;
+};
+
+/**
+ * Parametri per requestBussola (cliente tesserato).
+ */
+export type RequestBussolaParams = {
+  /** Preferenza di data/ora (ISO 8601), opzionale. */
+  preferredAt?: string;
+  /** Cosa vorrebbe affrontare, opzionale. */
+  note?: string;
+};
+
+/**
+ * Risultato della RPC request_bussola.
+ */
+export type RequestBussolaResult = {
+  ok: boolean;
+  reason?: string;
+  request_id?: string;
+};
+
+/**
+ * Wrapper tipizzato per la RPC get_my_membership.
+ * Ritorna stato del Community Pass dell'utente autenticato: has_pass (attivo e non scaduto),
+ * membership, tier e vantaggi.
+ *
+ * @param client - Il client Supabase autenticato
+ * @returns Promise<GetMyMembershipResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function getMyMembership(
+  client: SupabaseClient<Database>
+): Promise<GetMyMembershipResult> {
+  const { data, error } = await client.rpc('get_my_membership');
+
+  if (error) {
+    handleRpcError(error, 'get_my_membership');
+  }
+
+  return data as GetMyMembershipResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC assign_membership (staff).
+ * Assegna il Community Pass a un cliente, calcola la scadenza dal tier e chiude
+ * l'eventuale Pass attivo precedente. Usato dal gestionale (assegnazione manuale).
+ *
+ * @param client - Il client Supabase autenticato (staff)
+ * @param params - clientId, tierId, startedAt?, priceCents?, note?
+ * @returns Promise<AssignMembershipResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function assignMembership(
+  client: SupabaseClient<Database>,
+  params: AssignMembershipParams
+): Promise<AssignMembershipResult> {
+  const { clientId, tierId, startedAt, priceCents, note } = params;
+
+  const { data, error } = await client.rpc('assign_membership', {
+    p_client_id: clientId,
+    p_tier_id: tierId,
+    p_started_at: startedAt,
+    p_price_cents: priceCents,
+    p_note: note,
+  });
+
+  if (error) {
+    handleRpcError(error, 'assign_membership');
+  }
+
+  return data as AssignMembershipResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC cancel_membership (staff).
+ * Annulla un Community Pass.
+ *
+ * @param client - Il client Supabase autenticato (staff)
+ * @param membershipId - id della membership da annullare
+ * @returns Promise<PassActionResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function cancelMembership(
+  client: SupabaseClient<Database>,
+  membershipId: string
+): Promise<PassActionResult> {
+  const { data, error } = await client.rpc('cancel_membership', {
+    p_membership_id: membershipId,
+  });
+
+  if (error) {
+    handleRpcError(error, 'cancel_membership');
+  }
+
+  return data as PassActionResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC request_bussola.
+ * Il cliente tesserato (Pass attivo) richiede una consulenza Bussola 15'.
+ * Una sola richiesta aperta per volta; lo staff la trasforma in una lezione individuale.
+ *
+ * @param client - Il client Supabase autenticato (cliente)
+ * @param params - preferredAt?, note?
+ * @returns Promise<RequestBussolaResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function requestBussola(
+  client: SupabaseClient<Database>,
+  params: RequestBussolaParams = {}
+): Promise<RequestBussolaResult> {
+  const { preferredAt, note } = params;
+
+  const { data, error } = await client.rpc('request_bussola', {
+    p_preferred_at: preferredAt,
+    p_note: note,
+  });
+
+  if (error) {
+    handleRpcError(error, 'request_bussola');
+  }
+
+  return data as RequestBussolaResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC cancel_bussola_request.
+ * Annulla una richiesta Bussola aperta (cliente proprietario o staff).
+ *
+ * @param client - Il client Supabase autenticato
+ * @param requestId - id della richiesta da annullare
+ * @returns Promise<PassActionResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function cancelBussolaRequest(
+  client: SupabaseClient<Database>,
+  requestId: string
+): Promise<PassActionResult> {
+  const { data, error } = await client.rpc('cancel_bussola_request', {
+    p_request_id: requestId,
+  });
+
+  if (error) {
+    handleRpcError(error, 'cancel_bussola_request');
+  }
+
+  return data as PassActionResult;
+}
+

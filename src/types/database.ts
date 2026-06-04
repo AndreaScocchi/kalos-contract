@@ -2756,6 +2756,41 @@ export type Database = {
           },
         ]
       }
+      user_preferences: {
+        Row: {
+          created_at: string
+          goals: Json
+          interests: Json
+          onboarding_completed_at: string | null
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          goals?: Json
+          interests?: Json
+          onboarding_completed_at?: string | null
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          goals?: Json
+          interests?: Json
+          onboarding_completed_at?: string | null
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       waitlist: {
         Row: {
           created_at: string | null
@@ -3186,6 +3221,11 @@ export type Database = {
       }
       get_financial_kpis: {
         Args: { p_month_end?: string; p_month_start?: string }
+        Returns: Json
+      }
+      get_journey_summary: { Args: never; Returns: Json }
+      get_journey_timeline: {
+        Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
       get_monthly_revenue_by_client: {

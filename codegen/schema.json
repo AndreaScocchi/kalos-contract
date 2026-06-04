@@ -5209,6 +5209,65 @@
       ]
     },
     {
+      "name": "user_preferences",
+      "columns": [
+        {
+          "name": "profile_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "goals",
+          "dataType": "jsonb",
+          "udtName": "jsonb",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "interests",
+          "dataType": "jsonb",
+          "udtName": "jsonb",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "onboarding_completed_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "created_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "updated_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        }
+      ]
+    },
+    {
       "name": "waitlist",
       "columns": [
         {

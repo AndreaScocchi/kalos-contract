@@ -1867,6 +1867,41 @@ type Database = {
                     }
                 ];
             };
+            notification_settings: {
+                Row: {
+                    client_id: string;
+                    created_at: string;
+                    quiet_hours_enabled: boolean;
+                    quiet_hours_end: string | null;
+                    quiet_hours_start: string | null;
+                    updated_at: string;
+                };
+                Insert: {
+                    client_id: string;
+                    created_at?: string;
+                    quiet_hours_enabled?: boolean;
+                    quiet_hours_end?: string | null;
+                    quiet_hours_start?: string | null;
+                    updated_at?: string;
+                };
+                Update: {
+                    client_id?: string;
+                    created_at?: string;
+                    quiet_hours_enabled?: boolean;
+                    quiet_hours_end?: string | null;
+                    quiet_hours_start?: string | null;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "notification_settings_client_id_fkey";
+                        columns: ["client_id"];
+                        isOneToOne: true;
+                        referencedRelation: "clients";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             operators: {
                 Row: {
                     bio: string | null;
@@ -2748,6 +2783,41 @@ type Database = {
                     }
                 ];
             };
+            user_preferences: {
+                Row: {
+                    created_at: string;
+                    goals: Json;
+                    interests: Json;
+                    onboarding_completed_at: string | null;
+                    profile_id: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    created_at?: string;
+                    goals?: Json;
+                    interests?: Json;
+                    onboarding_completed_at?: string | null;
+                    profile_id: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    created_at?: string;
+                    goals?: Json;
+                    interests?: Json;
+                    onboarding_completed_at?: string | null;
+                    profile_id?: string;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "user_preferences_profile_id_fkey";
+                        columns: ["profile_id"];
+                        isOneToOne: true;
+                        referencedRelation: "profiles";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             waitlist: {
                 Row: {
                     created_at: string | null;
@@ -3218,6 +3288,12 @@ type Database = {
                 Args: never;
                 Returns: undefined;
             };
+            deactivate_device_token: {
+                Args: {
+                    p_token: string;
+                };
+                Returns: Json;
+            };
             delete_campaign: {
                 Args: {
                     campaign_id: string;
@@ -3279,6 +3355,17 @@ type Database = {
                 };
                 Returns: Json;
             };
+            get_journey_summary: {
+                Args: never;
+                Returns: Json;
+            };
+            get_journey_timeline: {
+                Args: {
+                    p_limit?: number;
+                    p_offset?: number;
+                };
+                Returns: Json;
+            };
             get_monthly_revenue_by_client: {
                 Args: {
                     p_month_end: string;
@@ -3310,6 +3397,17 @@ type Database = {
             };
             get_my_membership: {
                 Args: never;
+                Returns: Json;
+            };
+            get_my_notification_settings: {
+                Args: never;
+                Returns: Json;
+            };
+            get_my_notifications: {
+                Args: {
+                    p_limit?: number;
+                    p_offset?: number;
+                };
                 Returns: Json;
             };
             get_notification_channel: {
@@ -3465,10 +3563,27 @@ type Database = {
                 Args: never;
                 Returns: Json;
             };
+            register_device_token: {
+                Args: {
+                    p_app_version?: string;
+                    p_device_id?: string;
+                    p_platform?: string;
+                    p_token: string;
+                };
+                Returns: Json;
+            };
             request_bussola: {
                 Args: {
                     p_note?: string;
                     p_preferred_at?: string;
+                };
+                Returns: Json;
+            };
+            set_notification_quiet_hours: {
+                Args: {
+                    p_enabled: boolean;
+                    p_end?: string;
+                    p_start?: string;
                 };
                 Returns: Json;
             };
@@ -5752,6 +5867,39 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedColumns: ["id"];
             }];
         };
+        notification_settings: {
+            Row: {
+                client_id: string;
+                created_at: string;
+                quiet_hours_enabled: boolean;
+                quiet_hours_end: string | null;
+                quiet_hours_start: string | null;
+                updated_at: string;
+            };
+            Insert: {
+                client_id: string;
+                created_at?: string;
+                quiet_hours_enabled?: boolean;
+                quiet_hours_end?: string | null;
+                quiet_hours_start?: string | null;
+                updated_at?: string;
+            };
+            Update: {
+                client_id?: string;
+                created_at?: string;
+                quiet_hours_enabled?: boolean;
+                quiet_hours_end?: string | null;
+                quiet_hours_start?: string | null;
+                updated_at?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "notification_settings_client_id_fkey";
+                columns: ["client_id"];
+                isOneToOne: true;
+                referencedRelation: "clients";
+                referencedColumns: ["id"];
+            }];
+        };
         operators: {
             Row: {
                 bio: string | null;
@@ -6592,6 +6740,39 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
                 referencedColumns: ["id"];
             }];
         };
+        user_preferences: {
+            Row: {
+                created_at: string;
+                goals: Json;
+                interests: Json;
+                onboarding_completed_at: string | null;
+                profile_id: string;
+                updated_at: string;
+            };
+            Insert: {
+                created_at?: string;
+                goals?: Json;
+                interests?: Json;
+                onboarding_completed_at?: string | null;
+                profile_id: string;
+                updated_at?: string;
+            };
+            Update: {
+                created_at?: string;
+                goals?: Json;
+                interests?: Json;
+                onboarding_completed_at?: string | null;
+                profile_id?: string;
+                updated_at?: string;
+            };
+            Relationships: [{
+                foreignKeyName: "user_preferences_profile_id_fkey";
+                columns: ["profile_id"];
+                isOneToOne: true;
+                referencedRelation: "profiles";
+                referencedColumns: ["id"];
+            }];
+        };
         waitlist: {
             Row: {
                 created_at: string | null;
@@ -7053,6 +7234,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Args: never;
             Returns: undefined;
         };
+        deactivate_device_token: {
+            Args: {
+                p_token: string;
+            };
+            Returns: Json;
+        };
         delete_campaign: {
             Args: {
                 campaign_id: string;
@@ -7114,6 +7301,17 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             };
             Returns: Json;
         };
+        get_journey_summary: {
+            Args: never;
+            Returns: Json;
+        };
+        get_journey_timeline: {
+            Args: {
+                p_limit?: number;
+                p_offset?: number;
+            };
+            Returns: Json;
+        };
         get_monthly_revenue_by_client: {
             Args: {
                 p_month_end: string;
@@ -7145,6 +7343,17 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         };
         get_my_membership: {
             Args: never;
+            Returns: Json;
+        };
+        get_my_notification_settings: {
+            Args: never;
+            Returns: Json;
+        };
+        get_my_notifications: {
+            Args: {
+                p_limit?: number;
+                p_offset?: number;
+            };
             Returns: Json;
         };
         get_notification_channel: {
@@ -7300,10 +7509,27 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
             Args: never;
             Returns: Json;
         };
+        register_device_token: {
+            Args: {
+                p_app_version?: string;
+                p_device_id?: string;
+                p_platform?: string;
+                p_token: string;
+            };
+            Returns: Json;
+        };
         request_bussola: {
             Args: {
                 p_note?: string;
                 p_preferred_at?: string;
+            };
+            Returns: Json;
+        };
+        set_notification_quiet_hours: {
+            Args: {
+                p_enabled: boolean;
+                p_end?: string;
+                p_start?: string;
             };
             Returns: Json;
         };
@@ -9121,6 +9347,38 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     }];
 } | {
     Row: {
+        client_id: string;
+        created_at: string;
+        quiet_hours_enabled: boolean;
+        quiet_hours_end: string | null;
+        quiet_hours_start: string | null;
+        updated_at: string;
+    };
+    Insert: {
+        client_id: string;
+        created_at?: string;
+        quiet_hours_enabled?: boolean;
+        quiet_hours_end?: string | null;
+        quiet_hours_start?: string | null;
+        updated_at?: string;
+    };
+    Update: {
+        client_id?: string;
+        created_at?: string;
+        quiet_hours_enabled?: boolean;
+        quiet_hours_end?: string | null;
+        quiet_hours_start?: string | null;
+        updated_at?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "notification_settings_client_id_fkey";
+        columns: ["client_id"];
+        isOneToOne: true;
+        referencedRelation: "clients";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
         bio: string | null;
         created_at: string | null;
         deleted_at: string | null;
@@ -9944,6 +10202,38 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     }];
 } | {
     Row: {
+        created_at: string;
+        goals: Json;
+        interests: Json;
+        onboarding_completed_at: string | null;
+        profile_id: string;
+        updated_at: string;
+    };
+    Insert: {
+        created_at?: string;
+        goals?: Json;
+        interests?: Json;
+        onboarding_completed_at?: string | null;
+        profile_id: string;
+        updated_at?: string;
+    };
+    Update: {
+        created_at?: string;
+        goals?: Json;
+        interests?: Json;
+        onboarding_completed_at?: string | null;
+        profile_id?: string;
+        updated_at?: string;
+    };
+    Relationships: [{
+        foreignKeyName: "user_preferences_profile_id_fkey";
+        columns: ["profile_id"];
+        isOneToOne: true;
+        referencedRelation: "profiles";
+        referencedColumns: ["id"];
+    }];
+} | {
+    Row: {
         created_at: string | null;
         id: string;
         lesson_id: string;
@@ -9986,7 +10276,7 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
         referencedRelation: "profiles";
         referencedColumns: ["id"];
     }];
-}, "campaigns" | "clients" | "lessons" | "subscriptions" | "profiles" | "campaign_contents" | "newsletter_campaigns" | "social_connections" | "events" | "activities" | "operators" | "practices" | "pass_tiers" | "newsletter_emails" | "announcements" | "notification_logs" | "plans" | "practice_steps" | "auth_email_logs" | "bookings" | "bug_reports" | "bussola_requests" | "campaign_analytics" | "device_tokens" | "event_bookings" | "expenses" | "feature_flags" | "feedback" | "journal_entries" | "memberships" | "newsletter_extra_emails" | "newsletter_tracking_events" | "notification_preferences" | "notification_queue" | "notification_reads" | "pass_tier_benefits" | "payout_rules" | "payouts" | "plan_activities" | "practice_activities" | "practice_blocks" | "practice_user_state" | "promotions" | "subscription_usages" | "waitlist", [] | [{
+}, "campaigns" | "clients" | "lessons" | "subscriptions" | "profiles" | "campaign_contents" | "newsletter_campaigns" | "social_connections" | "events" | "activities" | "operators" | "practices" | "pass_tiers" | "newsletter_emails" | "announcements" | "notification_logs" | "plans" | "practice_steps" | "auth_email_logs" | "bookings" | "bug_reports" | "bussola_requests" | "campaign_analytics" | "device_tokens" | "event_bookings" | "expenses" | "feature_flags" | "feedback" | "journal_entries" | "memberships" | "newsletter_extra_emails" | "newsletter_tracking_events" | "notification_preferences" | "notification_queue" | "notification_reads" | "notification_settings" | "pass_tier_benefits" | "payout_rules" | "payouts" | "plan_activities" | "practice_activities" | "practice_blocks" | "practice_user_state" | "promotions" | "subscription_usages" | "user_preferences" | "waitlist", [] | [{
     foreignKeyName: "announcements_marketing_campaign_id_fkey";
     columns: ["marketing_campaign_id"];
     isOneToOne: false;
@@ -10407,6 +10697,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     referencedRelation: "notification_logs";
     referencedColumns: ["id"];
 }] | [{
+    foreignKeyName: "notification_settings_client_id_fkey";
+    columns: ["client_id"];
+    isOneToOne: true;
+    referencedRelation: "clients";
+    referencedColumns: ["id"];
+}] | [{
     foreignKeyName: "operators_profile_id_fkey";
     columns: ["profile_id"];
     isOneToOne: false;
@@ -10573,6 +10869,12 @@ declare function fromPublic<T extends PublicViewName>(client: SupabaseClient<Dat
     columns: ["plan_id"];
     isOneToOne: false;
     referencedRelation: "public_site_pricing";
+    referencedColumns: ["id"];
+}] | [{
+    foreignKeyName: "user_preferences_profile_id_fkey";
+    columns: ["profile_id"];
+    isOneToOne: true;
+    referencedRelation: "profiles";
     referencedColumns: ["id"];
 }] | [{
     foreignKeyName: "waitlist_lesson_id_fkey";
@@ -11006,6 +11308,13 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     notification_log_id: string | null;
     read_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    quiet_hours_enabled: boolean;
+    quiet_hours_end: string | null;
+    quiet_hours_start: string | null;
+    updated_at: string;
+} | {
     bio: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -11195,6 +11504,13 @@ declare function getPublicSchedule(client: SupabaseClient<Database>, params?: Ge
     plan_id: string;
     started_at: string;
     status: Database["public"]["Enums"]["subscription_status"];
+} | {
+    created_at: string;
+    goals: Json;
+    interests: Json;
+    onboarding_completed_at: string | null;
+    profile_id: string;
+    updated_at: string;
 } | {
     created_at: string | null;
     id: string;
@@ -11600,6 +11916,13 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     notification_log_id: string | null;
     read_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    quiet_hours_enabled: boolean;
+    quiet_hours_end: string | null;
+    quiet_hours_start: string | null;
+    updated_at: string;
+} | {
     bio: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -11789,6 +12112,13 @@ declare function getPublicPricing(client: SupabaseClient<Database>): Promise<({
     plan_id: string;
     started_at: string;
     status: Database["public"]["Enums"]["subscription_status"];
+} | {
+    created_at: string;
+    goals: Json;
+    interests: Json;
+    onboarding_completed_at: string | null;
+    profile_id: string;
+    updated_at: string;
 } | {
     created_at: string | null;
     id: string;
@@ -12194,6 +12524,13 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     notification_log_id: string | null;
     read_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    quiet_hours_enabled: boolean;
+    quiet_hours_end: string | null;
+    quiet_hours_start: string | null;
+    updated_at: string;
+} | {
     bio: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -12383,6 +12720,13 @@ declare function getPublicActivities(client: SupabaseClient<Database>): Promise<
     plan_id: string;
     started_at: string;
     status: Database["public"]["Enums"]["subscription_status"];
+} | {
+    created_at: string;
+    goals: Json;
+    interests: Json;
+    onboarding_completed_at: string | null;
+    profile_id: string;
+    updated_at: string;
 } | {
     created_at: string | null;
     id: string;
@@ -12788,6 +13132,13 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     notification_log_id: string | null;
     read_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    quiet_hours_enabled: boolean;
+    quiet_hours_end: string | null;
+    quiet_hours_start: string | null;
+    updated_at: string;
+} | {
     bio: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -12977,6 +13328,13 @@ declare function getPublicOperators(client: SupabaseClient<Database>): Promise<(
     plan_id: string;
     started_at: string;
     status: Database["public"]["Enums"]["subscription_status"];
+} | {
+    created_at: string;
+    goals: Json;
+    interests: Json;
+    onboarding_completed_at: string | null;
+    profile_id: string;
+    updated_at: string;
 } | {
     created_at: string | null;
     id: string;
@@ -13391,6 +13749,13 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     notification_log_id: string | null;
     read_at: string;
 } | {
+    client_id: string;
+    created_at: string;
+    quiet_hours_enabled: boolean;
+    quiet_hours_end: string | null;
+    quiet_hours_start: string | null;
+    updated_at: string;
+} | {
     bio: string | null;
     created_at: string | null;
     deleted_at: string | null;
@@ -13580,6 +13945,13 @@ declare function getPublicEvents(client: SupabaseClient<Database>, params?: GetP
     plan_id: string;
     started_at: string;
     status: Database["public"]["Enums"]["subscription_status"];
+} | {
+    created_at: string;
+    goals: Json;
+    interests: Json;
+    onboarding_completed_at: string | null;
+    profile_id: string;
+    updated_at: string;
 } | {
     created_at: string | null;
     id: string;

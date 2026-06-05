@@ -1875,6 +1875,41 @@ export type Database = {
           },
         ]
       }
+      notification_settings: {
+        Row: {
+          client_id: string
+          created_at: string
+          quiet_hours_enabled: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operators: {
         Row: {
           bio: string | null
@@ -3181,6 +3216,7 @@ export type Database = {
       cron_queue_re_engagement: { Args: never; Returns: undefined }
       cron_queue_subscription_expiry: { Args: never; Returns: undefined }
       cron_update_subscription_statuses: { Args: never; Returns: undefined }
+      deactivate_device_token: { Args: { p_token: string }; Returns: Json }
       delete_campaign: { Args: { campaign_id: string }; Returns: undefined }
       fix_missing_cancel_restore_entries: {
         Args: never
@@ -3249,6 +3285,11 @@ export type Database = {
       }
       get_my_client_id: { Args: never; Returns: string }
       get_my_membership: { Args: never; Returns: Json }
+      get_my_notification_settings: { Args: never; Returns: Json }
+      get_my_notifications: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
       get_notification_channel: {
         Args: {
           p_category: Database["public"]["Enums"]["notification_category"]
@@ -3341,8 +3382,21 @@ export type Database = {
       queue_practice_resume: { Args: never; Returns: Json }
       queue_re_engagement: { Args: never; Returns: Json }
       queue_subscription_expiry: { Args: never; Returns: Json }
+      register_device_token: {
+        Args: {
+          p_app_version?: string
+          p_device_id?: string
+          p_platform?: string
+          p_token: string
+        }
+        Returns: Json
+      }
       request_bussola: {
         Args: { p_note?: string; p_preferred_at?: string }
+        Returns: Json
+      }
+      set_notification_quiet_hours: {
+        Args: { p_enabled: boolean; p_end?: string; p_start?: string }
         Returns: Json
       }
       staff_book_event: {

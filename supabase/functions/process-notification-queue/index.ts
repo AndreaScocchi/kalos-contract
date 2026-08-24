@@ -4,7 +4,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { sendEmail, getFromEmail, delay } from '../_shared/resend.ts'
+import { sendEmail, getFromEmail, delay } from '../_shared/ses.ts'
 
 const BATCH_SIZE = 50
 
@@ -372,7 +372,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         })
       }
 
-      // Rate limiting for Resend
+      // Pace the loop under the SES sending rate
       await delay(100)
     }
 

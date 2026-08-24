@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { getSendQuota } from '../_shared/ses.ts'
 
 interface QuotaResponse {
   ok: boolean
@@ -18,10 +19,13 @@ interface QuotaResponse {
   }
 }
 
-// Known limits for free tier (update these if plan changes)
-const FREE_TIER_LIMITS = {
-  daily: 100,
-  monthly: 3000,
+// Fallbacks used only when the SES account API is unreachable.
+//  - daily   mirrors the 24h sending quota requested for the AWS account
+//  - monthly is a self-imposed budget guardrail: SES has no monthly cap, but a
+//    visible ceiling keeps a runaway send from turning into a surprise bill
+const FALLBACK_LIMITS = {
+  daily: Number(Deno.env.get('SES_DAILY_QUOTA') ?? '5000'),
+  monthly: Number(Deno.env.get('MAIL_MONTHLY_BUDGET') ?? '50000'),
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
@@ -104,16 +108,29 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const dailyUsed = (newsletterDailyCount ?? 0) + (notificationDailyCount ?? 0)
     const monthlyUsed = (newsletterMonthlyCount ?? 0) + (notificationMonthlyCount ?? 0)
 
+    // The daily figure that actually gates sending is SES's own rolling 24h
+    // counter, so prefer it over our calendar-day count from the database.
+    // SES reports Max24HourSend = -1 for accounts with no cap.
+    let dailyLimit = FALLBACK_LIMITS.daily
+    let dailyCount = dailyUsed
+    const { data: sendQuota, error: quotaError } = await getSendQuota()
+    if (sendQuota) {
+      if (sendQuota.max24HourSend > 0) dailyLimit = sendQuota.max24HourSend
+      dailyCount = Math.round(sendQuota.sentLast24Hours)
+    } else if (quotaError) {
+      console.error('SES quota lookup failed, using database counts:', quotaError.message)
+    }
+
     const quota: QuotaResponse['quota'] = {
       daily: {
-        used: dailyUsed,
-        limit: FREE_TIER_LIMITS.daily,
-        remaining: Math.max(0, FREE_TIER_LIMITS.daily - dailyUsed),
+        used: dailyCount,
+        limit: dailyLimit,
+        remaining: Math.max(0, dailyLimit - dailyCount),
       },
       monthly: {
         used: monthlyUsed,
-        limit: FREE_TIER_LIMITS.monthly,
-        remaining: Math.max(0, FREE_TIER_LIMITS.monthly - monthlyUsed),
+        limit: FALLBACK_LIMITS.monthly,
+        remaining: Math.max(0, FALLBACK_LIMITS.monthly - monthlyUsed),
       },
     }
 

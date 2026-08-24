@@ -14,29 +14,33 @@ significa **circa $0,60 all'anno**.
 
 ## 0. Checklist operativa
 
-> Da seguire in ordine. Le sezioni numerate qui sotto spiegano ogni punto per esteso.
-> Circa un'ora di clic, distribuita su due giorni per via delle due attese.
+> Da seguire in ordine; le sezioni numerate sotto spiegano ogni punto per esteso.
+> Circa un'ora di clic più due attese. Esiste anche in versione stampabile:
+> [`AWS_SES_CHECKLIST.html`](AWS_SES_CHECKLIST.html).
+> **Percorsi e moduli verificati sulla documentazione AWS ad agosto 2026.**
 
 **Prima di sedersi**
 
-- [ ] Carta di credito e documento (AWS verifica l'identità alla registrazione)
-- [ ] **Accesso a dove è gestito il DNS di `kalosstudio.it`** ← è il punto che blocca più spesso: scoprirlo prima
-- [ ] Un indirizzo email di prova accessibile, per il test finale
-- [ ] Un posto sicuro dove incollare due chiavi segrete (non una chat, non un file nel repo)
+- [ ] Carta di credito e documento (AWS verifica l'identità e fa un addebito di prova di ~1 €, poi stornato)
+- [ ] **Accesso al pannello DNS di `kalosstudio.it`** con permessi su CNAME, TXT e MX ← è il punto che blocca più spesso
+- [ ] Un indirizzo email di prova accessibile (in sandbox si scrive solo a indirizzi verificati)
+- [ ] Un password manager per due chiavi segrete — non una chat, non un file nel repo
 
 **I passaggi**
 
-- [ ] **1. Account AWS** → piano **a consumo (Paid)**, *non* il Free: si disattiva dopo 6 mesi e ferma le email. → §1
-- [ ] **2. Regione `eu-central-1` (Francoforte)** e restarci sempre: risorse create in regioni diverse non si vedono tra loro. → §1
-- [ ] **3. Dominio + DKIM** — SES → Identities → Create identity → Domain, Easy DKIM RSA 2048. Restituisce **3 CNAME** da mettere nel DNS (i valori li genera AWS). → §2
-- [ ] ⏳ *Attesa ~30 minuti* — propagazione DNS e verifica del dominio
-- [ ] **4. SPF, DMARC, MAIL FROM** — record già pronti nella tabella sotto. Se un SPF esiste già, **aggiungere** `include:amazonses.com`, non sostituire: quello di Resend deve restare. → §2
-- [ ] **5. Configuration set `kalos-events`** — open/click tracking, reputation metrics, suppression list, e il custom redirect domain (senza, i link vengono riscritti su `awstrack.me`). → §3
-- [ ] **6. Topic SNS `kalos-ses-events`** — Standard, firma **Signature version 2**, event destination con Send/Delivery/Bounce/Complaint/Open/Click/Reject. *La sottoscrizione HTTPS si crea dopo il deploy* (§3). → §3
-- [ ] **7. Utente IAM `kalos-ses-sender`** + policy inline → **salvare Access Key ID e Secret: il secret si vede una volta sola.** → §4
-- [ ] **8. Uscita dalla sandbox** — Request production access, tipo *Transactional*, volume **5.000/giorno** (non i 50.000 di default: è un tetto rigido, quindi un invio impazzito costa meno di $1/giorno). → §5
-- [ ] ⏳ *Attesa ~24 ore* — risposta di AWS. Nel frattempo si può già fare il punto 9.
-- [ ] **9. Passare le due chiavi a Claude** → segreti su Supabase, deploy delle 6 function, generazione del segreto webhook, poi **insieme** la sottoscrizione SNS e il test di fumo. → §6, §7
+- [ ] **1. Account AWS** — piano **a consumo (Paid)**, *non* il Free: si disattiva dopo 6 mesi e ferma le email. Attivare la MFA sull'utente root. → §1
+- [ ] **2. Regione `eu-central-1` (Frankfurt)** e restarci sempre: identità, set, topic, quote e stato sandbox sono per-regione. → §1
+- [ ] **3. Dominio + Easy DKIM (RSA_2048)** — `SES → Configuration → Identities → Create identity`, tipo Domain. Restituisce **3 CNAME** da pubblicare (i valori li genera AWS). Attenzione ai pannelli DNS che aggiungono da soli il suffisso del dominio. → §2
+- [ ] ⏳ *Attesa: di norma < 30 minuti, ma SES può metterci fino a 72 ore*
+- [ ] **4. SPF e DMARC sul dominio** — **mai due record SPF**: se ne esiste già uno, aggiungere `include:amazonses.com` dentro quello, lasciando Resend. DMARC in osservazione (`p=none`) su `_dmarc.kalosstudio.it`. → §2
+- [ ] **5. Custom MAIL FROM** `mail.kalosstudio.it` — `Behavior on MX failure` = **Use default MAIL FROM domain** (l'altra opzione fa fallire tutti gli invii). **Un solo MX** su quel sottodominio, e il sottodominio non va usato per altro. Rilevamento fino a 72 h, ma non blocca gli invii. → §2
+- [ ] **6. Configuration set `kalos-events`** — open/click tracking, custom redirect domain `track.kalosstudio.it` (senza, i link vengono riscritti su `awstrack.me`), reputation metrics, suppression list a livello account. → §3
+- [ ] **7. Topic SNS `kalos-ses-events`** — Standard, **Signature version 2**, event destination con Send/Delivery/Bounce/Complaint/Open/Click/Reject. *La sottoscrizione HTTPS si crea dopo il deploy.* → §3
+- [ ] **8. Utente IAM `kalos-ses-sender`** + policy inline. Le chiavi si creano **dopo**, dalla scheda *Security credentials* → *Create access key* → **Other** → *Show* / *Download .csv*. **Il secret si vede una volta sola.** → §4
+- [ ] **9. Uscita dalla sandbox** — `Account dashboard → View Get set up page → Request production access`. Campi: Mail type **Transactional**, Website URL, Additional contacts, lingua **English**, Acknowledgement. **Niente campo per il volume**: approvati, la quota è 50.000/giorno. → §5
+- [ ] **10. Tetto di spesa** — `Budgets → Create budget → Cost budget`, **$5/mese**, notifica a 80% e 100%. È qui che si mette il limite, non nella quota. → §8
+- [ ] ⏳ *Attesa ~24 ore — risposta di AWS. Nel frattempo si può già fare il punto 11.*
+- [ ] **11. Passare le due chiavi a Claude** → secret su Supabase, deploy delle 6 function, segreto webhook, poi **insieme** la sottoscrizione SNS e il test di fumo. → §6, §7
 
 **Valori già compilati**
 
@@ -48,15 +52,16 @@ significa **circa $0,60 all'anno**.
 | Configuration set | `kalos-events` |
 | Topic SNS | `kalos-ses-events` |
 | Utente IAM | `kalos-ses-sender` |
-| TXT · SPF | `v=spf1 include:amazonses.com ~all` |
-| TXT · DMARC | `v=DMARC1; p=none; rua=mailto:dmarc@kalosstudio.it` |
+| TXT · SPF su `kalosstudio.it` | `v=spf1 include:amazonses.com ~all` |
+| TXT · DMARC su `_dmarc.kalosstudio.it` | `v=DMARC1; p=none; rua=mailto:dmarc@kalosstudio.it` |
 | MX · `mail.kalosstudio.it` | `10 feedback-smtp.eu-central-1.amazonses.com` |
 | TXT · `mail.kalosstudio.it` | `v=spf1 include:amazonses.com ~all` |
 | CNAME · `track.kalosstudio.it` | `r.eu-central-1.awstrack.me` |
 
 **Se qualcosa non convince:** `_shared/resend.ts` è intatto e i record DNS di Resend restano validi
-finché non li si rimuove — i due provider convivono. Tornare indietro è cambiare un import e
-rideployare (§10). Per questo non va rimosso nulla di Resend finché SES non è stabile da qualche settimana.
+finché non si rimuovono — i due provider usano selettori DKIM diversi e convivono. Tornare indietro è
+cambiare un import e rideployare (§10). Non rimuovere nulla di Resend finché SES non è stabile da
+qualche settimana.
 
 ---
 
@@ -143,8 +148,8 @@ crea la sottoscrizione — o usa **Request confirmation** per rimandarla.
 
 ## 4. Utente IAM
 
-**IAM → Users → Create user** (`kalos-ses-sender`), accesso programmatico, con
-questa policy inline — solo i due permessi che servono:
+**IAM → Users → Create user** (`kalos-ses-sender`), **senza** accesso alla console
+(serve solo per l'API), con questa policy inline — i due soli permessi necessari:
 
 ```json
 {
@@ -175,28 +180,51 @@ questa policy inline — solo i due permessi che servono:
 quota reale invece di un numero fisso. La condizione su `ses:FromAddress` limita
 il danno se la chiave venisse esfiltrata: può inviare solo da quell'indirizzo.
 
-Salva Access Key ID e Secret: il secret è mostrato una volta sola.
+Le chiavi si creano **in un secondo momento**, non più insieme all'utente: il
+vecchio flusso con la spunta "accesso programmatico" non esiste più.
+
+Aperto l'utente → scheda **Security credentials** → sezione **Access keys** →
+**Create access key** → nella pagina *Access key best practices & alternatives*
+scegli **Other** → **Next** → (tag facoltativo) → **Create access key** → **Show**
+per rivelare il secret, o **Download .csv**.
+
+Salva subito Access Key ID e Secret: il secret è mostrato **una volta sola**, e se
+lo perdi va cancellata la chiave e ricreata.
 
 ---
 
 ## 5. Uscita dalla sandbox
 
-In sandbox puoi scrivere solo a indirizzi verificati, max 200/giorno a 1/secondo.
+In sandbox puoi scrivere solo a indirizzi verificati (o al mailbox simulator),
+**200 messaggi ogni 24 ore** e **1 al secondo**; anche le azioni bulk sulla
+suppression list sono disabilitate.
 
-**SES → Account dashboard → Request production access**:
+Percorso: **SES → Account dashboard →** nel riquadro di avviso *"Your Amazon SES
+account is in the sandbox"* → **View Get set up page** → **Request production
+access**.
 
-- Tipo di mail: **Transactional** (l'uso prevalente sono promemoria e conferme)
-- Sito web: `https://kalosstudio.it`
-- Descrizione: spiega che si tratta di comunicazioni a clienti iscritti di un
-  centro benessere, con doppio opt-in, unsubscribe one-click e gestione
-  automatica dei bounce.
-- **Volume giornaliero richiesto: 5.000** — non i 50.000 di default.
+Il modulo chiede:
 
-L'ultimo punto è una protezione concreta: la quota giornaliera è un tetto
-rigido, quindi anche in caso di bug con invio in loop il danno massimo è
-5.000 × $0,0001 = **$0,50 al giorno**.
+- **Mail type**: **Transactional** (l'uso prevalente sono promemoria e conferme)
+- **Website URL**: `https://kalosstudio.it`
+- **Additional contacts**: fino a 4 indirizzi, separati da virgola
+- **Preferred contact language**: **English** (le uniche opzioni sono inglese e giapponese)
+- **Acknowledgement**: spunta di conferma su consenso esplicito dei destinatari e
+  gestione di bounce e complaint
 
-L'approvazione arriva in genere entro 24 ore.
+L'approvazione arriva in genere entro 24 ore; finché la richiesta è in revisione i
+dati non sono modificabili.
+
+> **Correzione 2026-08-24.** La versione precedente di questa guida diceva di
+> chiedere un volume giornaliero di 5.000 al posto dei 50.000 di default, e ne
+> faceva la protezione principale sui costi. **Quel campo non esiste più nel
+> modulo**, e non c'è nemmeno più la descrizione libera del caso d'uso. Approvato
+> l'account, la quota è quella predefinita di **50.000 al giorno**, e AWS
+> documenta solo come *aumentarla*: non c'è una via self-service per abbassarla.
+> Il tetto di spesa va quindi messo con AWS Budgets — vedi §8, livello 3.
+
+Nota: **la quota conta i destinatari, non i messaggi.** Una campagna a 500 persone
+pesa 500.
 
 ---
 
@@ -283,14 +311,20 @@ gestionale riprende la campagna quando la finestra si libera.
 
 ### Livello 3 — tetto AWS (console)
 
-1. **Quota giornaliera a 5.000** (richiesta al punto 5): è un limite rigido lato
-   AWS, quindi il danno massimo teorico è 5.000 × $0,0001 = **$0,50 al giorno**.
-2. **AWS Budgets → Create budget → Cost budget**, soglia **$5/mese**, notifica
-   via email all'80% e al 100%.
+1. **AWS Budgets → Create budget → Cost budget**, soglia **$5/mese**, notifica via
+   email all'80% e al 100%. Sui volumi reali (~490 email/mese ≈ $0,05/anno) un
+   budget da 5 dollari suona molto prima che il costo diventi reale.
+2. Consigliato: un **allarme CloudWatch** sulla metrica SES `Send`, che avvisa se in
+   un'ora partono più email del normale.
 
-Il livello 3 è quello che conta davvero, perché è l'unico che regge anche se il
-codice ha un bug: gli altri due si limitano a far fallire l'invio prima e con un
-messaggio comprensibile.
+> Qui la guida diceva che il primo baluardo era la quota giornaliera fissata a
+> 5.000. **Non è più ottenibile**: il modulo di uscita dalla sandbox non permette
+> di chiedere un volume, e dopo l'approvazione la quota è 50.000/giorno (vedi §5).
+> Il tetto vero diventa quindi il budget, che però **non blocca l'invio, avvisa**.
+
+Restano i due livelli nel codice, che sono quelli che fermano davvero un invio
+sbagliato prima che parta — e lo fanno con un messaggio comprensibile invece che
+con una bolletta.
 
 ---
 

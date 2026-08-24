@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attivazione SES — checklist</title>
+<style>
+  :root {
+    --ink: #0F2D3B;
+    --bg: #F7F6EF;
+    --card: #FFFFFF;
+    --line: rgba(15,45,59,.12);
+    --muted: rgba(15,45,59,.62);
+    --orange: #C23B10;
+    --green: #036257;
+    --gold: #8A6D3B;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #F2ECE0; --bg: #0F1A1F; --card: #17242B;
+      --line: rgba(242,236,224,.16); --muted: rgba(242,236,224,.66);
+      --orange: #FF8557; --green: #3DA694; --gold: #D1B07A;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2.5rem 1.25rem 4rem;
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  main { max-width: 46rem; margin: 0 auto; }
+  h1 { font-size: 1.9rem; font-weight: 600; margin: 0 0 .4rem; }
+  h2 { font-size: 1.05rem; font-weight: 600; margin: 2.2rem 0 .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  p.sub { color: var(--muted); margin: 0 0 2rem; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { background: var(--card); border: 1px solid var(--line); border-radius: 8px; margin-bottom: .5rem; }
+  label { display: flex; gap: .75rem; padding: .8rem .95rem; cursor: pointer; align-items: flex-start; }
+  input { margin: .3rem 0 0; width: 1.05rem; height: 1.05rem; flex: none; accent-color: var(--green); }
+  .txt { min-width: 0; }
+  .txt b { font-weight: 600; }
+  .txt small { display: block; color: var(--muted); font-size: .87rem; margin-top: .15rem; }
+  input:checked ~ .txt { opacity: .5; text-decoration: line-through; text-decoration-color: var(--line); }
+  li.wait { background: none; border: none; border-left: 2px dashed var(--gold); border-radius: 0; margin: .8rem 0 .8rem .5rem; padding: .1rem 0 .1rem .9rem; color: var(--gold); font-size: .9rem; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: .9rem; }
+  th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: none; }
+  th { font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+  td.v { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem; word-break: break-all; }
+  .wrap { overflow-x: auto; }
+  .note { border-left: 2px solid var(--orange); padding: .6rem .9rem; margin-top: 1.5rem; color: var(--muted); font-size: .92rem; background: var(--card); border-radius: 0 8px 8px 0; }
+  .note b { color: var(--orange); }
+  footer { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+  @media print {
+    body { background: #fff; color: #000; padding: 0; }
+    li, table, .note { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <h1>Attivazione SES</h1>
+  <p class="sub">Passare l'invio email da Resend ad Amazon SES. Una volta sola, in ordine.<br>
+  Circa un'ora di clic, su due giorni per via delle attese. Dettagli per esteso in <code>AWS_SES_SETUP.md</code>.</p>
+
+  <h2>Prima di sedersi</h2>
+  <ul>
+    <li><label><input type="checkbox"><span class="txt"><b>Carta di credito e documento</b><small>AWS verifica l'identità alla registrazione</small></span></label></li>
+    <li><label><input type="checkbox"><span class="txt"><b>Accesso al DNS di kalosstudio.it</b><small>È il punto che blocca più spesso — scoprire stasera dove è gestito</small></span></label></li>
+    <li><label><input type="checkbox"><span class="txt"><b>Un indirizzo email di prova</b><small>Serve per il test finale, in sandbox si scrive solo a indirizzi verificati</small></span></label></li>
+    <li><label><input type="checkbox"><span class="txt"><b>Un posto sicuro per due chiavi segrete</b><small>Non una chat, non un file nel repo</small></span></label></li>
+  </ul>
+
+  <h2>I passaggi</h2>
+  <ul>
+    <li><label><input type="checkbox"><span class="txt"><b>1 · Account AWS</b><small>Piano <b>a consumo (Paid)</b>, non il Free: si disattiva dopo 6 mesi e ferma le email</small></span></label></li>
+    <li><label><input type="checkbox"><span class="txt"><b>2 · Regione Francoforte (eu-central-1)</b><small>Restarci sempre: risorse create in regioni diverse non si vedono tra loro</small></span></label></li>
+    <li><label><input type="checkbox"><span class="txt"><b>3 · Dominio + DKIM</b><small>SES → Identities → Create identity → Domain, Easy DKIM RSA 2048. Restituisce 3 CNAME da mettere nel DNS (i valori li genera AWS)</small></span></label></li>
+    <li class="wait">Attesa ~30 minuti — propagazione DNS e verifica del dominio</li>
+    <li><label><input type="checkbox"><span class="txt"><b>4 · SPF, DMARC, MAIL FROM</b><small>Record pronti nella tabella sotto. Se un SPF esiste già, <b>aggiungere</b> include:amazonses.com senza sostituire: quello di Resend deve restare</small></span></label></li>
+    <li><label><input type="checkbox"><span class="txt"><b>5 · Configuration set “kalos-events”</b><small>Open/click tracking, reputation metrics, suppression list, e il custom redirect domain (senza, i link vengono riscritti su awstrack.me)</small></span></label></li>
+    <li><label><input type="checkbox"><span class="txt"><b>6 · Topic SNS “kalos-ses-events”</b><small>Standard, firma Signature version 2, eventi Send/Delivery/Bounce/Complaint/Open/Click/Reject. La sottoscrizione HTTPS si crea dopo il deploy</small></span></label></li>
+    <li><label><input type="checkbox"><span class="txt"><b>7 · Utente IAM “kalos-ses-sender”</b><small>Con la policy inline della guida. <b>Salvare subito Access Key ID e Secret: il secret si vede una volta sola</b></small></span></label></li>
+    <li><label><input type="checkbox"><span class="txt"><b>8 · Uscita dalla sandbox</b><small>Request production access, tipo Transactional, volume <b>5.000/giorno</b> e non i 50.000 di default: è un tetto rigido, quindi un invio impazzito costa meno di $1 al giorno</small></span></label></li>
+    <li class="wait">Attesa ~24 ore — risposta di AWS. Nel frattempo si può già fare il punto 9.</li>
+    <li><label><input type="checkbox"><span class="txt"><b>9 · Passare le due chiavi a Claude</b><small>Segreti su Supabase, deploy delle 6 function, segreto webhook, poi insieme la sottoscrizione SNS e il test di invio</small></span></label></li>
+  </ul>
+
+  <h2>Valori già compilati</h2>
+  <div class="wrap">
+  <table>
+    <tr><th>Cosa</th><th>Valore</th></tr>
+    <tr><td>Regione</td><td class="v">eu-central-1</td></tr>
+    <tr><td>Dominio</td><td class="v">kalosstudio.it</td></tr>
+    <tr><td>Mittente</td><td class="v">newsletter@kalosstudio.it</td></tr>
+    <tr><td>Configuration set</td><td class="v">kalos-events</td></tr>
+    <tr><td>Topic SNS</td><td class="v">kalos-ses-events</td></tr>
+    <tr><td>Utente IAM</td><td class="v">kalos-ses-sender</td></tr>
+    <tr><td>TXT · SPF</td><td class="v">v=spf1 include:amazonses.com ~all</td></tr>
+    <tr><td>TXT · DMARC</td><td class="v">v=DMARC1; p=none; rua=mailto:dmarc@kalosstudio.it</td></tr>
+    <tr><td>MX · mail.kalosstudio.it</td><td class="v">10 feedback-smtp.eu-central-1.amazonses.com</td></tr>
+    <tr><td>TXT · mail.kalosstudio.it</td><td class="v">v=spf1 include:amazonses.com ~all</td></tr>
+    <tr><td>CNAME · track.kalosstudio.it</td><td class="v">r.eu-central-1.awstrack.me</td></tr>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>Si torna indietro in un minuto.</b> Il codice di Resend è intatto e i suoi record DNS restano
+    validi finché non li rimuovete: i due provider convivono. Per questo non va tolto nulla di Resend
+    finché SES non è stabile da qualche settimana.
+  </div>
+
+  <footer>
+    Guida completa: <code>kalos-contract/AWS_SES_SETUP.md</code> (§0 è questa stessa checklist).<br>
+    Le spunte non vengono salvate: è una pagina da tenere aperta durante il lavoro, o da stampare.
+  </footer>
+
+</main>
+</body>
+</html>

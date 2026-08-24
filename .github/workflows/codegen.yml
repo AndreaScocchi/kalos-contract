@@ -3,6 +3,11 @@ name: Codegen Drift Check
 # Garantisce che tipi TS e modelli Kotlin siano SEMPRE in sync con lo schema (le migrazioni).
 # Pipeline ermetica: migrazioni → Supabase locale → gen tipi TS + schema.json → modelli Kotlin → drift-check.
 # Se i file generati e committati non combaciano con lo schema, la build FALLISCE.
+#
+# IMPORTANTE: la CLI Supabase è pinnata come devDependency (package.json) e invocata via `npx`,
+# così CI e locale generano byte-identici. NON usare `supabase/setup-cli` con `version: latest`:
+# versioni diverse della CLI ordinano diversamente gli overload delle RPC in database.ts
+# e producono drift fantasma. Per aggiornare la CLI: bump del pin + `npm run codegen` + commit.
 # Vedi codegen/README.md e CONTRACT_DISCIPLINE.md.
 
 on:
@@ -13,6 +18,7 @@ on:
       - 'scripts/gen-kotlin-models.mjs'
       - 'codegen/**'
       - 'src/types/database.ts'
+      - 'package.json'
       - '.github/workflows/codegen.yml'
   push:
     branches: [main]
@@ -20,42 +26,36 @@ on:
       - 'supabase/migrations/**'
       - 'scripts/introspect-schema.mjs'
       - 'scripts/gen-kotlin-models.mjs'
+      - 'package.json'
+      - '.github/workflows/codegen.yml'
 
 jobs:
   codegen:
     name: Codegen TS + Kotlin (drift-check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
 
-      - name: Install deps
+      - name: Install deps (include la CLI Supabase pinnata)
         run: npm ci
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
+      - name: Versione CLI Supabase in uso
+        run: npx supabase --version
 
       - name: Start local Supabase + apply migrations
         run: |
-          supabase start
-          supabase db reset --local   # riapplica le migrazioni in modo pulito
+          npx supabase start
+          npx supabase db reset --local   # riapplica le migrazioni in modo pulito
 
-      - name: Generate TypeScript types
-        run: supabase gen types typescript --local > src/types/database.ts
-
-      - name: Introspect schema → codegen/schema.json
-        run: node scripts/introspect-schema.mjs
+      - name: Codegen (tipi TS + schema.json + modelli Kotlin)
+        run: npm run codegen
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-
-      - name: Generate Kotlin models
-        run: node scripts/gen-kotlin-models.mjs
 
       - name: Drift check (i file generati devono essere già committati e aggiornati)
         run: |

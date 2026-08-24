@@ -27,8 +27,8 @@ jobs:
     name: Build & pack contract candidato
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -66,13 +66,13 @@ jobs:
             cmd: npx --yes tsc --noEmit
     steps:
       - name: Checkout ${{ matrix.name }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ matrix.repo }}
           token: ${{ secrets.CONSUMER_REPOS_TOKEN }}
           path: consumer
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
 

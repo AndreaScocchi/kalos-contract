@@ -238,7 +238,7 @@ npx supabase secrets set SES_ACCESS_KEY_ID=AKIA...
 npx supabase secrets set SES_SECRET_ACCESS_KEY=...
 npx supabase secrets set SES_REGION=eu-central-1
 npx supabase secrets set SES_CONFIGURATION_SET=kalos-events
-npx supabase secrets set SES_DAILY_QUOTA=5000
+npx supabase secrets set SES_DAILY_QUOTA=50000   # solo display, vedi nota
 
 # Segreto condiviso per il webhook (genera un valore casuale)
 npx supabase secrets set SES_WEBHOOK_SECRET="$(openssl rand -hex 24)"
@@ -255,6 +255,12 @@ npx supabase functions deploy process-notification-queue
 npx supabase functions deploy resend-confirmation-email
 npx supabase functions deploy get-email-quota
 ```
+
+> **`SES_DAILY_QUOTA` non limita nulla.** È solo il numero che il gestionale mostra
+> quando l'API SES non risponde: il gate vero legge la quota live da SES prima di
+> ogni campagna (§8, livello 2). Tienilo allineato alla quota reale dell'account —
+> 200 in sandbox, 50.000 dopo l'approvazione — altrimenti la schermata Newsletter
+> mostra un tetto che non esiste.
 
 I secret `MAIL_FROM_EMAIL`, `MAIL_REPLY_TO` e `MAIL_UNSUBSCRIBE_MAILTO` sono
 opzionali: se assenti il codice ricade sui vecchi `RESEND_*` già configurati,

@@ -19,8 +19,10 @@ interface QuotaResponse {
   }
 }
 
-// Fallbacks used only when the SES account API is unreachable.
-//  - daily   mirrors the 24h sending quota requested for the AWS account
+// Fallbacks used only when the SES account API is unreachable. Neither value caps
+// sending: the real gate reads the live 24h quota from SES before each campaign.
+//  - daily   mirrors the account's 24h sending quota (200 in sandbox, 50k after
+//            production access — AWS grants the default and documents no way down)
 //  - monthly is a self-imposed budget guardrail: SES has no monthly cap, but a
 //    visible ceiling keeps a runaway send from turning into a surprise bill
 const FALLBACK_LIMITS = {

@@ -29,3 +29,29 @@ jobs:
       # Nessun npm install: il linter usa solo i moduli builtin di Node.
       - name: migration-lint
         run: node scripts/migration-lint.mjs
+
+  version-bump:
+    name: La migrazione porta con sé un bump di versione?
+    # Regola 2 di CONTRACT_DISCIPLINE: una migrazione non è "rilasciata" finché non esiste un tag
+    # che la contiene. Il tag lo crea tag-release.yml dal bump di `version` — qui verifichiamo
+    # che il bump ci sia, quando la PR tocca le migrazioni.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Confronta package.json con il branch di base
+        run: |
+          set -euo pipefail
+          BASE="origin/${{ github.base_ref }}"
+          git fetch origin "${{ github.base_ref }}" --quiet
+          OLD=$(git show "$BASE:package.json" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
+          NEW=$(node -p "require('./package.json').version")
+          echo "base=$OLD  PR=$NEW"
+          if [ "$OLD" = "$NEW" ]; then
+            echo "::error::La PR aggiunge migrazioni ma \`version\` resta $OLD. Bumpa package.json: il tag (e quindi il rilascio ai consumer) nasce da lì."
+            exit 1
+          fi
+          echo "✅ Bump di versione: $OLD → $NEW (il tag v$NEW sarà creato al merge su main)." >> "$GITHUB_STEP_SUMMARY"

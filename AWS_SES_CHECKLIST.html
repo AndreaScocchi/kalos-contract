@@ -11,48 +11,64 @@
     --card: #FFFFFF;
     --line: rgba(15,45,59,.12);
     --muted: rgba(15,45,59,.62);
+    --faint: rgba(15,45,59,.45);
     --orange: #C23B10;
     --green: #036257;
     --gold: #8A6D3B;
+    --goldbg: rgba(209,176,122,.12);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --ink: #F2ECE0; --bg: #0F1A1F; --card: #17242B;
-      --line: rgba(242,236,224,.16); --muted: rgba(242,236,224,.66);
-      --orange: #FF8557; --green: #3DA694; --gold: #D1B07A;
+      --line: rgba(242,236,224,.16); --muted: rgba(242,236,224,.66); --faint: rgba(242,236,224,.5);
+      --orange: #FF8557; --green: #3DA694; --gold: #D1B07A; --goldbg: rgba(209,176,122,.1);
     }
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; padding: 2.5rem 1.25rem 4rem;
     background: var(--bg); color: var(--ink);
-    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font: 16px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   }
-  main { max-width: 46rem; margin: 0 auto; }
+  main { max-width: 48rem; margin: 0 auto; }
   h1 { font-size: 1.9rem; font-weight: 600; margin: 0 0 .4rem; }
-  h2 { font-size: 1.05rem; font-weight: 600; margin: 2.2rem 0 .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-  p.sub { color: var(--muted); margin: 0 0 2rem; }
-  ul { list-style: none; margin: 0; padding: 0; }
-  li { background: var(--card); border: 1px solid var(--line); border-radius: 8px; margin-bottom: .5rem; }
-  label { display: flex; gap: .75rem; padding: .8rem .95rem; cursor: pointer; align-items: flex-start; }
-  input { margin: .3rem 0 0; width: 1.05rem; height: 1.05rem; flex: none; accent-color: var(--green); }
-  .txt { min-width: 0; }
-  .txt b { font-weight: 600; }
-  .txt small { display: block; color: var(--muted); font-size: .87rem; margin-top: .15rem; }
-  input:checked ~ .txt { opacity: .5; text-decoration: line-through; text-decoration-color: var(--line); }
-  li.wait { background: none; border: none; border-left: 2px dashed var(--gold); border-radius: 0; margin: .8rem 0 .8rem .5rem; padding: .1rem 0 .1rem .9rem; color: var(--gold); font-size: .9rem; }
-  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: .9rem; }
-  th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--line); }
+  h2 { font-size: 1rem; font-weight: 600; margin: 2.4rem 0 .8rem; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); }
+  p.sub { color: var(--muted); margin: 0 0 1.5rem; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .87em; background: var(--goldbg); padding: .05em .3em; border-radius: 3px; }
+
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list > li { background: var(--card); border: 1px solid var(--line); border-radius: 8px; margin-bottom: .6rem; }
+  .head { display: flex; gap: .75rem; padding: .85rem .95rem; cursor: pointer; align-items: flex-start; }
+  .head input { margin: .32rem 0 0; width: 1.05rem; height: 1.05rem; flex: none; accent-color: var(--green); }
+  .head .txt { min-width: 0; }
+  .head b { font-weight: 600; }
+  .head input:checked ~ .txt > b { opacity: .45; text-decoration: line-through; text-decoration-color: var(--line); }
+  .path { display: block; font-size: .84rem; color: var(--orange); font-family: ui-monospace, Menlo, Consolas, monospace; margin-top: .2rem; }
+  .detail { padding: 0 .95rem 1rem 2.75rem; }
+  .detail ol { margin: 0; padding-left: 1.15rem; color: var(--muted); font-size: .93rem; }
+  .detail ol li { margin-bottom: .35rem; }
+  .detail p { margin: .6rem 0 0; color: var(--muted); font-size: .93rem; }
+  .detail b { color: var(--ink); font-weight: 600; }
+
+  .warn { margin-top: .7rem; padding: .55rem .8rem; border-left: 2px solid var(--orange); background: var(--goldbg); border-radius: 0 6px 6px 0; font-size: .89rem; color: var(--muted); }
+  .warn b { color: var(--orange); }
+
+  li.wait { background: none !important; border: none !important; border-left: 2px dashed var(--gold) !important; border-radius: 0 !important; margin: .9rem 0 .9rem .5rem; padding: .15rem 0 .15rem .9rem; color: var(--gold); font-size: .9rem; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: .89rem; }
+  th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
   tr:last-child td { border-bottom: none; }
-  th { font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
-  td.v { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem; word-break: break-all; }
+  th { font-weight: 600; color: var(--faint); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+  td.v { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .84rem; word-break: break-all; }
   .wrap { overflow-x: auto; }
-  .note { border-left: 2px solid var(--orange); padding: .6rem .9rem; margin-top: 1.5rem; color: var(--muted); font-size: .92rem; background: var(--card); border-radius: 0 8px 8px 0; }
-  .note b { color: var(--orange); }
-  footer { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+
+  .note { border-left: 2px solid var(--green); padding: .7rem .9rem; margin-top: 1.4rem; color: var(--muted); font-size: .92rem; background: var(--card); border-radius: 0 8px 8px 0; }
+  .note b { color: var(--green); }
+  footer { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--line); color: var(--faint); font-size: .85rem; }
   @media print {
-    body { background: #fff; color: #000; padding: 0; }
-    li, table, .note { break-inside: avoid; }
+    body { background: #fff; color: #000; padding: 0; font-size: 11pt; }
+    ul.list > li, table, .note, .warn { break-inside: avoid; }
+    .head input { display: none; }
   }
 </style>
 </head>
@@ -61,58 +77,208 @@
 
   <h1>Attivazione SES</h1>
   <p class="sub">Passare l'invio email da Resend ad Amazon SES. Una volta sola, in ordine.<br>
-  Circa un'ora di clic, su due giorni per via delle attese. Dettagli per esteso in <code>AWS_SES_SETUP.md</code>.</p>
+  Circa un'ora di clic più due attese. Verificato sulla documentazione AWS di agosto 2026.<br>
+  Guida completa e motivazioni: <code>AWS_SES_SETUP.md</code>.</p>
 
   <h2>Prima di sedersi</h2>
-  <ul>
-    <li><label><input type="checkbox"><span class="txt"><b>Carta di credito e documento</b><small>AWS verifica l'identità alla registrazione</small></span></label></li>
-    <li><label><input type="checkbox"><span class="txt"><b>Accesso al DNS di kalosstudio.it</b><small>È il punto che blocca più spesso — scoprire stasera dove è gestito</small></span></label></li>
-    <li><label><input type="checkbox"><span class="txt"><b>Un indirizzo email di prova</b><small>Serve per il test finale, in sandbox si scrive solo a indirizzi verificati</small></span></label></li>
-    <li><label><input type="checkbox"><span class="txt"><b>Un posto sicuro per due chiavi segrete</b><small>Non una chat, non un file nel repo</small></span></label></li>
+  <ul class="list">
+    <li><label class="head"><input type="checkbox"><span class="txt"><b>Carta di credito e documento</b></span></label>
+      <div class="detail"><p>AWS verifica l'identità alla registrazione e fa un addebito di verifica di circa 1 €, poi stornato.</p></div></li>
+    <li><label class="head"><input type="checkbox"><span class="txt"><b>Accesso al pannello DNS di kalosstudio.it</b></span></label>
+      <div class="detail"><p>È il punto che blocca più spesso. Servono i permessi per aggiungere record <b>CNAME</b>, <b>TXT</b> e <b>MX</b>. Se non sapete dove è gestito il dominio, scopritelo prima di iniziare.</p></div></li>
+    <li><label class="head"><input type="checkbox"><span class="txt"><b>Un indirizzo email di prova</b></span></label>
+      <div class="detail"><p>Finché l'account è in sandbox si può scrivere <b>solo</b> a indirizzi verificati da voi. Serve per il test finale.</p></div></li>
+    <li><label class="head"><input type="checkbox"><span class="txt"><b>Un posto sicuro per due chiavi segrete</b></span></label>
+      <div class="detail"><p>Un password manager. Non una chat, non un file dentro il repo.</p></div></li>
   </ul>
 
   <h2>I passaggi</h2>
-  <ul>
-    <li><label><input type="checkbox"><span class="txt"><b>1 · Account AWS</b><small>Piano <b>a consumo (Paid)</b>, non il Free: si disattiva dopo 6 mesi e ferma le email</small></span></label></li>
-    <li><label><input type="checkbox"><span class="txt"><b>2 · Regione Francoforte (eu-central-1)</b><small>Restarci sempre: risorse create in regioni diverse non si vedono tra loro</small></span></label></li>
-    <li><label><input type="checkbox"><span class="txt"><b>3 · Dominio + DKIM</b><small>SES → Identities → Create identity → Domain, Easy DKIM RSA 2048. Restituisce 3 CNAME da mettere nel DNS (i valori li genera AWS)</small></span></label></li>
-    <li class="wait">Attesa ~30 minuti — propagazione DNS e verifica del dominio</li>
-    <li><label><input type="checkbox"><span class="txt"><b>4 · SPF, DMARC, MAIL FROM</b><small>Record pronti nella tabella sotto. Se un SPF esiste già, <b>aggiungere</b> include:amazonses.com senza sostituire: quello di Resend deve restare</small></span></label></li>
-    <li><label><input type="checkbox"><span class="txt"><b>5 · Configuration set “kalos-events”</b><small>Open/click tracking, reputation metrics, suppression list, e il custom redirect domain (senza, i link vengono riscritti su awstrack.me)</small></span></label></li>
-    <li><label><input type="checkbox"><span class="txt"><b>6 · Topic SNS “kalos-ses-events”</b><small>Standard, firma Signature version 2, eventi Send/Delivery/Bounce/Complaint/Open/Click/Reject. La sottoscrizione HTTPS si crea dopo il deploy</small></span></label></li>
-    <li><label><input type="checkbox"><span class="txt"><b>7 · Utente IAM “kalos-ses-sender”</b><small>Con la policy inline della guida. <b>Salvare subito Access Key ID e Secret: il secret si vede una volta sola</b></small></span></label></li>
-    <li><label><input type="checkbox"><span class="txt"><b>8 · Uscita dalla sandbox</b><small>Request production access, tipo Transactional, volume <b>5.000/giorno</b> e non i 50.000 di default: è un tetto rigido, quindi un invio impazzito costa meno di $1 al giorno</small></span></label></li>
-    <li class="wait">Attesa ~24 ore — risposta di AWS. Nel frattempo si può già fare il punto 9.</li>
-    <li><label><input type="checkbox"><span class="txt"><b>9 · Passare le due chiavi a Claude</b><small>Segreti su Supabase, deploy delle 6 function, segreto webhook, poi insieme la sottoscrizione SNS e il test di invio</small></span></label></li>
+  <ul class="list">
+
+    <li>
+      <label class="head"><input type="checkbox"><span class="txt"><b>1 · Creare l'account AWS</b>
+      <span class="path">portal.aws.amazon.com/billing/signup</span></span></label>
+      <div class="detail">
+        <ol>
+          <li>Registratevi con un indirizzo email dello studio, non personale: diventerà l'utente <i>root</i> dell'account.</li>
+          <li>Alla scelta del piano selezionate quello <b>a consumo (Paid)</b>.</li>
+          <li>Appena dentro, attivate la <b>MFA sull'utente root</b> (IAM → Security credentials). È l'unica credenziale che può fare qualsiasi cosa sull'account.</li>
+        </ol>
+        <div class="warn"><b>Non prendete il piano Free.</b> Si disattiva dopo sei mesi e vi spegnerebbe le email senza preavviso utile. Il piano a consumo, sui vostri volumi, costa pochi centesimi al mese.</div>
+      </div>
+    </li>
+
+    <li>
+      <label class="head"><input type="checkbox"><span class="txt"><b>2 · Selezionare la regione Francoforte</b>
+      <span class="path">selettore in alto a destra → Europe (Frankfurt) eu-central-1</span></span></label>
+      <div class="detail">
+        <p>Da qui in avanti <b>ogni</b> schermata deve mostrare Frankfurt. Identità, configuration set, topic SNS, quote e stato della sandbox sono separati per regione: risorse create in due regioni diverse non si vedono tra loro, ed è l'errore che fa perdere più tempo.</p>
+      </div>
+    </li>
+
+    <li>
+      <label class="head"><input type="checkbox"><span class="txt"><b>3 · Verificare il dominio con DKIM</b>
+      <span class="path">SES → Configuration → Identities → Create identity</span></span></label>
+      <div class="detail">
+        <ol>
+          <li>Tipo identità: <b>Domain</b>. Inserite <code>kalosstudio.it</code>.</li>
+          <li>Lasciate attivo <b>Easy DKIM</b> con <b>RSA_2048</b>.</li>
+          <li>Lasciate spuntato <b>Publish DNS records to Route53</b> solo se il dominio è su Route 53. Se sta altrove, toglietelo.</li>
+          <li>AWS genera <b>tre record CNAME</b>. Copiateli nel pannello DNS così come sono — i valori li produce Amazon, qui non ci sono.</li>
+        </ol>
+        <div class="warn"><b>Attenti al suffisso del dominio.</b> Alcuni pannelli DNS aggiungono da soli <code>.kalosstudio.it</code> al nome del record: se incollate il nome completo vi ritrovate con <code>...kalosstudio.it.kalosstudio.it</code> e la verifica non passa mai.</div>
+      </div>
+    </li>
+
+    <li class="wait">Attesa — di solito meno di 30 minuti, ma SES può metterci fino a 72 ore. Lo stato dell'identità passa a <b>Verified</b> e arriva una email di conferma.</li>
+
+    <li>
+      <label class="head"><input type="checkbox"><span class="txt"><b>4 · SPF e DMARC sul dominio</b>
+      <span class="path">pannello DNS di kalosstudio.it</span></span></label>
+      <div class="detail">
+        <ol>
+          <li><b>SPF</b>: se esiste già un TXT che inizia con <code>v=spf1</code>, <b>non createne un secondo</b> — è vietato averne due e le email verrebbero rifiutate. Aggiungete <code>include:amazonses.com</code> dentro quello esistente, lasciando quello di Resend.</li>
+          <li><b>DMARC</b>: se non esiste, create il TXT su <code>_dmarc.kalosstudio.it</code> in modalità osservazione (<code>p=none</code>). Serve solo a raccogliere report, non blocca nulla.</li>
+        </ol>
+        <p>I valori sono nella tabella in fondo.</p>
+      </div>
+    </li>
+
+    <li>
+      <label class="head"><input type="checkbox"><span class="txt"><b>5 · Mittente tecnico (Custom MAIL FROM)</b>
+      <span class="path">SES → Identities → kalosstudio.it → riquadro Custom MAIL FROM domain → Edit</span></span></label>
+      <div class="detail">
+        <ol>
+          <li>Spuntate <b>Use a custom MAIL FROM domain</b> e inserite <code>mail.kalosstudio.it</code>.</li>
+          <li><b>Behavior on MX failure</b>: scegliete <b>Use default MAIL FROM domain</b>. L'altra opzione, <i>Reject message</i>, farebbe fallire tutti gli invii se il record MX si rompesse.</li>
+          <li>Salvate, poi pubblicate i due record (MX e TXT) che compaiono nel riquadro <b>Publish DNS records</b>. Sono nella tabella in fondo.</li>
+        </ol>
+        <div class="warn"><b>Un solo record MX su quel sottodominio.</b> Se <code>mail.kalosstudio.it</code> ha più di un MX, la configurazione fallisce. E il sottodominio non va usato per nient'altro: né per spedire, né per ricevere posta. La priorità <code>10</code> di solito va in un campo separato del pannello DNS.</div>
+        <p>Serve ad allineare l'indirizzo tecnico di ritorno al vostro dominio: migliora DMARC e la consegna. SES può metterci fino a 72 ore a rilevare l'MX; nel frattempo usa il mittente predefinito, quindi <b>non blocca gli invii</b>.</p>
+      </div>
+    </li>
+
+    <li>
+      <label class="head"><input type="checkbox"><span class="txt"><b>6 · Configuration set per il tracciamento</b>
+      <span class="path">SES → Configuration → Configuration sets → Create set</span></span></label>
+      <div class="detail">
+        <ol>
+          <li>Nome: <code>kalos-events</code> — deve coincidere esattamente, il codice lo passa a ogni invio.</li>
+          <li>Attivate <b>Open and click tracking</b>.</li>
+          <li>Impostate un <b>custom redirect domain</b>: <code>track.kalosstudio.it</code>, con il CNAME in tabella. Senza, i link nelle email vengono riscritti su un dominio <code>awstrack.me</code> che i clienti vedono.</li>
+          <li>Attivate <b>Reputation metrics</b>.</li>
+          <li>In <b>Account dashboard</b> attivate la <b>suppression list</b> a livello account per bounce e complaint: SES smette da solo di riscrivere a indirizzi morti.</li>
+        </ol>
+      </div>
+    </li>
+
+    <li>
+      <label class="head"><input type="checkbox"><span class="txt"><b>7 · Notifiche di consegna e rimbalzo</b>
+      <span class="path">SNS → Topics → Create topic · poi SES → Configuration sets → kalos-events → Event destinations</span></span></label>
+      <div class="detail">
+        <ol>
+          <li>In SNS create un topic <b>Standard</b> chiamato <code>kalos-ses-events</code>.</li>
+          <li>Nel topic, <b>Edit → Delivery policy</b>, impostate la firma a <b>Signature version 2</b>.</li>
+          <li>Tornate sul configuration set, <b>Event destinations → Add destination</b>, tipo <b>Amazon SNS</b>, topic <code>kalos-ses-events</code>.</li>
+          <li>Eventi da selezionare: <code>Send</code>, <code>Delivery</code>, <code>Bounce</code>, <code>Complaint</code>, <code>Open</code>, <code>Click</code>, <code>Reject</code>.</li>
+        </ol>
+        <div class="warn"><b>La sottoscrizione HTTPS non si crea adesso.</b> Ha bisogno di un segreto che genero io e della funzione già pubblicata su Supabase, altrimenti resta bloccata in <i>Pending confirmation</i>. La facciamo insieme al passo 10.</div>
+      </div>
+    </li>
+
+    <li>
+      <label class="head"><input type="checkbox"><span class="txt"><b>8 · Utente e chiavi di invio</b>
+      <span class="path">IAM → Users → Create user · poi scheda Security credentials</span></span></label>
+      <div class="detail">
+        <ol>
+          <li>Create l'utente <code>kalos-ses-sender</code>. <b>Non</b> spuntate l'accesso alla console: serve solo per l'API.</li>
+          <li>Allegate come <b>policy inline</b> quella riportata in <code>AWS_SES_SETUP.md §4</code>: concede due soli permessi, e solo per il mittente <code>newsletter@kalosstudio.it</code>.</li>
+          <li>Aprite l'utente creato → scheda <b>Security credentials</b> → sezione <b>Access keys</b> → <b>Create access key</b>.</li>
+          <li>Nella pagina <b>Access key best practices &amp; alternatives</b> scegliete <b>Other</b>, poi <b>Next</b>. AWS sconsiglia le chiavi a lunga durata, ma qui servono.</li>
+          <li>Tag descrizione (facoltativo), poi <b>Create access key</b>.</li>
+          <li>Premete <b>Show</b> per rivelare il secret e scaricate il <b>.csv</b>.</li>
+        </ol>
+        <div class="warn"><b>Le chiavi non si creano più insieme all'utente</b> — il vecchio flusso con “accesso programmatico” non esiste più, sono due passaggi separati. E il <b>Secret Access Key si vede una volta sola</b>: se lo perdete va cancellata la chiave e rifatta.</div>
+      </div>
+    </li>
+
+    <li>
+      <label class="head"><input type="checkbox"><span class="txt"><b>9 · Chiedere l'uscita dalla sandbox</b>
+      <span class="path">SES → Account dashboard → View Get set up page → Request production access</span></span></label>
+      <div class="detail">
+        <p>In sandbox si può scrivere solo a indirizzi verificati, <b>200 email ogni 24 ore</b> e <b>1 al secondo</b>. Il modulo chiede quattro cose:</p>
+        <ol>
+          <li><b>Mail type</b>: <b>Transactional</b> — l'uso prevalente sono promemoria di lezione e conferme di prenotazione.</li>
+          <li><b>Website URL</b>: <code>https://kalosstudio.it</code></li>
+          <li><b>Additional contacts</b>: fino a 4 indirizzi che riceveranno le comunicazioni sull'account.</li>
+          <li><b>Preferred contact language</b>: <b>English</b> (le uniche opzioni sono inglese e giapponese).</li>
+          <li>Spuntate l'<b>Acknowledgement</b>: confermate di scrivere solo a chi l'ha chiesto e di gestire rimbalzi e reclami.</li>
+        </ol>
+        <div class="warn"><b>Il modulo non chiede più un volume giornaliero né una descrizione libera.</b> Una volta approvati la quota è quella predefinita di <b>50.000 al giorno</b>, e AWS documenta solo come <i>aumentarla</i>, non come abbassarla. Il tetto di spesa quindi va messo altrove: vedi il passo successivo. Mentre la richiesta è in revisione i dati non sono modificabili.</div>
+      </div>
+    </li>
+
+    <li>
+      <label class="head"><input type="checkbox"><span class="txt"><b>10 · Tetto di spesa</b>
+      <span class="path">Billing and Cost Management → Budgets → Create budget</span></span></label>
+      <div class="detail">
+        <ol>
+          <li>Tipo <b>Cost budget</b>, soglia <b>$5 al mese</b>, notifica via email all'<b>80%</b> e al <b>100%</b>.</li>
+          <li>Facoltativo ma consigliato: un <b>allarme CloudWatch</b> sulla metrica SES <code>Send</code>, che vi avvisa se in un'ora partono più email del normale.</li>
+        </ol>
+        <p>Sui volumi reali (~490 email al mese) la spesa è di circa <b>60 centesimi all'anno</b>, quindi un budget da 5 dollari suona l'allarme molto prima che il costo diventi reale.</p>
+        <p>Nel codice ci sono già due protezioni indipendenti: <b>rifiuto delle campagne oltre 1.000 destinatari</b> (una lista molto più lunga di 500 significa che la query è andata storta) e <b>blocco preventivo se la quota residua non basta per l'intera campagna</b>, così non si spedisce a metà lista.</p>
+        <div class="warn"><b>La quota conta i destinatari, non i messaggi.</b> Una email a 500 persone pesa 500 sulla quota giornaliera.</div>
+      </div>
+    </li>
+
+    <li class="wait">Attesa — AWS risponde entro 24 ore. Nel frattempo si può già fare il passo 11.</li>
+
+    <li>
+      <label class="head"><input type="checkbox"><span class="txt"><b>11 · Passare le chiavi a Claude</b>
+      <span class="path">da consegnare — non su una chat pubblica</span></span></label>
+      <div class="detail">
+        <p>Da qui è lavoro mio. Mi servono <b>Access Key ID</b> e <b>Secret Access Key</b> del passo 8. Io:</p>
+        <ol>
+          <li>carico i segreti su Supabase e genero quello del webhook;</li>
+          <li>pubblico le sei edge function;</li>
+          <li>poi <b>insieme</b> creiamo la sottoscrizione SNS del passo 7, che ora si conferma da sola;</li>
+          <li>chiudiamo con l'invio di prova: una newsletter a un solo indirizzo, verificando che il mittente arrivi come <b>Studio Kalòs</b> con la ò intatta, che aperture e click vengano registrati e che il MessageId finisca a database.</li>
+        </ol>
+        <p>Finché siete in sandbox tengo il ritmo a 1 email al secondo. Dopo l'approvazione lo alzo: una campagna da 500 destinatari passa da circa 8 minuti a meno di un minuto.</p>
+      </div>
+    </li>
+
   </ul>
 
   <h2>Valori già compilati</h2>
   <div class="wrap">
   <table>
     <tr><th>Cosa</th><th>Valore</th></tr>
-    <tr><td>Regione</td><td class="v">eu-central-1</td></tr>
+    <tr><td>Regione</td><td class="v">eu-central-1 (Europe · Frankfurt)</td></tr>
     <tr><td>Dominio</td><td class="v">kalosstudio.it</td></tr>
     <tr><td>Mittente</td><td class="v">newsletter@kalosstudio.it</td></tr>
     <tr><td>Configuration set</td><td class="v">kalos-events</td></tr>
     <tr><td>Topic SNS</td><td class="v">kalos-ses-events</td></tr>
     <tr><td>Utente IAM</td><td class="v">kalos-ses-sender</td></tr>
-    <tr><td>TXT · SPF</td><td class="v">v=spf1 include:amazonses.com ~all</td></tr>
-    <tr><td>TXT · DMARC</td><td class="v">v=DMARC1; p=none; rua=mailto:dmarc@kalosstudio.it</td></tr>
-    <tr><td>MX · mail.kalosstudio.it</td><td class="v">10 feedback-smtp.eu-central-1.amazonses.com</td></tr>
-    <tr><td>TXT · mail.kalosstudio.it</td><td class="v">v=spf1 include:amazonses.com ~all</td></tr>
-    <tr><td>CNAME · track.kalosstudio.it</td><td class="v">r.eu-central-1.awstrack.me</td></tr>
+    <tr><td>TXT · SPF su <code>kalosstudio.it</code></td><td class="v">v=spf1 include:amazonses.com ~all</td></tr>
+    <tr><td>TXT · DMARC su <code>_dmarc.kalosstudio.it</code></td><td class="v">v=DMARC1; p=none; rua=mailto:dmarc@kalosstudio.it</td></tr>
+    <tr><td>MX · <code>mail.kalosstudio.it</code></td><td class="v">10 feedback-smtp.eu-central-1.amazonses.com</td></tr>
+    <tr><td>TXT · <code>mail.kalosstudio.it</code></td><td class="v">v=spf1 include:amazonses.com ~all</td></tr>
+    <tr><td>CNAME · <code>track.kalosstudio.it</code></td><td class="v">r.eu-central-1.awstrack.me</td></tr>
   </table>
   </div>
 
   <div class="note">
-    <b>Si torna indietro in un minuto.</b> Il codice di Resend è intatto e i suoi record DNS restano
-    validi finché non li rimuovete: i due provider convivono. Per questo non va tolto nulla di Resend
-    finché SES non è stabile da qualche settimana.
+    <b>Si torna indietro in un minuto.</b> Il codice di Resend è rimasto intatto e i suoi record DNS
+    restano validi finché non li rimuovete: i due provider convivono senza conflitti, perché usano
+    selettori DKIM diversi. Tornare a Resend è cambiare un import e ripubblicare le funzioni.
+    Per questo non va rimosso nulla di Resend finché SES non è stabile da qualche settimana.
   </div>
 
   <footer>
-    Guida completa: <code>kalos-contract/AWS_SES_SETUP.md</code> (§0 è questa stessa checklist).<br>
-    Le spunte non vengono salvate: è una pagina da tenere aperta durante il lavoro, o da stampare.
+    Guida completa, policy IAM e procedura di rollback: <code>kalos-contract/AWS_SES_SETUP.md</code>.<br>
+    Passaggi verificati sulla documentazione AWS ad agosto 2026. Le spunte non vengono salvate: pagina da tenere aperta durante il lavoro, o da stampare.
   </footer>
 
 </main>

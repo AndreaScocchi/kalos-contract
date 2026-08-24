@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, PRIMARY_DEFAULT_FROM_NAME } from '../_shared/resend.ts'
+import { renderNewsletterContent, personalizeContent, toPlainText } from '../_shared/newsletterContent.ts'
+import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, SEND_DELAY_MS, PRIMARY_DEFAULT_FROM_NAME, getSendQuota } from '../_shared/ses.ts'
 
 type DeliveryMode = 'promotions' | 'primary'
 
@@ -17,9 +18,10 @@ interface ResponseBody {
   totalRetried?: number
 }
 
-// Rate limiting: Resend allows 2 requests per second
-// We send emails sequentially with 1000ms delay to stay safely under the limit
-const EMAIL_DELAY_MS = 1000
+// Rate limiting: SES accepts 14 emails/sec once out of the sandbox.
+// SEND_DELAY_MS defaults to 100ms (10/sec) and is overridable via SES_SEND_DELAY_MS;
+// sendEmail() also retries with backoff if SES throttles anyway.
+const EMAIL_DELAY_MS = SEND_DELAY_MS
 
 // Generate unsubscribe token (must match unsubscribe-newsletter function)
 async function generateUnsubscribeToken(email: string): Promise<string> {
@@ -46,16 +48,8 @@ function getImagePublicUrl(imageUrl: string | null): string | null {
 
 // HTML email template with professional styling (same as send-newsletter)
 function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string | null = null): string {
-  // Escape HTML entities
-  const escaped = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-
-  // Convert newlines to <br>
-  const htmlContent = escaped.replace(/\n/g, '<br>')
+  // Rich text (HTML ristretto) oppure vecchio formato con marcatori
+  const htmlContent = renderNewsletterContent(text, 'promotions')
 
   // Colors from Studio Kalos brand
   const primaryColor = '#0F2D3B'
@@ -152,13 +146,7 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
 
 // Minimal HTML template for "primary" mode — see send-newsletter for design rationale.
 function wrapTextInHtmlPrimary(text: string, unsubscribeUrl: string): string {
-  const escaped = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-  const htmlContent = escaped.replace(/\n/g, '<br>')
+  const htmlContent = renderNewsletterContent(text, 'primary')
 
   const primaryColor = '#0F2D3B'
   const footerText = '#6B7280'
@@ -325,7 +313,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const fromEmail = buildFromAddress(deliveryMode === 'primary' ? primaryFromName : null)
     console.log(`[Retry] delivery_mode=${deliveryMode}, from=${fromEmail}`)
 
-    // Send emails sequentially to respect Resend rate limit (2 req/sec)
+    // Pre-flight quota gate: a retry that runs into the SES 24h cap would just
+    // re-fail the same addresses and burn quota. Stop before starting.
+    const { data: sendQuota } = await getSendQuota()
+    if (sendQuota && sendQuota.max24HourSend > 0) {
+      const available = Math.floor(sendQuota.max24HourSend - sendQuota.sentLast24Hours)
+      if (failedEmails.length > available) {
+        console.error(`SES quota gate: ${failedEmails.length} to retry vs ${available} available`)
+        return jsonResponse({
+          ok: false,
+          reason: 'SES_QUOTA_INSUFFICIENT',
+          message: `Quota SES insufficiente: servono ${failedEmails.length} invii ma ne restano ${Math.max(0, available)} nelle prossime 24 ore.`,
+        }, 429)
+      }
+    }
+
+    // Send emails sequentially to respect the SES sending rate
     let sentCount = 0
     let failedCount = 0
 
@@ -345,7 +348,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         .eq('id', emailRecord.id)
 
       // Replace template variables ({{nome}} -> recipient name)
-      const personalizedText = replaceTemplateVariables(campaign.content, {
+      const personalizedText = personalizeContent(campaign.content, {
         nome: emailRecord.client_name,
         client_name: emailRecord.client_name,
         studio_name: 'Studio Kalos',
@@ -368,7 +371,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         to: emailRecord.email_address,
         subject: campaign.subject,
         html: personalizedHtml,
-        text: personalizedText,
+        text: toPlainText(personalizedText),
         replyTo: getReplyToEmail(),
         tags: [
           { name: 'campaign_id', value: body.campaignId },
@@ -390,7 +393,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
           .eq('id', emailRecord.id)
         failedCount++
       } else {
-        // Update email record with Resend ID
+        // Store the SES MessageId (column name predates the provider change)
         await supabaseAdmin
           .from('newsletter_emails')
           .update({

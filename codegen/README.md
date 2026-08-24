@@ -43,6 +43,26 @@ Flusso tipico dopo una **nuova migrazione**:
 3. committa i file generati **insieme** alla migrazione;
 4. la CI (`.github/workflows/codegen.yml`) rigenera in ambiente pulito e verifica zero drift.
 
+## Versione della CLI Supabase (pinnata)
+
+La CLI è **pinnata come devDependency** (`supabase` in `package.json`, versione esatta) e va invocata
+sempre via `npx supabase` — sia in locale sia in CI (`npm ci` la installa).
+
+Motivo: versioni diverse della CLI emettono lo **stesso schema con ordinamenti diversi** (es. l'ordine
+degli overload delle RPC nell'union di `Database['public']['Functions']`). Se in locale generi con una
+versione e la CI con un'altra (`setup-cli` con `version: latest`), il drift-check fallisce pur essendo
+lo schema identico: *drift fantasma*.
+
+⚠️ Non usare la CLI installata a livello globale (`/usr/local/bin/supabase`): può essere di un'altra
+versione. Verifica con `npx supabase --version` che corrisponda al pin in `package.json`.
+
+Per aggiornare la CLI:
+```bash
+npm i -D --save-exact supabase@<nuova-versione>
+npm run codegen            # rigenera con la nuova versione
+git add package.json package-lock.json src/types/database.ts codegen/
+```
+
 ## Mappatura tipi (Postgres → Kotlin)
 
 | Postgres | Kotlin |

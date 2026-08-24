@@ -3318,16 +3318,16 @@ export type Database = {
       process_recurring_announcements: { Args: never; Returns: undefined }
       queue_announcement:
         | {
+            Args: { p_announcement_id: string; p_body: string; p_title: string }
+            Returns: Json
+          }
+        | {
             Args: {
               p_announcement_id: string
               p_body: string
               p_scheduled_for?: string
               p_title: string
             }
-            Returns: Json
-          }
-        | {
-            Args: { p_announcement_id: string; p_body: string; p_title: string }
             Returns: Json
           }
         | {
@@ -3365,8 +3365,6 @@ export type Database = {
               p_event_date: string
               p_event_id: string
               p_event_name: string
-              p_send_email?: boolean
-              p_send_push?: boolean
             }
             Returns: Json
           }
@@ -3375,6 +3373,8 @@ export type Database = {
               p_event_date: string
               p_event_id: string
               p_event_name: string
+              p_send_email?: boolean
+              p_send_push?: boolean
             }
             Returns: Json
           }

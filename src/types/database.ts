@@ -3316,6 +3316,10 @@ export type Database = {
         Returns: boolean
       }
       process_recurring_announcements: { Args: never; Returns: undefined }
+      promote_profile_to_operator: {
+        Args: { p_profile_id: string }
+        Returns: Json
+      }
       queue_announcement:
         | {
             Args: { p_announcement_id: string; p_body: string; p_title: string }

@@ -1,0 +1,131 @@
+name: DB Migrate → prod
+
+# Applica le migrazioni alla PROD dalla CI, non dal portatile.
+# Stessa sequenza di `npm run db:push:safe` (lint → snapshot → conferma → push), ma:
+#   • tracciata (log + artifact dello snapshot),
+#   • riproducibile (CLI Supabase pinnata come devDependency),
+#   • la "conferma digitando PUSH" diventa l'approvazione della GitHub Environment `production`.
+#
+# ⚠️  PREREQUISITO NON NEGOZIABILE: l'Environment `production` deve avere un *required reviewer*
+#     (Settings → Environments → production → Required reviewers). Senza, il job partirebbe da solo.
+#
+# Secrets richiesti (Settings → Secrets → Actions):
+#   SUPABASE_ACCESS_TOKEN  — token personale della CLI (supabase.com/dashboard/account/tokens)
+#   SUPABASE_DB_PASSWORD   — password del database del progetto
+# Variabile opzionale: SUPABASE_PROJECT_REF (default: il progetto di produzione).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+    inputs:
+      include_data_snapshot:
+        description: "Includi anche un dump DEI DATI nell'artifact (contiene PII: retention 1 giorno)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: db-migrate
+  cancel-in-progress: false
+
+env:
+  SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF || 'tkioedsebdxqblgcctxv' }}
+
+jobs:
+  migrate:
+    name: Applica migrazioni alla produzione
+    runs-on: ubuntu-latest
+    environment: production   # ← qui si ferma e aspetta la tua approvazione
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install (include la CLI Supabase pinnata)
+        run: npm ci
+
+      - name: Secrets presenti?
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PW: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$TOKEN" ] && missing="$missing SUPABASE_ACCESS_TOKEN"
+          [ -z "$PW" ] && missing="$missing SUPABASE_DB_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Mancano i secrets:$missing — configurali in Settings → Secrets → Actions."
+            exit 1
+          fi
+
+      # 1/4 — le migrazioni nuove devono essere additive (stesso linter del locale).
+      - name: migration-lint
+        run: npm run lint:migrations
+
+      - name: Link al progetto di produzione
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npx supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      # 2/4 — cosa sta per succedere, nero su bianco nel log del run.
+      - name: Migrazioni pendenti (prima)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          {
+            echo "### Migrazioni pendenti prima del push"
+            echo '```'
+            npx supabase migration list --linked 2>&1
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # 3/4 — rete di sicurezza. Ruoli+schema sempre; i dati SOLO su richiesta esplicita (PII).
+      - name: Snapshot pre-push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p backups
+          STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+          npx supabase db dump --linked --role-only -f "backups/${STAMP}-roles.sql"
+          npx supabase db dump --linked             -f "backups/${STAMP}-schema.sql"
+          if [ "${{ inputs.include_data_snapshot }}" = "true" ]; then
+            npx supabase db dump --linked --data-only -f "backups/${STAMP}-data.sql"
+            echo "⚠️ L'artifact include un dump dei DATI (PII di clienti reali): scaricalo, verificalo, e non ridistribuirlo." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          ls -lh backups/ >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Conserva lo snapshot
+        uses: actions/upload-artifact@v7
+        with:
+          name: snapshot-pre-push-${{ github.run_id }}
+          path: backups/
+          retention-days: ${{ inputs.include_data_snapshot && 1 || 30 }}
+
+      # 4/4 — il push vero. Ci si arriva solo dopo l'approvazione dell'Environment.
+      - name: supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npx supabase db push --linked
+
+      - name: Stato finale
+        if: always()
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          {
+            echo "### Stato dopo il push"
+            echo '```'
+            npx supabase migration list --linked 2>&1 || true
+            echo '```'
+            echo "In caso di problemi: scarica l'artifact \`snapshot-pre-push-${{ github.run_id }}\` e ripristina (ordine: roles → schema → data)."
+          } >> "$GITHUB_STEP_SUMMARY"

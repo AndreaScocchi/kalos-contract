@@ -1,0 +1,55 @@
+name: Tag release
+
+# Regola 2 di CONTRACT_DISCIPLINE: "ogni migrazione = nuovo tag".
+# Qui smette di essere un passo manuale dimenticabile: quando `version` di package.json cambia
+# su main, il tag vX.Y.Z viene creato da solo. I consumer restano opt-in (si aggiornano via PR,
+# vedi contract-bump.yml nei repo consumer).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Crea il tag se la versione è cambiata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Versione dichiarata
+        id: v
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Tag già esistente?
+        id: check
+        run: |
+          TAG="v${{ steps.v.outputs.version }}"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ Il tag \`$TAG\` esiste già: niente da fare." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Crea e pubblica il tag
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.v.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+          {
+            echo "🏷️ Creato il tag **$TAG** su \`${GITHUB_SHA:0:7}\`."
+            echo ""
+            echo "I consumer si aggiornano **in opt-in**: nei loro repo, Actions → *Bump @kalos/contract* apre la PR."
+          } >> "$GITHUB_STEP_SUMMARY"

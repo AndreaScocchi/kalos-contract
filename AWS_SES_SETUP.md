@@ -12,6 +12,54 @@ significa **circa $0,60 all'anno**.
 
 ---
 
+## 0. Checklist operativa
+
+> Da seguire in ordine. Le sezioni numerate qui sotto spiegano ogni punto per esteso.
+> Circa un'ora di clic, distribuita su due giorni per via delle due attese.
+
+**Prima di sedersi**
+
+- [ ] Carta di credito e documento (AWS verifica l'identità alla registrazione)
+- [ ] **Accesso a dove è gestito il DNS di `kalosstudio.it`** ← è il punto che blocca più spesso: scoprirlo prima
+- [ ] Un indirizzo email di prova accessibile, per il test finale
+- [ ] Un posto sicuro dove incollare due chiavi segrete (non una chat, non un file nel repo)
+
+**I passaggi**
+
+- [ ] **1. Account AWS** → piano **a consumo (Paid)**, *non* il Free: si disattiva dopo 6 mesi e ferma le email. → §1
+- [ ] **2. Regione `eu-central-1` (Francoforte)** e restarci sempre: risorse create in regioni diverse non si vedono tra loro. → §1
+- [ ] **3. Dominio + DKIM** — SES → Identities → Create identity → Domain, Easy DKIM RSA 2048. Restituisce **3 CNAME** da mettere nel DNS (i valori li genera AWS). → §2
+- [ ] ⏳ *Attesa ~30 minuti* — propagazione DNS e verifica del dominio
+- [ ] **4. SPF, DMARC, MAIL FROM** — record già pronti nella tabella sotto. Se un SPF esiste già, **aggiungere** `include:amazonses.com`, non sostituire: quello di Resend deve restare. → §2
+- [ ] **5. Configuration set `kalos-events`** — open/click tracking, reputation metrics, suppression list, e il custom redirect domain (senza, i link vengono riscritti su `awstrack.me`). → §3
+- [ ] **6. Topic SNS `kalos-ses-events`** — Standard, firma **Signature version 2**, event destination con Send/Delivery/Bounce/Complaint/Open/Click/Reject. *La sottoscrizione HTTPS si crea dopo il deploy* (§3). → §3
+- [ ] **7. Utente IAM `kalos-ses-sender`** + policy inline → **salvare Access Key ID e Secret: il secret si vede una volta sola.** → §4
+- [ ] **8. Uscita dalla sandbox** — Request production access, tipo *Transactional*, volume **5.000/giorno** (non i 50.000 di default: è un tetto rigido, quindi un invio impazzito costa meno di $1/giorno). → §5
+- [ ] ⏳ *Attesa ~24 ore* — risposta di AWS. Nel frattempo si può già fare il punto 9.
+- [ ] **9. Passare le due chiavi a Claude** → segreti su Supabase, deploy delle 6 function, generazione del segreto webhook, poi **insieme** la sottoscrizione SNS e il test di fumo. → §6, §7
+
+**Valori già compilati**
+
+| Cosa | Valore |
+|---|---|
+| Regione | `eu-central-1` |
+| Dominio | `kalosstudio.it` |
+| Mittente | `newsletter@kalosstudio.it` |
+| Configuration set | `kalos-events` |
+| Topic SNS | `kalos-ses-events` |
+| Utente IAM | `kalos-ses-sender` |
+| TXT · SPF | `v=spf1 include:amazonses.com ~all` |
+| TXT · DMARC | `v=DMARC1; p=none; rua=mailto:dmarc@kalosstudio.it` |
+| MX · `mail.kalosstudio.it` | `10 feedback-smtp.eu-central-1.amazonses.com` |
+| TXT · `mail.kalosstudio.it` | `v=spf1 include:amazonses.com ~all` |
+| CNAME · `track.kalosstudio.it` | `r.eu-central-1.awstrack.me` |
+
+**Se qualcosa non convince:** `_shared/resend.ts` è intatto e i record DNS di Resend restano validi
+finché non li si rimuove — i due provider convivono. Tornare indietro è cambiare un import e
+rideployare (§10). Per questo non va rimosso nulla di Resend finché SES non è stabile da qualche settimana.
+
+---
+
 ## 1. Account e regione
 
 1. Crea l'account AWS scegliendo il piano **Paid** (pay-as-you-go), non il piano

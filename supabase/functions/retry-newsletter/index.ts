@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { renderNewsletterContent, personalizeContent, toPlainText } from '../_shared/newsletterContent.ts'
-import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, SEND_DELAY_MS, PRIMARY_DEFAULT_FROM_NAME, getSendQuota } from '../_shared/ses.ts'
+import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, SEND_DELAY_MS, PRIMARY_DEFAULT_FROM_NAME, checkDailyCap } from '../_shared/ses.ts'
 
 type DeliveryMode = 'promotions' | 'primary'
 
@@ -313,19 +313,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const fromEmail = buildFromAddress(deliveryMode === 'primary' ? primaryFromName : null)
     console.log(`[Retry] delivery_mode=${deliveryMode}, from=${fromEmail}`)
 
-    // Pre-flight quota gate: a retry that runs into the SES 24h cap would just
+    // Pre-flight ceiling check: a retry that runs into the 24h limit would just
     // re-fail the same addresses and burn quota. Stop before starting.
-    const { data: sendQuota } = await getSendQuota()
-    if (sendQuota && sendQuota.max24HourSend > 0) {
-      const available = Math.floor(sendQuota.max24HourSend - sendQuota.sentLast24Hours)
-      if (failedEmails.length > available) {
-        console.error(`SES quota gate: ${failedEmails.length} to retry vs ${available} available`)
-        return jsonResponse({
-          ok: false,
-          reason: 'SES_QUOTA_INSUFFICIENT',
-          message: `Quota SES insufficiente: servono ${failedEmails.length} invii ma ne restano ${Math.max(0, available)} nelle prossime 24 ore.`,
-        }, 429)
-      }
+    const cap = await checkDailyCap(failedEmails.length)
+    if (!cap.allowed) {
+      console.error(`Daily cap gate: ${failedEmails.length} to retry, ${cap.available} available (cap ${cap.cap})`)
+      return jsonResponse({
+        ok: false,
+        reason: 'DAILY_CAP_REACHED',
+        message: `Tetto giornaliero raggiunto: servono ${failedEmails.length} invii ma ne restano ${cap.available} nelle prossime 24 ore (limite ${cap.cap}).`,
+      }, 429)
     }
 
     // Send emails sequentially to respect the SES sending rate

@@ -248,7 +248,7 @@ npx supabase secrets set SES_WEBHOOK_SECRET="$(openssl rand -hex 24)"
 npx supabase secrets set SES_SEND_DELAY_MS=1100
 
 # Deploy
-npx supabase functions deploy ses-webhook --no-verify-jwt
+npx supabase functions deploy ses-webhook   # verify_jwt=false è in config.toml
 npx supabase functions deploy send-newsletter
 npx supabase functions deploy retry-newsletter
 npx supabase functions deploy process-notification-queue
@@ -290,47 +290,59 @@ Ancora in sandbox, verifica l'indirizzo di test in **SES → Identities**, poi:
 
 ## 8. Protezioni contro un invio impazzito
 
-AWS fattura a consumo senza tetto, quindi la difesa è a tre livelli
-indipendenti. I primi due sono già nel codice, il terzo lo configuri tu.
+AWS fattura a consumo senza tetto e la quota SES non è abbassabile (§5), quindi
+la difesa è a quattro livelli. I primi tre sono nel codice e bloccano **prima**
+che l'email parta; il quarto è lato AWS e agisce dopo.
 
-### Livello 1 — tetto sui destinatari (codice)
+### Livello 1 — tetto giornaliero (codice)
+
+Prima di ogni invio massivo, `send-newsletter`, `retry-newsletter` e
+`process-notification-queue` chiedono a SES quante email sono già partite nelle
+ultime 24 ore e si fermano se il lotto sforerebbe `MAIL_DAILY_CAP`
+(default **1.500**, cioè al massimo **$0,15 al giorno**).
+
+È l'unico blocco in tempo reale contro un bug che invia in loop: AWS Budgets se
+ne accorge ore dopo, a soldi già spesi.
+
+```bash
+npx supabase secrets set MAIL_DAILY_CAP=1500   # opzionale, questo è il default
+```
+
+Il tetto effettivo è sempre il minore tra questo valore e la quota AWS. Se la
+verifica non riesce (API SES irraggiungibile) il controllo lascia passare: bloccare
+tutte le email per un intoppo momentaneo fermerebbe anche i promemoria delle
+lezioni, e nello scenario che questa guardia previene — il loop — l'API funziona.
+
+### Livello 2 — tetto sui destinatari per campagna (codice)
 
 `send-newsletter` rifiuta qualsiasi campagna sopra
 `MAIL_MAX_RECIPIENTS_PER_CAMPAIGN` (default **1.000**). Con ~500 clienti reali,
-un numero molto più alto significa che la query dei destinatari è andata storta:
-meglio bloccare che far partire l'invio.
+un numero molto più alto significa che la query dei destinatari è andata storta.
 
 ```bash
-npx supabase secrets set MAIL_MAX_RECIPIENTS_PER_CAMPAIGN=1000   # opzionale
+npx supabase secrets set MAIL_MAX_RECIPIENTS_PER_CAMPAIGN=600
 ```
 
-### Livello 2 — gate sulla quota (codice)
+### Livello 3 — nessun invio parziale (codice)
 
-Prima di iniziare, `send-newsletter` e `retry-newsletter` chiedono a SES quanta
-quota resta nella finestra mobile di 24 ore. Se non basta per l'intera
-campagna, l'invio **non parte affatto** e risponde `SES_QUOTA_INSUFFICIENT`.
+Se il lotto non entra sotto il tetto, l'invio **non parte affatto** invece di
+fermarsi a metà lista. I record restano `pending`, quindi il pulsante **Riprova**
+del gestionale riprende la campagna quando la finestra si libera, e le notifiche
+in coda vengono ritentate al giro successivo. Nulla va perso.
 
-Questo evita lo scenario peggiore: sforare a metà lista, con una parte dei
-clienti che riceve la newsletter e l'altra no, e la campagna in stato
-incoerente. I record restano `pending`, quindi il pulsante **Riprova** del
-gestionale riprende la campagna quando la finestra si libera.
+### Livello 4 — AWS Budgets (console)
 
-### Livello 3 — tetto AWS (console)
+**AWS Billing → Budgets → Create budget → Cost budget**, soglia **$5/mese**,
+notifica all'80% e al 100%.
 
-1. **AWS Budgets → Create budget → Cost budget**, soglia **$5/mese**, notifica via
-   email all'80% e al 100%. Sui volumi reali (~490 email/mese ≈ $0,05/anno) un
-   budget da 5 dollari suona molto prima che il costo diventi reale.
-2. Consigliato: un **allarme CloudWatch** sulla metrica SES `Send`, che avvisa se in
-   un'ora partono più email del normale.
+Opzionale ma consigliato, e **gratuito**: nello stesso budget aggiungi una
+**budget action** che allega una policy IAM di *Deny* all'utente
+`kalos-ses-sender` al superamento della soglia. I primi due budget con azione
+sono senza costi. È l'unico interruttore che stacca davvero la corrente lato AWS.
 
-> Qui la guida diceva che il primo baluardo era la quota giornaliera fissata a
-> 5.000. **Non è più ottenibile**: il modulo di uscita dalla sandbox non permette
-> di chiedere un volume, e dopo l'approvazione la quota è 50.000/giorno (vedi §5).
-> Il tetto vero diventa quindi il budget, che però **non blocca l'invio, avvisa**.
-
-Restano i due livelli nel codice, che sono quelli che fermano davvero un invio
-sbagliato prima che parta — e lo fanno con un messaggio comprensibile invece che
-con una bolletta.
+Attenzione al limite: i dati di fatturazione AWS si aggiornano poche volte al
+giorno, quindi l'azione può scattare **con 8-12 ore di ritardo**. È una rete di
+sicurezza, non una guardia in tempo reale — quella è il livello 1.
 
 ---
 

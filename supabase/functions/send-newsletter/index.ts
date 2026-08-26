@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { renderNewsletterContent, personalizeContent, toPlainText } from '../_shared/newsletterContent.ts'
-import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, SEND_DELAY_MS, PRIMARY_DEFAULT_FROM_NAME, getSendQuota } from '../_shared/ses.ts'
+import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, SEND_DELAY_MS, PRIMARY_DEFAULT_FROM_NAME, checkDailyCap } from '../_shared/ses.ts'
 
 type DeliveryMode = 'promotions' | 'primary'
 
@@ -618,25 +618,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: false, reason: 'PENDING_EMAILS_FETCH_ERROR' }, 500)
     }
 
-    // Pre-flight quota gate. SES enforces a rolling 24h cap: blowing through it
-    // mid-campaign would leave part of the list without the newsletter and the
-    // campaign in a half-sent state. Refuse upfront instead — the records stay
-    // 'pending', so retry-newsletter resumes the campaign once the window frees up.
-    const { data: sendQuota } = await getSendQuota()
-    if (sendQuota && sendQuota.max24HourSend > 0) {
-      const available = Math.floor(sendQuota.max24HourSend - sendQuota.sentLast24Hours)
-      if (pendingEmails.length > available) {
-        console.error(`SES quota gate: ${pendingEmails.length} pending vs ${available} available`)
-        await supabaseAdmin
-          .from('newsletter_campaigns')
-          .update({ status: 'failed' })
-          .eq('id', body.campaignId)
-        return jsonResponse({
-          ok: false,
-          reason: 'SES_QUOTA_INSUFFICIENT',
-          message: `Quota SES insufficiente: servono ${pendingEmails.length} invii ma ne restano ${Math.max(0, available)} nelle prossime 24 ore. La campagna e' recuperabile con "Riprova".`,
-        }, 429)
-      }
+    // Pre-flight ceiling check. Blowing through the 24h limit mid-campaign would
+    // leave part of the list without the newsletter and the campaign in a
+    // half-sent state. Refuse upfront instead — the records stay 'pending', so
+    // retry-newsletter resumes the campaign once the window frees up.
+    const cap = await checkDailyCap(pendingEmails.length)
+    if (!cap.allowed) {
+      console.error(`Daily cap gate: ${pendingEmails.length} pending, ${cap.available} available (cap ${cap.cap}, sent ${cap.sentLast24Hours})`)
+      await supabaseAdmin
+        .from('newsletter_campaigns')
+        .update({ status: 'failed' })
+        .eq('id', body.campaignId)
+      return jsonResponse({
+        ok: false,
+        reason: 'DAILY_CAP_REACHED',
+        message: `Tetto giornaliero raggiunto: servono ${pendingEmails.length} invii ma ne restano ${cap.available} nelle prossime 24 ore (limite ${cap.cap}). La campagna e' recuperabile con "Riprova".`,
+      }, 429)
     }
 
     // Send emails sequentially to respect the SES sending rate

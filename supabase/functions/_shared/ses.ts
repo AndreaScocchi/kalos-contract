@@ -348,3 +348,48 @@ export async function getSendQuota(): Promise<{ data: SesSendQuota | null; error
     }
   }
 }
+
+/**
+ * Self-imposed ceiling on emails sent in any rolling 24h window, checked before
+ * every bulk send.
+ *
+ * AWS grants ~50.000/day on leaving the sandbox and offers no self-service way to
+ * lower it, so this is the only real-time stop against a bug that sends in a loop:
+ * AWS Budgets only notices hours later, when the money is already spent. At the
+ * default of 1500 the worst case is $0.15/day.
+ *
+ * Raise it with: supabase secrets set MAIL_DAILY_CAP=<n>
+ */
+export const DAILY_CAP = Number(Deno.env.get('MAIL_DAILY_CAP') ?? '1500')
+
+export interface DailyCapResult {
+  allowed: boolean
+  /** How many more emails fit under the lower of our cap and the AWS quota. */
+  available: number
+  cap: number
+  sentLast24Hours: number
+}
+
+/**
+ * Check whether `requested` more emails fit under the effective 24h ceiling.
+ *
+ * Fails open when the SES account API is unreachable: blocking every email on a
+ * transient API hiccup would take down lesson reminders, and in the runaway-loop
+ * scenario this guard exists for, the API is working fine.
+ */
+export async function checkDailyCap(requested: number): Promise<DailyCapResult> {
+  const { data: quota, error } = await getSendQuota()
+
+  if (!quota) {
+    console.error('Daily cap check skipped, SES quota unavailable:', error?.message)
+    return { allowed: true, available: Number.POSITIVE_INFINITY, cap: DAILY_CAP, sentLast24Hours: 0 }
+  }
+
+  // SES reports -1 when the account has no 24h limit at all.
+  const awsCap = quota.max24HourSend > 0 ? quota.max24HourSend : Number.POSITIVE_INFINITY
+  const cap = Math.min(DAILY_CAP, awsCap)
+  const sentLast24Hours = Math.round(quota.sentLast24Hours)
+  const available = Math.max(0, cap - sentLast24Hours)
+
+  return { allowed: requested <= available, available, cap, sentLast24Hours }
+}

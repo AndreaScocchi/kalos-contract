@@ -5,8 +5,9 @@
 // from the `email_id` message tag, applies the highest-priority status seen,
 // records a tracking event, and refreshes the campaign counters.
 //
-// Deploy with --no-verify-jwt (SNS cannot send a Supabase JWT):
-//   supabase functions deploy ses-webhook --no-verify-jwt
+// SNS cannot send a Supabase JWT, so this function is deployed with
+// verify_jwt = false — declared in supabase/config.toml under [functions.ses-webhook]
+// rather than passed as a flag, so a future deploy can't silently re-enable it.
 //
 // Optional secret SES_WEBHOOK_SECRET adds a shared-token check on top of the
 // SNS signature verification: subscribe the topic to

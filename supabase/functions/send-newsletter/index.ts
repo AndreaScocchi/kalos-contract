@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, PRIMARY_DEFAULT_FROM_NAME } from '../_shared/resend.ts'
+import { renderNewsletterContent, personalizeContent, toPlainText } from '../_shared/newsletterContent.ts'
+import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, SEND_DELAY_MS, PRIMARY_DEFAULT_FROM_NAME, checkDailyCap } from '../_shared/ses.ts'
 
 type DeliveryMode = 'promotions' | 'primary'
 
@@ -26,9 +27,15 @@ interface ResponseBody {
   failedCount?: number
 }
 
-// Rate limiting: Resend allows 2 requests per second
-// We send emails sequentially with 1000ms delay to stay safely under the limit
-const EMAIL_DELAY_MS = 1000
+// Rate limiting: SES accepts 14 emails/sec once out of the sandbox.
+// SEND_DELAY_MS defaults to 100ms (10/sec) and is overridable via SES_SEND_DELAY_MS;
+// sendEmail() also retries with backoff if SES throttles anyway.
+const EMAIL_DELAY_MS = SEND_DELAY_MS
+
+// Hard ceiling on a single campaign. Studio Kalòs has ~500 clients, so anything
+// far above that means the recipient query went wrong — refuse rather than bill
+// AWS for it. Override with MAIL_MAX_RECIPIENTS_PER_CAMPAIGN.
+const MAX_RECIPIENTS_PER_CAMPAIGN = Number(Deno.env.get('MAIL_MAX_RECIPIENTS_PER_CAMPAIGN') ?? '1000')
 
 // Atomicity gate: Admin client for pre-flight testing
 // Before sending to all recipients, we verify both email and push work
@@ -127,16 +134,6 @@ function getImagePublicUrl(imageUrl: string | null): string | null {
   return `${supabaseUrl}/storage/v1/object/public/newsletter/${imageUrl}`
 }
 
-// Parse markdown bold and italic to HTML
-function parseMarkdownFormatting(text: string): string {
-  // Process double asterisks first (**text**) then single (*text*)
-  // **text** -> <em>text</em> (italic)
-  let result = text.replace(/\*\*(.+?)\*\*/g, '<em>$1</em>')
-  // *text* -> <strong>text</strong> (bold)
-  result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<strong>$1</strong>')
-  return result
-}
-
 // Generate preview text padding to hide other content from email preview
 function generatePreviewPadding(): string {
   // Use zero-width non-joiners and non-breaking spaces to fill the preview area
@@ -146,19 +143,8 @@ function generatePreviewPadding(): string {
 
 // HTML email template with professional styling
 function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string | null = null, previewText: string | null = null): string {
-  // Escape HTML entities (but preserve our markdown markers for now)
-  const escaped = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-
-  // Parse markdown formatting (bold/italic) into HTML tags
-  const formatted = parseMarkdownFormatting(escaped)
-
-  // Convert newlines to <br>
-  const htmlContent = formatted.replace(/\n/g, '<br>')
+  // Rich text (HTML ristretto) oppure vecchio formato con marcatori
+  const htmlContent = renderNewsletterContent(text, 'promotions')
 
   // Colors from Studio Kalòs brand
   const primaryColor = '#0F2D3B' // Dark teal - text color
@@ -262,15 +248,7 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
 // and a short footer with the unsubscribe link. This format is critical for
 // avoiding the Promotions tab — every visual marketing signal is removed.
 function wrapTextInHtmlPrimary(text: string, unsubscribeUrl: string, previewText: string | null = null): string {
-  const escaped = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-
-  const formatted = parseMarkdownFormatting(escaped)
-  const htmlContent = formatted.replace(/\n/g, '<br>')
+  const htmlContent = renderNewsletterContent(text, 'primary')
 
   const primaryColor = '#0F2D3B'
   const accentColor = '#036257'
@@ -437,6 +415,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: false, reason: 'NO_RECIPIENTS' }, 400)
     }
 
+    if (recipients.length > MAX_RECIPIENTS_PER_CAMPAIGN) {
+      console.error(`Recipient ceiling exceeded: ${recipients.length} > ${MAX_RECIPIENTS_PER_CAMPAIGN}`)
+      return jsonResponse({
+        ok: false,
+        reason: 'TOO_MANY_RECIPIENTS',
+        message: `${recipients.length} destinatari superano il tetto di sicurezza di ${MAX_RECIPIENTS_PER_CAMPAIGN}. Verifica la selezione prima di procedere.`,
+      }, 400)
+    }
+
     // Get campaign
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('newsletter_campaigns')
@@ -477,7 +464,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const imagePublicUrl = getImagePublicUrl(campaign.image_url)
 
       // Prepare test email content
-      const testPersonalizedText = replaceTemplateVariables(campaign.content, {
+      const testPersonalizedText = personalizeContent(campaign.content, {
         nome: 'Admin Test',
         client_name: 'Admin Test',
         studio_name: 'Studio Kalòs',
@@ -502,7 +489,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         to: ATOMICITY_TEST_EMAIL,
         subject: `[TEST] ${campaign.subject}`,
         html: testHtml,
-        text: testPersonalizedText,
+        text: toPlainText(testPersonalizedText),
         replyTo: getReplyToEmail(),
         tags: [
           { name: 'campaign_id', value: body.campaignId },
@@ -631,7 +618,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: false, reason: 'PENDING_EMAILS_FETCH_ERROR' }, 500)
     }
 
-    // Send emails sequentially to respect Resend rate limit (2 req/sec)
+    // Pre-flight ceiling check. Blowing through the 24h limit mid-campaign would
+    // leave part of the list without the newsletter and the campaign in a
+    // half-sent state. Refuse upfront instead — the records stay 'pending', so
+    // retry-newsletter resumes the campaign once the window frees up.
+    const cap = await checkDailyCap(pendingEmails.length)
+    if (!cap.allowed) {
+      console.error(`Daily cap gate: ${pendingEmails.length} pending, ${cap.available} available (cap ${cap.cap}, sent ${cap.sentLast24Hours})`)
+      await supabaseAdmin
+        .from('newsletter_campaigns')
+        .update({ status: 'failed' })
+        .eq('id', body.campaignId)
+      return jsonResponse({
+        ok: false,
+        reason: 'DAILY_CAP_REACHED',
+        message: `Tetto giornaliero raggiunto: servono ${pendingEmails.length} invii ma ne restano ${cap.available} nelle prossime 24 ore (limite ${cap.cap}). La campagna e' recuperabile con "Riprova".`,
+      }, 429)
+    }
+
+    // Send emails sequentially to respect the SES sending rate
     let sentCount = 0
     let failedCount = 0
 
@@ -642,7 +647,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       const emailRecord = pendingEmails[i]
 
       // Replace template variables ({{nome}} -> recipient name)
-      const personalizedText = replaceTemplateVariables(campaign.content, {
+      const personalizedText = personalizeContent(campaign.content, {
         nome: emailRecord.client_name,
         client_name: emailRecord.client_name, // Keep old variable for compatibility
         studio_name: 'Studio Kalòs',
@@ -668,7 +673,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         to: emailRecord.email_address,
         subject: campaign.subject,
         html: personalizedHtml,
-        text: personalizedText,
+        text: toPlainText(personalizedText),
         replyTo: getReplyToEmail(),
         tags: [
           { name: 'campaign_id', value: body.campaignId },
@@ -689,7 +694,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
           .eq('id', emailRecord.id)
         failedCount++
       } else {
-        // Update email record with Resend ID
+        // Store the SES MessageId (column name predates the provider change)
         await supabaseAdmin
           .from('newsletter_emails')
           .update({
@@ -701,8 +706,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         sentCount++
       }
 
-      // Delay between emails to respect rate limit (2 req/sec = 500ms minimum)
-      // Using 550ms to have a safety margin
+      // Pace the loop under the SES sending rate
       if (i < pendingEmails.length - 1) {
         await delay(EMAIL_DELAY_MS)
       }

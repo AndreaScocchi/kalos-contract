@@ -4,7 +4,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { sendEmail, getFromEmail, delay } from '../_shared/resend.ts'
+import { sendEmail, getFromEmail, delay, checkDailyCap } from '../_shared/ses.ts'
 
 const BATCH_SIZE = 50
 
@@ -308,7 +308,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const fromEmail = getFromEmail()
     const appUrl = 'https://app.kalosstudio.it'
 
-    for (const notification of emailNotifications) {
+    // This path is trigger- and cron-driven, so a misbehaving trigger could keep
+    // refilling the queue indefinitely. Check the 24h ceiling before the batch:
+    // notifications left pending are retried on the next run, nothing is lost.
+    const cap = await checkDailyCap(emailNotifications.length)
+    if (!cap.allowed) {
+      console.error(`Daily cap gate: ${emailNotifications.length} email notifications queued, ${cap.available} available (cap ${cap.cap}, sent ${cap.sentLast24Hours})`)
+    }
+    const emailsToSend = cap.allowed ? emailNotifications : []
+
+    for (const notification of emailsToSend) {
       const client = notification.clients
       if (!client?.email) {
         await supabaseAdmin
@@ -372,7 +381,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         })
       }
 
-      // Rate limiting for Resend
+      // Pace the loop under the SES sending rate
       await delay(100)
     }
 

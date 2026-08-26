@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { sendEmail, getFromEmail } from '../_shared/resend.ts'
+import { sendEmail, getFromEmail } from '../_shared/ses.ts'
 
 interface RequestBody {
   userId: string

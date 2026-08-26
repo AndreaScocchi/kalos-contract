@@ -372,3 +372,9 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+# SNS non può inviare un JWT Supabase: il webhook degli eventi SES si difende da solo
+# con la verifica della firma AWS più il token condiviso in SES_WEBHOOK_SECRET.
+# Tenerlo qui invece che nel flag --no-verify-jwt evita di dimenticarlo a un deploy futuro.
+[functions.ses-webhook]
+verify_jwt = false

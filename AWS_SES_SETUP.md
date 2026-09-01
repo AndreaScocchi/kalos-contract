@@ -1,5 +1,10 @@
 # Migrazione email: Resend → Amazon SES
 
+> **Stato (2026-08-31): cutover completato.** Account SES in produzione su `eu-central-1`
+> (50.000 email/giorno, 14/sec), secret configurati, le sei function deployate,
+> `SES_SEND_DELAY_MS` rimosso e `SES_DAILY_QUOTA` a 50000 (§9). Resend resta come
+> percorso di rollback (§10) finché SES non è stabile da qualche settimana.
+
 Guida operativa per portare l'invio email di Studio Kalòs su Amazon SES.
 Il codice è già pronto (vedi [Stato del codice](#stato-del-codice)); questa
 guida copre la parte da fare in console AWS e il cutover.

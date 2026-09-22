@@ -367,6 +367,22 @@ async function localChecks() {
   check('service_role: registra un token push (register-push-token)', svcToken.status === 201, describe(svcToken));
   const queue = await count(service, 'notification_queue');
   check('service_role: legge la coda notifiche (process-notification-queue)', queue.status === 200, `HTTP ${queue.status}`);
+
+  // Scritture delle edge function con service_role: fino alla sessione 1 fallivano per permessi mancanti.
+  const unsub = await patch(service, `clients?id=eq.${clientId}`, { newsletter_subscribed: false });
+  check('service_role: disiscrizione dalla newsletter (unsubscribe-newsletter)', unsub.status === 200 && unsub.json?.length === 1, describe(unsub));
+  const bounce = await patch(service, `clients?id=eq.${clientId}`, { email_bounced: true, email_bounced_at: iso(new Date()) });
+  check('service_role: bounce permanente segnato (ses-webhook)', bounce.status === 200 && bounce.json?.length === 1, describe(bounce));
+  const delBookings = await patch(service, `bookings?client_id=eq.${clientId}&status=eq.booked`, { status: 'canceled' });
+  check('service_role: annulla le prenotazioni di chi elimina l\'account (delete-account)', delBookings.status === 200, describe(delBookings));
+  const delEvents = await patch(service, `event_bookings?client_id=eq.${clientId}&status=eq.booked`, { status: 'canceled' });
+  check('service_role: annulla le iscrizioni agli eventi (delete-account)', delEvents.status === 200, describe(delEvents));
+  const delClient = await patch(service, `clients?id=eq.${clientId}`,
+    { deleted_at: iso(new Date()), is_active: false, notes: 'Account eliminato (verifica)' });
+  check('service_role: archivia la scheda cliente (delete-account)', delClient.status === 200 && delClient.json?.length === 1, describe(delClient));
+  const delProfile = await patch(service, `profiles?id=eq.${cliente.userId}`,
+    { deleted_at: iso(new Date()), full_name: 'Account eliminato', phone: null, avatar_url: null });
+  check('service_role: archivia il profilo (delete-account)', delProfile.status === 200 && delProfile.json?.length === 1, describe(delProfile));
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────────────────────

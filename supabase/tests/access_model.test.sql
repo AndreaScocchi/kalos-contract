@@ -7,7 +7,7 @@
 -- Più alcuni comportamenti critici, simulando i ruoli come fa PostgREST (SET ROLE + claims JWT).
 
 BEGIN;
-SELECT plan(20);
+SELECT plan(22);
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- 1. Elenco esplicito: funzioni
@@ -106,14 +106,14 @@ SELECT set_eq(
 
 SELECT is_empty(
   $$ SELECT c.relname || ':' || p FROM pg_class c,
-       unnest(ARRAY['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) p
+       unnest(ARRAY['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
      WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r', 'v', 'm', 'p')
        AND has_table_privilege('anon', c.oid, p) $$,
   'anon non scrive nessuna tabella'
 );
 
 SELECT is_empty(
-  $$ SELECT c.relname || ':' || p FROM pg_class c, unnest(ARRAY['TRUNCATE', 'REFERENCES', 'TRIGGER']) p
+  $$ SELECT c.relname || ':' || p FROM pg_class c, unnest(ARRAY['TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
      WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r', 'v', 'm', 'p')
        AND has_table_privilege('authenticated', c.oid, p) $$,
   'authenticated non ha i privilegi che l''API non usa'
@@ -126,6 +126,13 @@ SELECT is_empty(
 );
 
 SELECT is_empty(
+  $$ SELECT c.relname::text FROM pg_class c
+     WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r', 'p')
+       AND NOT has_table_privilege('service_role', c.oid, 'SELECT, INSERT, UPDATE, DELETE') $$,
+  'service_role (edge function) legge e scrive tutte le tabelle di public'
+);
+
+SELECT is_empty(
   $$ SELECT 1 FROM pg_class
      WHERE oid = 'public.financial_monthly_summary'::regclass
        AND (has_table_privilege('authenticated', oid, 'SELECT') OR has_table_privilege('anon', oid, 'SELECT')) $$,
@@ -133,7 +140,7 @@ SELECT is_empty(
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
--- 3. Le funzioni future nascono chiuse
+-- 3. Funzioni e tabelle future nascono con i permessi giusti
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 
 CREATE FUNCTION public.__access_model_probe() RETURNS int LANGUAGE sql AS 'SELECT 1';
@@ -142,6 +149,14 @@ SELECT ok(
   AND NOT has_function_privilege('authenticated', 'public.__access_model_probe()', 'EXECUTE')
   AND has_function_privilege('service_role', 'public.__access_model_probe()', 'EXECUTE'),
   'una funzione nuova in public non è eseguibile da anon e authenticated, sì da service_role'
+);
+
+CREATE TABLE public.__access_model_probe_t (id int);
+SELECT ok(
+  has_table_privilege('service_role', 'public.__access_model_probe_t', 'SELECT, INSERT, UPDATE, DELETE')
+  AND NOT has_table_privilege('anon', 'public.__access_model_probe_t', 'TRUNCATE, REFERENCES, TRIGGER, MAINTAIN')
+  AND NOT has_table_privilege('authenticated', 'public.__access_model_probe_t', 'TRUNCATE, REFERENCES, TRIGGER, MAINTAIN'),
+  'una tabella nuova in public: service_role la usa, anon e authenticated non hanno privilegi inutili'
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────

@@ -1,0 +1,65 @@
+name: Controllo coda notifiche e backup
+
+# Ogni due ore, di giorno: controlla che la coda delle notifiche venga elaborata e che l'ultimo
+# backup notturno sia recente. Se qualcosa non va, email di avviso via SES (una per controllo,
+# finché il problema resta). Soglie e dettagli: BACKUP.md e scripts/backup/ops-health.mjs.
+#
+# Non è una CI: non parte su push né su pull request. Legge solo conteggi (log pubblici).
+
+on:
+  schedule:
+    - cron: '25 5-21/2 * * *'   # 05:25 … 21:25 UTC, circa dalle 7 alle 23 in Italia
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    name: Coda notifiche + freschezza del backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AWS_REGION: eu-central-1
+      AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+      BACKUP_S3_BUCKET: ${{ vars.BACKUP_S3_BUCKET }}
+      ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+      ALERT_EMAIL_FROM: ${{ vars.ALERT_EMAIL_FROM }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+
+      - name: Coda delle notifiche
+        id: queue
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/backup/ops-health.mjs | tee "$RUNNER_TEMP/queue.txt"; exit "${PIPESTATUS[0]}"
+
+      - name: Freschezza dell'ultimo backup
+        id: backup
+        continue-on-error: true
+        run: |
+          last=$(aws s3api list-objects-v2 --bucket "$BACKUP_S3_BUCKET" --prefix backups/ \
+            --query 'sort_by(Contents, &LastModified)[-1].LastModified' --output text)
+          if [ -z "$last" ] || [ "$last" = "None" ]; then
+            echo "❌ Nessun backup nel bucket." | tee "$RUNNER_TEMP/backup.txt"; exit 1
+          fi
+          age_h=$(( ( $(date -u +%s) - $(date -u -d "$last" +%s) ) / 3600 ))
+          if [ "$age_h" -gt 30 ]; then
+            echo "❌ L'ultimo backup ha $age_h ore: il backup notturno non sta girando." | tee "$RUNNER_TEMP/backup.txt"; exit 1
+          fi
+          echo "✅ Ultimo backup: $age_h ore fa." | tee "$RUNNER_TEMP/backup.txt"
+
+      - name: Avviso email
+        if: steps.queue.outcome == 'failure' || steps.backup.outcome == 'failure'
+        run: |
+          scripts/backup/send-alert.sh \
+            "⚠️ Studio Kalòs: problema su notifiche o backup" \
+            "$(cat "$RUNNER_TEMP/queue.txt" "$RUNNER_TEMP/backup.txt" 2>/dev/null)"
+          exit 1

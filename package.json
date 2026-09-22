@@ -49,7 +49,9 @@
     "seed:anon": "node scripts/make-anon-seed.mjs",
     "verify": "npm run lint:migrations && npm run typecheck && npm run build",
     "verify:migrations": "node scripts/verify-migrations.mjs",
-    "verify:subscriptions": "node scripts/verify-subscriptions-bookings-entries.mjs"
+    "verify:subscriptions": "node scripts/verify-subscriptions-bookings-entries.mjs",
+    "test:db": "npx supabase test db",
+    "verify:access": "node scripts/verify-access.mjs"
   },
   "keywords": [
     "supabase",

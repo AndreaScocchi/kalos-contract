@@ -52,6 +52,11 @@ jobs:
           npx supabase start
           npx supabase db reset --local   # riapplica le migrazioni in modo pulito
 
+      - name: Test del modello di accesso (pgTAP)
+        # Fallisce se una migrazione apre ad anon/authenticated funzioni o tabelle fuori elenco.
+        # Vedi ACCESS_MODEL.md.
+        run: npx supabase test db
+
       - name: Codegen (tipi TS + schema.json + modelli Kotlin)
         run: npm run codegen
         env:

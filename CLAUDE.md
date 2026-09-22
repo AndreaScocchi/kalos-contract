@@ -288,6 +288,8 @@ dist/
 - [src/rpc/index.ts](src/rpc/index.ts) - RPC wrappers
 - [supabase/migrations/](supabase/migrations/) - Schema source of truth
 - [DATABASE_WORKFLOW.md](DATABASE_WORKFLOW.md) - Detailed migration guide
+- [ACCESS_MODEL.md](ACCESS_MODEL.md) - Chi può leggere, scrivere ed eseguire cosa; regole per funzioni/tabelle/view nuove
+- [BACKUP.md](BACKUP.md) - Backup notturno cifrato su S3 (UE), avvisi email, procedura di ripristino
 
 ## Important Rules
 

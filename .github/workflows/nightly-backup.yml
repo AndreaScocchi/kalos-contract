@@ -1,0 +1,76 @@
+name: Backup notturno
+
+# Copia cifrata di database e Storage, ogni notte, in un bucket S3 privato in UE (eu-central-1),
+# conservata 30 giorni dalla lifecycle rule del bucket. Se fallisce, email di avviso via SES.
+#
+# Non è una CI: non parte su push né su pull request e non tocca build né deploy.
+# Setup, secret e ripristino: BACKUP.md.
+#
+# ⚠️ Il repo è pubblico e quindi anche questi log: gli script stampano solo dimensioni e conteggi.
+
+on:
+  schedule:
+    - cron: '17 1 * * *'   # 01:17 UTC = 03:17 in estate, 02:17 in inverno (ora italiana)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Dump cifrato → S3
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      AWS_REGION: eu-central-1
+      AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+      BACKUP_S3_BUCKET: ${{ vars.BACKUP_S3_BUCKET }}
+      ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+      ALERT_EMAIL_FROM: ${{ vars.ALERT_EMAIL_FROM }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Dipendenze (CLI Supabase pinnata, age)
+        run: |
+          npm ci
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq age
+
+      - name: Backup cifrato di database e Storage
+        env:
+          SUPABASE_DB_URL: ${{ secrets.BACKUP_SUPABASE_DB_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+        run: |
+          file="kalos-$(date -u +%Y%m%dT%H%M%SZ).tar.gz.age"
+          echo "BACKUP_FILE=$file" >> "$GITHUB_ENV"
+          scripts/backup/run-backup.sh "$RUNNER_TEMP/$file"
+
+      - name: Caricamento nel bucket S3
+        run: |
+          aws s3 cp "$RUNNER_TEMP/$BACKUP_FILE" "s3://$BACKUP_S3_BUCKET/backups/$BACKUP_FILE" --only-show-errors
+          remote=$(aws s3api list-objects-v2 --bucket "$BACKUP_S3_BUCKET" --prefix "backups/$BACKUP_FILE" --query 'Contents[0].Size' --output text)
+          local=$(stat -c %s "$RUNNER_TEMP/$BACKUP_FILE")
+          if [ "$remote" != "$local" ]; then
+            echo "::error::Dimensione su S3 ($remote) diversa da quella locale ($local)"
+            exit 1
+          fi
+          echo "✅ Caricato su S3: $local byte"
+
+      - name: Avviso email se il backup non è riuscito
+        if: failure()
+        run: |
+          scripts/backup/send-alert.sh \
+            "⚠️ Studio Kalòs: backup notturno NON riuscito" \
+            "Il backup notturno di database e Storage del $(date -u +%d/%m/%Y) non è riuscito. Finché non si risolve, l'ultima copia valida è quella della notte precedente (vedi il bucket S3)."

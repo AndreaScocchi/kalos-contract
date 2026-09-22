@@ -212,18 +212,12 @@ npm run verify:migrations   # Check migration integrity
 | `mark_all_notifications_read()` | Mark all as read |
 | `get_unread_notifications_count()` | Count unread |
 
-## Row-Level Security
+## Row-Level Security e permessi
 
-### Public Access (anon + authenticated)
-- `activities`, `lessons`, `operators`, `events`, `plans`, `promotions`: SELECT
-
-### Authenticated User
-- `profiles`: SELECT/UPDATE own
-- `bookings`, `subscriptions`, `event_bookings`: SELECT own (via client_id)
-
-### Staff Only (is_staff = true)
-- `clients`: Full access
-- All transactional data: Full access
+Modello completo e regole per funzioni, tabelle e view nuove: **[ACCESS_MODEL.md](ACCESS_MODEL.md)**.
+In breve: "tutto chiuso" — anon e authenticated eseguono solo le funzioni elencate in
+`supabase/tests/access_model.test.sql` (le funzioni nuove nascono chiuse), anon legge solo i dati
+pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run verify:access`.
 
 ## Migration Workflow
 
@@ -237,6 +231,8 @@ npm run verify:migrations   # Check migration integrity
    npm run db:start
    supabase db reset
    npm run verify
+   npm run test:db        # modello di accesso (pgTAP)
+   npm run verify:access  # ruoli simulati via API
    ```
 
 3. **Apply to production:**
@@ -292,6 +288,8 @@ dist/
 - [src/rpc/index.ts](src/rpc/index.ts) - RPC wrappers
 - [supabase/migrations/](supabase/migrations/) - Schema source of truth
 - [DATABASE_WORKFLOW.md](DATABASE_WORKFLOW.md) - Detailed migration guide
+- [ACCESS_MODEL.md](ACCESS_MODEL.md) - Chi può leggere, scrivere ed eseguire cosa; regole per funzioni/tabelle/view nuove
+- [BACKUP.md](BACKUP.md) - Backup notturno cifrato su S3 (UE), avvisi email, procedura di ripristino
 
 ## Important Rules
 

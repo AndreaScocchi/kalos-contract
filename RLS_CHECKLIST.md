@@ -1,5 +1,8 @@
 # RLS Policies Checklist - Tabella per Tabella
 
+> ⚠️ **Superato da [ACCESS_MODEL.md](ACCESS_MODEL.md) (2026-09-22).** Questa checklist è storica: cita
+> colonne `user_id` rimosse e policy cambiate nella sessione 1. Il modello attuale e le regole sono lì.
+
 Questa checklist documenta le RLS policies per ogni tabella importante, verificando sicurezza, coerenza con soft delete, e resistenza a race conditions.
 
 ## Tabelle Critiche

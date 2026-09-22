@@ -25,7 +25,9 @@ Helper usati da policy e RPC: `is_staff()` (operator, admin, finance), `is_admin
   non riceve un `GRANT EXECUTE` esplicito. Vale anche per quelle future: dal 2026-09-22 i default
   privileges di `postgres` non danno più EXECUTE a PUBLIC. `service_role` le esegue tutte.
 - **Tabelle.** RLS è attivo su tutte. `anon` legge solo i dati pubblici del sito e non scrive
-  nulla. Nessuno ha TRUNCATE, REFERENCES o TRIGGER tramite l'API.
+  nulla. Nessuno ha TRUNCATE, REFERENCES, TRIGGER o MAINTAIN tramite l'API. `service_role` legge e
+  scrive tutte le tabelle (le edge function ne hanno bisogno: fino al 2026-09-22 non poteva, e
+  disiscrizioni, bounce ed eliminazione account fallivano). Anche le tabelle future nascono così.
 
 ### Cosa è aperto ad `anon`
 
@@ -72,7 +74,9 @@ manutenzione, helper dei trigger. Lo chiamano cron, trigger e edge function, mai
 **Nuova tabella**
 1. `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` e policy `TO authenticated`.
 2. Niente policy `TO anon` o senza `TO` (cioè `public`), salvo dati pubblici del sito.
-3. `REVOKE TRUNCATE, REFERENCES, TRIGGER ON ... FROM anon, authenticated`.
+3. I grant ad `anon`/`authenticated` vanno scritti esplicitamente (per esempio
+   `GRANT SELECT, INSERT, UPDATE, DELETE ON ... TO authenticated`); `service_role` e l'assenza di
+   TRUNCATE/REFERENCES/TRIGGER/MAINTAIN arrivano dai default privileges.
 
 **Nuova view**
 - `WITH (security_invoker = true)`, così valgono le RLS delle tabelle sotto.

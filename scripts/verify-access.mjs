@@ -344,6 +344,21 @@ async function localChecks() {
   });
   check('operatrice: registra un incasso in studio',
     staffPay.status === 200 && staffPay.json?.ok === true, describe(staffPay));
+
+  // Sessione 4 — "da saldare", quota e stato di iscrizione, sempre senza vedere le Finanze
+  const pending = await rpc(staff, 'staff_register_payment', {
+    p_payload: { kind: 'other', amount_cents: 700, method: 'cash', source: 'studio', status: 'pending' },
+  });
+  check('operatrice: registra un incasso da saldare',
+    pending.status === 200 && pending.json?.ok === true, describe(pending));
+  const settled = await rpc(staff, 'staff_settle_transaction', {
+    p_transaction_id: pending.json?.transaction_id, p_method: 'bank_transfer', p_issue_receipt: false,
+  });
+  check('operatrice: salda un incasso da saldare',
+    settled.status === 200 && settled.json?.ok === true, describe(settled));
+  const statuses = await rpc(staff, 'staff_get_member_statuses', { p_client_ids: [clientId] });
+  check('operatrice: legge lo stato di iscrizione dei clienti',
+    statuses.status === 200 && typeof statuses.json?.statuses?.[clientId] === 'string', describe(statuses));
   await expectRowsHidden(staff, 'compensation_models');
   await expectRowsHidden(staff, 'volunteer_reimbursements');
   await expectRpcDenied(staff, 'calculate_compensation_v2', { ...FINANCE_1900, p_operator_id: null });
@@ -400,6 +415,15 @@ async function localChecks() {
   const payAsClient = await rpc(cliente, 'staff_register_payment', { p_payload: { amount_cents: 100 } });
   check('cliente: non può registrare incassi',
     payAsClient.status === 200 && payAsClient.json?.reason === 'NOT_STAFF', describe(payAsClient));
+  const settleAsClient = await rpc(cliente, 'staff_settle_transaction', { p_transaction_id: ZERO_UUID });
+  check('cliente: non può saldare incassi',
+    settleAsClient.status === 200 && settleAsClient.json?.reason === 'NOT_STAFF', describe(settleAsClient));
+  const feeAsClient = await rpc(cliente, 'staff_pay_member_fee', { p_client_id: clientId, p_year: 2026 });
+  check('cliente: non può incassare quote',
+    feeAsClient.status === 200 && feeAsClient.json?.reason === 'NOT_STAFF', describe(feeAsClient));
+  const statusesAsClient = await rpc(cliente, 'staff_get_member_statuses', { p_client_ids: [clientId] });
+  check('cliente: non legge lo stato di iscrizione degli altri',
+    statusesAsClient.status === 200 && statusesAsClient.json?.reason === 'NOT_STAFF', describe(statusesAsClient));
   await expectRowsHidden(cliente, 'transactions');
   await expectRowsHidden(cliente, 'compensation_models');
   await expectRpcNotExposed(cliente, 'call_edge_function', { p_function_name: '__verify_access_noop__', p_body: {} });

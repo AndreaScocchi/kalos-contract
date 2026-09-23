@@ -200,10 +200,12 @@ prova). I comandi sono gli stessi del §4, con gli URL locali.
 
 - **Fino a 24 ore di dati** si possono perdere (backup notturno, niente PITR). Le ricevute partono
   anche via email, quindi esiste una copia fuori dal sistema.
-- **GitHub disattiva i workflow programmati** di un repo pubblico dopo 60 giorni senza commit. Il
-  controllo del backup vecchio gira nello stesso repo, quindi non se ne accorgerebbe. Contromisura:
-  nei periodi senza sviluppo (per esempio ad agosto) apri *Actions* una volta al mese e riattiva
-  i workflow se compare l'avviso. In alternativa si può aggiungere un servizio esterno di tipo
-  "dead man's switch" (per esempio healthchecks.io).
+- **GitHub disattiva i workflow programmati** di un repo pubblico dopo 60 giorni senza attività nel
+  repo. Contromisura automatica dal 2026-09-23:
+  [`keepalive.yml`](.github/workflows/keepalive.yml) scrive un commit sul branch `ops/keepalive` il
+  primo di ogni mese, e il conteggio riparte. Se un giorno anche quello venisse spento (per esempio
+  dopo due mesi in cui non gira nulla), l'ultimo backup resta comunque nel bucket e basta riaprire
+  *Actions* e riattivarlo. Un'ulteriore rete, non necessaria oggi, sarebbe un servizio esterno di
+  tipo "dead man's switch" (per esempio healthchecks.io).
 - **La password del database è un secret di GitHub.** Secret e variabili non sono visibili ai fork
   né nei log. Solo chi ha accesso in scrittura al repo può usarli.

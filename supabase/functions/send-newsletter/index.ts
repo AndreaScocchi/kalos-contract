@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { renderNewsletterContent, personalizeContent, toPlainText } from '../_shared/newsletterContent.ts'
+import { renderNewsletterContent, personalizeContent, toPlainText, firstName } from '../_shared/newsletterContent.ts'
+import { legalLineHtml, legalLine } from '../_shared/legal.ts'
 import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, SEND_DELAY_MS, PRIMARY_DEFAULT_FROM_NAME, checkDailyCap } from '../_shared/ses.ts'
 
 type DeliveryMode = 'promotions' | 'primary'
@@ -216,7 +217,7 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
                     <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">
                       <a href="mailto:info.studiokalos@gmail.com" style="color: ${accentColor}; text-decoration: none;">info.studiokalos@gmail.com</a>
                     </p>
-                    <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">Località Casello Ferroviario, 3 - 34079 Staranzano (GO)</p>
+                    <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">${legalLineHtml()}</p>
                   </td>
                 </tr>
               </table>
@@ -273,7 +274,7 @@ function wrapTextInHtmlPrimary(text: string, unsubscribeUrl: string, previewText
     </div>
     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0 12px 0;">
     <div style="font-size: 11px; color: ${footerText}; line-height: 1.5;">
-      Staranzano (GO) · <a href="${unsubscribeUrl}" style="color: ${footerText}; text-decoration: underline;">annulla iscrizione</a>
+      ${legalLineHtml()} · <a href="${unsubscribeUrl}" style="color: ${footerText}; text-decoration: underline;">annulla iscrizione</a>
     </div>
   </div>
 </body>
@@ -465,7 +466,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       // Prepare test email content
       const testPersonalizedText = personalizeContent(campaign.content, {
-        nome: 'Admin Test',
+        nome: firstName('Admin Test'),
+        nome_completo: 'Admin Test',
         client_name: 'Admin Test',
         studio_name: 'Studio Kalòs',
       })
@@ -489,7 +491,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         to: ATOMICITY_TEST_EMAIL,
         subject: `[TEST] ${campaign.subject}`,
         html: testHtml,
-        text: toPlainText(testPersonalizedText),
+        text: `${toPlainText(testPersonalizedText)}\n\n—\n${legalLine()}`,
         replyTo: getReplyToEmail(),
         tags: [
           { name: 'campaign_id', value: body.campaignId },
@@ -646,9 +648,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     for (let i = 0; i < pendingEmails.length; i++) {
       const emailRecord = pendingEmails[i]
 
-      // Replace template variables ({{nome}} -> recipient name)
+      // Replace template variables ({{nome}} -> solo il nome di battesimo)
       const personalizedText = personalizeContent(campaign.content, {
-        nome: emailRecord.client_name,
+        nome: firstName(emailRecord.client_name),
+        nome_completo: emailRecord.client_name,
         client_name: emailRecord.client_name, // Keep old variable for compatibility
         studio_name: 'Studio Kalòs',
       })
@@ -673,7 +676,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         to: emailRecord.email_address,
         subject: campaign.subject,
         html: personalizedHtml,
-        text: toPlainText(personalizedText),
+        text: `${toPlainText(personalizedText)}\n\n—\n${legalLine()}`,
         replyTo: getReplyToEmail(),
         tags: [
           { name: 'campaign_id', value: body.campaignId },

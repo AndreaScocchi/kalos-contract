@@ -11,4 +11,11 @@ data class Waitlist(
     @SerialName("lesson_id") val lessonId: String,
     @SerialName("user_id") val userId: String,
     @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("client_id") val clientId: String? = null,
+    val status: WaitlistStatus,
+    val position: Int? = null,
+    @SerialName("offered_at") val offeredAt: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null,
+    @SerialName("notified_at") val notifiedAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String,
 )

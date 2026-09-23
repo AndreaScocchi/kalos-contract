@@ -20,4 +20,5 @@ data class Operator(
     @SerialName("image_url") val imageUrl: String? = null,
     @SerialName("display_order") val displayOrder: Int? = null,
     @SerialName("is_visible_on_site") val isVisibleOnSite: Boolean,
+    @SerialName("engagement_type") val engagementType: StaffEngagementType,
 )

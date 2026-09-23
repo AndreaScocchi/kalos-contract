@@ -176,6 +176,18 @@ export function renderNewsletterContent(content: string, mode: NewsletterRenderM
 }
 
 /**
+ * Prima parola del nome completo: `{{nome}}` saluta per nome, non per nome e
+ * cognome. Un nome composto scritto in `full_name` ("Maria Grazia Rossi") resta
+ * comunque troncato alla prima parola: e' l'unica lettura possibile da un campo
+ * unico.
+ */
+export function firstName(fullName: string | null | undefined): string {
+  const trimmed = (fullName ?? '').trim()
+  if (!trimmed) return ''
+  return trimmed.split(/\s+/)[0]
+}
+
+/**
  * Sostituisce le variabili `{{...}}` nel contenuto.
  * Sui contenuti HTML i valori vengono escapati: un nome con `<` o `&` non deve
  * poter rompere (o iniettare) markup nell'email.

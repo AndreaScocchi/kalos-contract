@@ -6,8 +6,9 @@ giorno, verifica che la coda delle notifiche venga elaborata e che l'ultimo back
 Se qualcosa non va arriva un'email. Deciso nel [piano](../docs/PIANO-APS-E-NUOVA-APP.md) (H3), al
 posto di Supabase Pro.
 
-> **Stato:** codice pronto e ripristino provato in locale (2026-09-22). Resta il setup una tantum
-> (§2), poi la prima esecuzione manuale.
+> **Stato: attivo dal 2026-09-23.** Setup completato, prima esecuzione riuscita (76 MB cifrati nel
+> bucket `kalos-backup-2026`, 73 tabelle e 64 file dello Storage), controllo della coda verde e
+> avvisi email verificati sul campo. Ripristino provato in locale il 2026-09-22 (§4).
 
 ## 1. Come funziona
 

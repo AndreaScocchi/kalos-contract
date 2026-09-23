@@ -6,6 +6,11 @@
 // e il dispositivo, presi dalla richiesta ("accettazione registrata", A7). Poi parte l'email "Domanda
 // ricevuta" con il PDF della domanda.
 //
+// Chi si registra dal sito ha, nella scheda cliente e nel profilo, un nome segnaposto: la parte
+// dell'email prima della "@", che mette il trigger di registrazione. Con la domanda arriva il nome
+// vero, e lo si scrive al posto del segnaposto (solo se è ancora quello: un nome inserito dallo staff
+// non si tocca).
+//
 // Risponde { ok, reason?, application_id?, email_sent? }. Un'email non partita non annulla la domanda.
 
 import { corsHeaders } from '../_shared/cors.ts'
@@ -57,6 +62,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
   if (!result?.ok) return jsonResponse(result ?? { ok: false, reason: 'SUBMIT_FAILED' })
 
+  try {
+    await replacePlaceholderName(
+      result.client_id,
+      userData.user.id,
+      userData.user.email ?? null,
+      `${String(payload.first_name ?? '').trim()} ${String(payload.last_name ?? '').trim()}`.trim(),
+    )
+  } catch (err) {
+    console.error('[member-application] nome della scheda:', err)
+  }
+
   // La copia della domanda, per email. Se non parte, la domanda resta valida: lo si scrive nei log.
   let emailSent = false
   try {
@@ -67,6 +83,29 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   return jsonResponse({ ...result, email_sent: emailSent })
 })
+
+/** Il nome che il trigger di registrazione mette quando non ne conosce uno. */
+function isPlaceholderName(name: string | null, email: string | null): boolean {
+  const value = (name ?? '').trim()
+  if (!value || value === 'Utente') return true
+  const local = (email ?? '').split('@')[0]
+  return !!local && value.toLowerCase() === local.toLowerCase()
+}
+
+async function replacePlaceholderName(clientId: string | null, profileId: string, email: string | null, fullName: string) {
+  if (!fullName) return
+  const admin = adminClient()
+  if (clientId) {
+    const { data: client } = await admin.from('clients').select('full_name, email').eq('id', clientId).maybeSingle()
+    if (client && isPlaceholderName(client.full_name, client.email ?? email)) {
+      await admin.from('clients').update({ full_name: fullName }).eq('id', clientId)
+    }
+  }
+  const { data: profile } = await admin.from('profiles').select('full_name, email').eq('id', profileId).maybeSingle()
+  if (profile && isPlaceholderName(profile.full_name, profile.email ?? email)) {
+    await admin.from('profiles').update({ full_name: fullName }).eq('id', profileId)
+  }
+}
 
 async function sendApplicationEmail(applicationId: string, accountEmail: string | null): Promise<boolean> {
   const admin = adminClient()

@@ -195,9 +195,10 @@ CREATE OR REPLACE TRIGGER "stripe_payments_fee_expense"
 -- 4. Ricevuta: un core condiviso con il webhook
 -- ─────────────────────────────────────────────────────────────────────────────
 --
--- Il corpo è quello di `issue_receipt` della sessione 4, con due differenze: niente controllo dello
--- staff (lo fa chi lo chiama) e, se l'incasso non ha una scheda cliente (le donazioni dal sito),
--- intestazione presa da `transactions.metadata->'payer'`, cioè da quello che il donatore ha scritto.
+-- Il corpo è quello di `issue_receipt` della sessione 4, con tre differenze: niente controllo dello
+-- staff (lo fa chi lo chiama); il nome di chi riceve viene prima dalla domanda di ammissione, se c'è,
+-- e poi dalla scheda; se l'incasso non ha una scheda cliente (le donazioni dal sito), intestazione
+-- presa da `transactions.metadata->'payer'`, cioè da quello che il donatore ha scritto.
 
 CREATE OR REPLACE FUNCTION "internal"."issue_receipt_core"(
     "p_transaction_id" "uuid",
@@ -241,8 +242,10 @@ BEGIN
     SELECT * INTO v_settings FROM public.association_settings WHERE id = true;
 
     -- Dati di chi riceve: prima la domanda con cui è entratə nel libro soci; se non è ancora sociə
-    -- (la quota si paga prima della delibera), la sua domanda più recente ancora valida.
-    SELECT COALESCE(c.full_name, btrim(a.first_name || ' ' || a.last_name)),
+    -- (la quota si paga prima della delibera), la sua domanda più recente ancora valida. Il nome
+    -- viene dalla domanda, che è il dato formale del libro soci: la scheda di chi si registra dal
+    -- sito nasce con la parte dell'email prima della "@" come nome.
+    SELECT COALESCE(NULLIF(btrim(a.first_name || ' ' || a.last_name), ''), c.full_name),
            a.fiscal_code,
            NULLIF(concat_ws(', ',
                NULLIF(btrim(a.address_street), ''),

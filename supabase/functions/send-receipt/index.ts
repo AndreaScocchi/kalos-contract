@@ -1,11 +1,13 @@
 // Invio (o nuovo invio) di una ricevuta per email, dal gestionale.
 //
-// POST { receipt_id, to? } con il token di chi è loggato. Chi chiede deve essere staff E poter
+// POST { receipt_id, to?, resend? } con il token di chi è loggato. Chi chiede deve essere staff E poter
 // leggere quella ricevuta col proprio token (decidono le RLS, come per `receipt-pdf`); solo dopo si
 // usa la chiave di servizio per prenotare l'invio e registrarne l'esito, che le operatrici non
 // potrebbero scrivere da sole.
 //
-// Senza `to` l'indirizzo è quello della persona (vedi `_shared/receiptEmail.ts`).
+// Senza `to` l'indirizzo è quello della persona (vedi `_shared/receiptEmail.ts`). `resend: false` è
+// l'invio automatico dopo un incasso: se la ricevuta risulta già inviata non riparte (ALREADY_SENT).
+// Il pulsante "Invia per email" usa il default, `true`: manda di nuovo.
 // Risponde { ok: true, to } oppure { ok: false, reason }.
 
 import { corsHeaders } from '../_shared/cors.ts'
@@ -42,7 +44,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
   if (!visible) return jsonResponse({ ok: false, reason: 'RECEIPT_NOT_FOUND' }, 404)
 
-  const result = await sendReceiptEmail(adminClient(), receiptId, { to, resend: true })
+  const result = await sendReceiptEmail(adminClient(), receiptId, { to, resend: body.resend !== false })
   if (!result.ok && result.reason === 'SEND_FAILED') console.error('[send-receipt]', result.message)
   return jsonResponse(result)
 })

@@ -20,23 +20,28 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/db" "$work/storage"
 
-query() { npx supabase db query --db-url "$SUPABASE_DB_URL" -o json "$1" 2>/dev/null; }
+# Il CLI incapsula le righe in un oggetto quando c'è un terminale interattivo e le restituisce
+# come elenco semplice in CI: qui esce sempre un elenco.
+query() {
+  npx supabase db query --db-url "$SUPABASE_DB_URL" -o json "$1" 2>/dev/null \
+    | jq 'if type == "object" and has("rows") then .rows else . end'
+}
 
 echo "▸ database"
 npx supabase db dump --db-url "$SUPABASE_DB_URL" -f "$work/db/roles.sql" --role-only
 npx supabase db dump --db-url "$SUPABASE_DB_URL" -f "$work/db/schema.sql"
 # Lo schema storage si ripristina via API (storage-sync): le sue tabelle appartengono al servizio
 # Storage e non si scrivono in SQL. I file e i bucket sono nella parte storage/.
-storage_tables="$(query "select string_agg(table_schema || '.' || table_name, ',') as t from information_schema.tables where table_schema = 'storage' and table_type = 'BASE TABLE'" | jq -r '.rows[0].t // empty')"
+storage_tables="$(query "select string_agg(table_schema || '.' || table_name, ',') as t from information_schema.tables where table_schema = 'storage' and table_type = 'BASE TABLE'" | jq -r '.[0].t // empty')"
 npx supabase db dump --db-url "$SUPABASE_DB_URL" -f "$work/db/data.sql" --use-copy --data-only ${storage_tables:+-x "$storage_tables"}
 
 # Fuori dal dump: definizione dei job pg_cron e nomi (non valori) dei secret del Vault.
 if rows="$(query "select format('select cron.schedule(%L, %L, %L);', jobname, schedule, command) as s from cron.job order by jobname")"; then
-  jq -r '.rows[].s' <<<"$rows" > "$work/db/cron_jobs.sql"
+  jq -r '.[].s' <<<"$rows" > "$work/db/cron_jobs.sql"
 else
   echo "-- pg_cron non presente nel database di origine" > "$work/db/cron_jobs.sql"
 fi
-query "select name from vault.secrets order by name" | jq -r '.rows[].name' > "$work/db/vault_secret_names.txt" || true
+query "select name from vault.secrets order by name" | jq -r '.[].name' > "$work/db/vault_secret_names.txt" || true
 
 # Le policy dello Storage non sono nel dump dello schema (storage è uno schema gestito) e in
 # produzione sono state create a mano: se ne salva la definizione.
@@ -46,7 +51,7 @@ query "select format('DROP POLICY IF EXISTS %I ON %I.%I; CREATE POLICY %I ON %I.
          case when qual is not null then ' USING (' || qual || ')' else '' end,
          case when with_check is not null then ' WITH CHECK (' || with_check || ')' else '' end) as s
        from pg_policies where schemaname = 'storage' order by tablename, policyname" \
-  | jq -r '.rows[].s' > "$work/db/storage_policies.sql"
+  | jq -r '.[].s' > "$work/db/storage_policies.sql"
 
 # Righe per tabella al momento del backup: servono a verificare il ripristino.
 query "select table_schema || '.' || table_name as t,
@@ -54,7 +59,7 @@ query "select table_schema || '.' || table_name as t,
        from information_schema.tables
        where table_schema in ('public', 'auth') and table_type = 'BASE TABLE'
          and (table_schema, table_name) <> ('auth', 'schema_migrations')  -- registro interno di Auth, escluso dal dump
-       order by 1" | jq '[.rows[] | {(.t): .n}] | add' > "$work/db/row_counts.json"
+       order by 1" | jq '[.[] | {(.t): .n}] | add' > "$work/db/row_counts.json"
 
 echo "▸ storage"
 node "$(dirname "$0")/storage-sync.mjs" pull "$work/storage"

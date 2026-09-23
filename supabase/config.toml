@@ -127,7 +127,7 @@ site_url = "http://127.0.0.1:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 # I deep link mobili dell'app KMP devono essere in allow-list anche in produzione (dashboard Supabase
 # → Authentication → URL Configuration): reset password e callback OAuth (Sign in with Apple su Android).
-additional_redirect_urls = ["https://127.0.0.1:3000", "kalos://reset-password", "kalos://oauth-callback"]
+additional_redirect_urls = ["https://127.0.0.1:3000", "kalos://reset-password", "kalos://oauth-callback", "http://localhost:3333/diventa-socio/"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to the local API URL (http://127.0.0.1:<port>/auth/v1).
@@ -377,4 +377,9 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # con la verifica della firma AWS più il token condiviso in SES_WEBHOOK_SECRET.
 # Tenerlo qui invece che nel flag --no-verify-jwt evita di dimenticarlo a un deploy futuro.
 [functions.ses-webhook]
+verify_jwt = false
+
+# Stripe non manda un JWT: la sicurezza del webhook è la firma (STRIPE_WEBHOOK_SECRET), verificata
+# nella function stessa. Come per ses-webhook, questa impostazione vale anche al deploy.
+[functions.stripe-webhook]
 verify_jwt = false

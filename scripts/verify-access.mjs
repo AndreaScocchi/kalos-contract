@@ -153,7 +153,9 @@ async function anonChecks() {
     // Sessione 3: soci, incassi e compensi non si leggono senza accesso
     'members', 'member_applications', 'member_fees', 'member_registry', 'transactions', 'receipts',
     'volunteers', 'volunteer_reimbursements', 'compensation_models', 'compensation_entries',
-    'association_settings', 'trials', 'stripe_payments']) {
+    'association_settings', 'trials', 'stripe_payments',
+    // Sessione 5: pagamenti online
+    'stripe_refunds', 'stripe_events', 'stripe_checkout_attempts']) {
     await expectReadDenied(anon, t);
   }
   const ins = await insert(anon, 'device_tokens', { client_id: ZERO_UUID, expo_push_token: 'verify-access' });
@@ -177,6 +179,12 @@ async function anonChecks() {
   // Funzioni interne di sola lettura: rappresentano tutte quelle chiuse dal "tutto chiuso".
   await expectRpcNotExposed(anon, 'count_attended_lessons', { p_client_id: ZERO_UUID });
   await expectRpcNotExposed(anon, 'get_notification_channel', { p_client_id: ZERO_UUID, p_category: 'birthday' });
+  // Sessione 5: le funzioni del webhook e dell'invio ricevute sono solo per le edge function.
+  // Payload vuoti: anche se fossero aperte, non scriverebbero nulla.
+  await expectRpcDenied(anon, 'stripe_apply_payment_state', { p_payload: {} });
+  await expectRpcDenied(anon, 'receipt_claim_send', { p_receipt_id: ZERO_UUID, p_resend: false });
+  await expectRpcDenied(anon, 'stripe_checkout_expired', { p_checkout_session_id: 'cs_verify_access' });
+  await expectRpcDenied(anon, 'prepare_my_fee_payment', {});
 
   console.log('\n▸ anon — dati pubblici che il sito deve continuare a leggere');
   for (const t of ['public_site_activities', 'public_site_events', 'public_site_operators', 'public_site_schedule',
@@ -361,6 +369,15 @@ async function localChecks() {
     statuses.status === 200 && typeof statuses.json?.statuses?.[clientId] === 'string', describe(statuses));
   await expectRowsHidden(staff, 'compensation_models');
   await expectRowsHidden(staff, 'volunteer_reimbursements');
+  // Sessione 5 — i pagamenti online e i loro rimborsi sono cosa delle Finanze. Una riga "aperta" di
+  // prova (nessun pagamento, nessun incasso) serve a provare che esiste ma l'operatrice non la vede.
+  await insert(service, 'stripe_payments', {
+    purpose: 'donation', amount_cents: 500, status: 'created', source: 'site', checkout_session_id: `cs_verify_${stamp}`,
+  });
+  await expectRowsHidden(staff, 'stripe_payments');
+  const staffStripeRefund = await rpc(staff, 'staff_prepare_stripe_refund', { p_transaction_id: ZERO_UUID, p_amount_cents: 100 });
+  check('operatrice: non rimborsa pagamenti online',
+    staffStripeRefund.status === 200 && staffStripeRefund.json?.reason === 'NOT_FINANCE', describe(staffStripeRefund));
   await expectRpcDenied(staff, 'calculate_compensation_v2', { ...FINANCE_1900, p_operator_id: null });
   await expectRpcDenied(staff, 'calculate_operator_compensation', { ...FINANCE_1900, p_operator_id: null });
   await expectReadDenied(staff, 'financial_monthly_summary');
@@ -426,6 +443,15 @@ async function localChecks() {
     statusesAsClient.status === 200 && statusesAsClient.json?.reason === 'NOT_STAFF', describe(statusesAsClient));
   await expectRowsHidden(cliente, 'transactions');
   await expectRowsHidden(cliente, 'compensation_models');
+  // Sessione 5 — pagare la propria quota: il cliente chiede, il database decide
+  const myFee = await rpc(cliente, 'prepare_my_fee_payment', {});
+  check('cliente: chiede se può pagare la quota online',
+    myFee.status === 200 && typeof myFee.json?.reason === 'string', describe(myFee));
+  const refundAsClient = await rpc(cliente, 'staff_prepare_stripe_refund', { p_transaction_id: ZERO_UUID, p_amount_cents: 100 });
+  check('cliente: non può preparare rimborsi',
+    refundAsClient.status === 200 && refundAsClient.json?.reason === 'NOT_FINANCE', describe(refundAsClient));
+  await expectRpcDenied(cliente, 'stripe_apply_payment_state', { p_payload: {} });
+  await expectRpcDenied(cliente, 'receipt_mark_sent', { p_receipt_id: ZERO_UUID, p_to: 'x@example.test', p_error: null });
   await expectRpcNotExposed(cliente, 'call_edge_function', { p_function_name: '__verify_access_noop__', p_body: {} });
   await expectRpcDenied(cliente, 'queue_new_event', {
     p_event_id: ZERO_UUID, p_event_name: 'x', p_event_date: iso(new Date()), p_send_push: false, p_send_email: false,
@@ -441,6 +467,9 @@ async function localChecks() {
   await expectRpcOk(admin, 'get_monthly_revenue_by_plan', month);
   const expenses = await select(admin, 'expenses?select=id&limit=1');
   check('admin: legge le spese', expenses.status === 200, describe(expenses));
+  const adminRefund = await rpc(admin, 'staff_prepare_stripe_refund', { p_transaction_id: ZERO_UUID, p_amount_cents: 100 });
+  check('admin: prepara i rimborsi online (qui su un incasso inesistente)',
+    adminRefund.status === 200 && adminRefund.json?.reason === 'TRANSACTION_NOT_FOUND', describe(adminRefund));
   const adminClients = await count(admin, 'clients');
   check('admin: vede le schede clienti', adminClients.n >= 2, `righe visibili: ${adminClients.n}`);
   const promoted = await expectRpcOk(admin, 'promote_profile_to_operator', { p_profile_id: cliente.userId });
@@ -451,6 +480,9 @@ async function localChecks() {
   const svcToken = await insert(service, 'device_tokens',
     { client_id: clientId, expo_push_token: `ExponentPushToken[svc-${stamp}]`, platform: 'web', is_active: true });
   check('service_role: registra un token push (register-push-token)', svcToken.status === 201, describe(svcToken));
+  const svcState = await rpc(service, 'stripe_apply_payment_state', { p_payload: {} });
+  check('service_role: il webhook di Stripe raggiunge stripe_apply_payment_state',
+    svcState.status === 200 && svcState.json?.reason === 'MISSING_PAYMENT_INTENT', describe(svcState));
   const queue = await count(service, 'notification_queue');
   check('service_role: legge la coda notifiche (process-notification-queue)', queue.status === 200, `HTTP ${queue.status}`);
 

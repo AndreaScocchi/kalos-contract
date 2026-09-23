@@ -103,7 +103,11 @@ SELECT set_eq(
     -- Sessione 4 (2026-09-23): gestionale soci e incassi
     'staff_get_member_statuses(p_client_ids uuid[])',
     'staff_pay_member_fee(p_client_id uuid, p_year integer, p_amount_cents integer, p_method payment_method, p_occurred_on date, p_issue_receipt boolean, p_note text)',
-    'staff_settle_transaction(p_transaction_id uuid, p_method payment_method, p_occurred_on date, p_issue_receipt boolean, p_causale text)'
+    'staff_settle_transaction(p_transaction_id uuid, p_method payment_method, p_occurred_on date, p_issue_receipt boolean, p_causale text)',
+    -- Sessione 5 (2026-09-24): pagamenti online. Le funzioni del webhook (`stripe_*`,
+    -- `receipt_claim_send`, `receipt_mark_sent`) restano solo a service_role.
+    'prepare_my_fee_payment(p_year integer)',
+    'staff_prepare_stripe_refund(p_transaction_id uuid, p_amount_cents integer)'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );

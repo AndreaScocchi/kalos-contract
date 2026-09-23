@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { renderNewsletterContent, personalizeContent, toPlainText } from '../_shared/newsletterContent.ts'
+import { renderNewsletterContent, personalizeContent, toPlainText, firstName } from '../_shared/newsletterContent.ts'
 import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, SEND_DELAY_MS, PRIMARY_DEFAULT_FROM_NAME, checkDailyCap } from '../_shared/ses.ts'
 
 type DeliveryMode = 'promotions' | 'primary'
@@ -465,7 +465,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       // Prepare test email content
       const testPersonalizedText = personalizeContent(campaign.content, {
-        nome: 'Admin Test',
+        nome: firstName('Admin Test'),
+        nome_completo: 'Admin Test',
         client_name: 'Admin Test',
         studio_name: 'Studio Kalòs',
       })
@@ -646,9 +647,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     for (let i = 0; i < pendingEmails.length; i++) {
       const emailRecord = pendingEmails[i]
 
-      // Replace template variables ({{nome}} -> recipient name)
+      // Replace template variables ({{nome}} -> solo il nome di battesimo)
       const personalizedText = personalizeContent(campaign.content, {
-        nome: emailRecord.client_name,
+        nome: firstName(emailRecord.client_name),
+        nome_completo: emailRecord.client_name,
         client_name: emailRecord.client_name, // Keep old variable for compatibility
         studio_name: 'Studio Kalòs',
       })

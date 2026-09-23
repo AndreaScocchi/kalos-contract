@@ -5480,12 +5480,28 @@ export type Database = {
         }
         Returns: Json
       }
+      staff_get_member_statuses: {
+        Args: { p_client_ids: string[] }
+        Returns: Json
+      }
       staff_get_user_email_status: {
         Args: { p_user_id: string }
         Returns: Json
       }
       staff_mark_compensation_paid: {
         Args: { p_entry_ids: string[] }
+        Returns: Json
+      }
+      staff_pay_member_fee: {
+        Args: {
+          p_amount_cents?: number
+          p_client_id: string
+          p_issue_receipt?: boolean
+          p_method?: Database["public"]["Enums"]["payment_method"]
+          p_note?: string
+          p_occurred_on?: string
+          p_year: number
+        }
         Returns: Json
       }
       staff_pay_volunteer_reimbursement: {
@@ -5508,6 +5524,16 @@ export type Database = {
           p_note?: string
           p_status: Database["public"]["Enums"]["member_fee_status"]
           p_year: number
+        }
+        Returns: Json
+      }
+      staff_settle_transaction: {
+        Args: {
+          p_causale?: string
+          p_issue_receipt?: boolean
+          p_method?: Database["public"]["Enums"]["payment_method"]
+          p_occurred_on?: string
+          p_transaction_id: string
         }
         Returns: Json
       }

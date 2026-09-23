@@ -55,7 +55,11 @@ Solo RPC che controllano login e ruolo **al loro interno**:
 - **incassi (staff):** `staff_register_payment`, `issue_receipt`, `void_receipt`,
   `staff_refund_transaction`, `staff_set_member_fee`, `staff_create_member_application`,
   `staff_decide_member_applications`, `staff_book_trial`, `staff_create_client_and_book_trial`,
-  `staff_unconvert_trial`;
+  `staff_unconvert_trial`; dalla sessione 4 `staff_settle_transaction` (salda un "da saldare":
+  le operatrici registrano e saldano, ma correggere o annullare resta alle Finanze),
+  `staff_pay_member_fee` (quota dell'anno in una transazione sola) e `staff_get_member_statuses`
+  (espone allo staff la regola "solo soci" di `internal.member_booking_status`). `void_receipt` e
+  `staff_refund_transaction` controllano `can_access_finance()`;
 - **Finanze:** `calculate_operator_compensation`, `calculate_compensation_v2`,
   `get_monthly_revenue_by_*`, `get_financial_kpis`, `get_revenue_breakdown`,
   `staff_freeze_compensation`, `staff_mark_compensation_paid`, `generate_recurring_expenses`,
@@ -78,7 +82,7 @@ edge function cambiasse modo di chiamarle, potrebbero seguire le altre.
 | Tabella | Chi scrive direttamente | Note |
 |---|---|---|
 | `profiles` | l'utente sul proprio profilo, lo staff su tutti | Il trigger `guard_profile_privileged_columns` blocca il cambio di `role` (solo admin) e di `email` (solo staff). L'email del profilo collega la scheda cliente. |
-| `bookings`, `event_bookings` | solo staff | I clienti passano da `book_lesson`, `cancel_booking`, `book_event` e `cancel_event_booking`, che applicano capienza e scadenze (in futuro anche la regola "solo soci"). |
+| `bookings`, `event_bookings` | solo staff | I clienti passano da `book_lesson`, `cancel_booking`, `book_event` e `cancel_event_booking`, che applicano capienza, scadenze e la regola "solo soci" (interruttore `members_only`). |
 | `clients`, `subscriptions`, `lessons`, … | solo staff | via policy `is_staff()` |
 | dati personali del cliente (notifiche, preferenze, diario, pratica) | il cliente, solo le proprie righe | policy su `get_my_client_id()` |
 
@@ -109,6 +113,16 @@ edge function cambiasse modo di chiamarle, potrebbero seguire le altre.
 - Le view pubbliche senza `security_invoker` sono ammesse solo se espongono esclusivamente colonne
   pubbliche (come `public_site_activities`).
 
+### Edge function e Storage
+
+- **`receipt-pdf`** (sessione 4) ridisegna il PDF di una ricevuta leggendo `receipts` **con il token
+  di chi chiede**, non con la chiave di servizio: decidono le RLS (oggi solo lo staff). Quando l'app
+  mostrerà le ricevute al socio basterà una policy sul proprio `client_id`.
+- **Bucket privati** (creati in produzione con gli script in `supabase/storage/`, non da
+  migrazione: vedi sotto): `documenti-spese` per i documenti dei rimborsi ai volontari e delle
+  uscite, leggibile e scrivibile solo con `can_access_finance()`. Il bucket `newsletter` (immagini,
+  lettura pubblica, scrittura staff) è stato creato a mano prima di questo modello.
+
 ## Come si verifica
 
 ```bash
@@ -124,8 +138,10 @@ SUPABASE_URL=https://tkioedsebdxqblgcctxv.supabase.co SUPABASE_ANON_KEY=<chiave 
 ## Cose note, rimandate
 
 - **Storage:** le policy di `storage.objects` esistono solo in produzione (create fuori dalle
-  migrazioni) e in locale lo Storage è spento. Le ricevute, gli allegati delle spese e i documenti
-  dei rimborsi ai volontari vivranno lì: i bucket vanno creati in produzione, non da una migrazione.
+  migrazioni) e in locale il servizio Storage è spento, anche se lo schema `storage` c'è. I bucket
+  si creano in produzione con gli script idempotenti di `supabase/storage/` (un solo blocco `DO`,
+  perché `supabase db query` esegue un'istruzione per volta), che si possono provare anche in locale
+  con `--local`. Le ricevute non hanno bisogno di un bucket: il PDF si genera al momento.
 - **`cron_*` in `internal`:** i job di pg_cron esistono solo in produzione, quindi la migrazione che
   li sposta riscrive i comandi dei job e fallisce se non ci riesce. Dopo ogni push che le tocca vanno
   guardati `cron.job` e `cron.job_run_details`.

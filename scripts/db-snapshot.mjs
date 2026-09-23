@@ -4,8 +4,13 @@
  * db-snapshot — snapshot logico COMPLETO della prod, da eseguire PRIMA di ogni `db push`.
  * È la nostra rete di sicurezza "backup" senza piano Pro/PITR (vedi NEW_APP_PLAN.md §3.bis).
  *
- * Usa `supabase db dump` (pg_dump bundlato nel CLI). Scrive in backups/<UTC>.sql (gitignored).
- * In caso di migrazione andata male, si ripristina da qui.
+ * Usa `supabase db dump` (pg_dump bundlato nel CLI). Scrive in backups/ (gitignored) tre file:
+ * <UTC>-roles.sql, <UTC>-schema.sql, <UTC>-data.sql. In caso di migrazione andata male, si
+ * ripristina da qui (procedura in BACKUP.md).
+ *
+ * Fino al 2026-09-23 lo snapshot "completo" lanciava un solo `db dump` senza opzioni, che salva
+ * SOLO lo schema: i dati non c'erano. Ora ruoli, schema e dati sono tre dump separati, e se uno
+ * fallisce lo snapshot fallisce.
  *
  * Connessione: usa il progetto LINKATO (`supabase link`) oppure SUPABASE_DB_URL.
  *
@@ -29,23 +34,40 @@ function utcStamp() {
   return (r.stdout || 'snapshot').trim();
 }
 
+function dump(outFile, extraArgs) {
+  const args = ['db', 'dump', '-f', outFile, ...extraArgs];
+  if (process.env.SUPABASE_DB_URL) args.push('--db-url', process.env.SUPABASE_DB_URL);
+  else args.push('--linked');
+  console.log(`📦 ${outFile}`);
+  const res = spawnSync('npx', ['--yes', 'supabase', ...args], { stdio: 'inherit' });
+  return res.status === 0;
+}
+
 async function main() {
   const dataOnly = process.argv.includes('--data-only');
   await mkdir(BACKUPS_DIR, { recursive: true });
-  const outFile = join(BACKUPS_DIR, `${utcStamp()}${dataOnly ? '-data' : '-full'}.sql`);
+  const stamp = utcStamp();
 
-  const args = ['db', 'dump', '-f', outFile];
-  if (dataOnly) args.push('--data-only');
-  if (process.env.SUPABASE_DB_URL) args.push('--db-url', process.env.SUPABASE_DB_URL);
-  else args.push('--linked');
+  const parts = dataOnly
+    ? [['data', ['--data-only']]]
+    : [
+        ['roles', ['--role-only']],
+        ['schema', []],
+        ['data', ['--data-only']],
+      ];
 
-  console.log(`📦 Snapshot prod → ${outFile}`);
-  const res = spawnSync('npx', ['--yes', 'supabase', ...args], { stdio: 'inherit' });
-  if (res.status !== 0) {
-    console.error('❌ Snapshot fallito. Assicurati di aver fatto `supabase link` o di aver impostato SUPABASE_DB_URL.');
-    process.exit(1);
+  const written = [];
+  for (const [name, extraArgs] of parts) {
+    const outFile = join(BACKUPS_DIR, `${stamp}-${name}.sql`);
+    if (!dump(outFile, extraArgs)) {
+      console.error('❌ Snapshot fallito. Assicurati di aver fatto `supabase link` o di aver impostato SUPABASE_DB_URL.');
+      process.exit(1);
+    }
+    written.push(outFile);
   }
-  console.log(`✅ Snapshot completato: ${outFile}`);
+
+  console.log(`✅ Snapshot completato (${dataOnly ? 'solo dati' : 'ruoli + schema + dati'}):`);
+  for (const f of written) console.log(`   ${f}`);
   console.log('   Conservalo finché la migrazione non è verificata in prod.');
 }
 

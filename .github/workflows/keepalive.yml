@@ -1,0 +1,39 @@
+name: Keepalive dei workflow programmati
+
+# GitHub disattiva i workflow programmati di un repo pubblico dopo 60 giorni senza attività nel
+# repo: è già successo a notification-cron.yml, e senza contromisure toccherebbe anche il backup
+# notturno e il controllo della coda (BACKUP.md §5).
+#
+# Il primo di ogni mese questo workflow scrive un commit sul branch ops/keepalive: è attività del
+# repo, quindi il conteggio dei 60 giorni riparte. Non tocca main, né build, né deploy.
+
+on:
+  schedule:
+    - cron: '7 4 1 * *'   # il 1° di ogni mese, 04:07 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    name: Commit mensile su ops/keepalive
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ops/keepalive
+
+      - name: Aggiorna la data e committa
+        run: |
+          sed -i "s|^Ultima esecuzione:.*|Ultima esecuzione: $(date -u '+%d/%m/%Y %H:%M UTC')|" KEEPALIVE.md
+          if git diff --quiet; then
+            echo "Niente da committare."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -qam "chore(keepalive): $(date -u '+%Y-%m-%d')"
+          git push
+          echo "✅ Workflow programmati tenuti accesi per altri 60 giorni."

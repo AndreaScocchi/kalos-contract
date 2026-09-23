@@ -172,6 +172,10 @@ async function main() {
       application?.channel === 'site' && application?.submitted_ip === '203.0.113.7' && application?.submitted_user_agent?.startsWith('Prova/1.0'),
       JSON.stringify(application))
     check('l\'email con il PDF della domanda è stata tentata (in locale SES manca)', app.json?.email_sent === false)
+    const clientRow = await one(`clients?id=eq.${app.json?.client_id}&select=full_name`)
+    const profileRow = await one(`profiles?id=eq.${socia.id}&select=full_name`)
+    check('il nome segnaposto della registrazione diventa quello della domanda',
+      clientRow?.full_name === 'Giulia Prova' && profileRow?.full_name === 'Giulia Prova', JSON.stringify({ clientRow, profileRow }))
 
     section('2. Checkout della quota')
     const c1 = await fn('stripe-checkout', { purpose: 'membership_fee' }, { token: socia.token })
@@ -198,8 +202,9 @@ async function main() {
     const payment = await one(`stripe_payments?id=eq.${row2.id}&select=status,payment_method_type,fee_cents,payment_intent_id`)
     check('pagamento con Apple Pay, commissione registrata', payment?.payment_method_type === 'apple_pay' && payment?.fee_cents === 60 && payment?.payment_intent_id === paid.paymentIntentId, JSON.stringify(payment))
     await sleep(1500)
-    const receipt = await one(`receipts?transaction_id=eq.${tx?.id}&select=id,full_number,causale,recipient_fiscal_code,sent_at,send_error`)
-    check('ricevuta emessa con causale e codice fiscale', receipt?.causale === `Quota associativa ${year}` && receipt?.recipient_fiscal_code === 'PRVGLU90D42F356X', JSON.stringify(receipt))
+    const receipt = await one(`receipts?transaction_id=eq.${tx?.id}&select=id,full_number,causale,recipient_name,recipient_fiscal_code,sent_at,send_error`)
+    check('ricevuta intestata come nella domanda, con causale e codice fiscale',
+      receipt?.causale === `Quota associativa ${year}` && receipt?.recipient_name === 'Giulia Prova' && receipt?.recipient_fiscal_code === 'PRVGLU90D42F356X', JSON.stringify(receipt))
     check('l\'invio per email è stato tentato dopo la risposta', !!receipt?.send_error && !receipt?.sent_at, JSON.stringify(receipt))
 
     section('4. Doppioni, parallelo, fuori ordine')

@@ -60,6 +60,10 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   `staff_pay_member_fee` (quota dell'anno in una transazione sola) e `staff_get_member_statuses`
   (espone allo staff la regola "solo soci" di `internal.member_booking_status`). `void_receipt` e
   `staff_refund_transaction` controllano `can_access_finance()`;
+- **pagamenti online (sessione 5):** `prepare_my_fee_payment` (il cliente chiede se può pagare la
+  propria quota; l'importo lo decide il database) e `staff_prepare_stripe_refund` (solo Finanze).
+  Dalla sessione 5 `staff_refund_transaction` rifiuta gli incassi online (`USE_STRIPE_REFUND`): si
+  rimborsano sulla carta, dall'edge function `stripe-refund`;
 - **Finanze:** `calculate_operator_compensation`, `calculate_compensation_v2`,
   `get_monthly_revenue_by_*`, `get_financial_kpis`, `get_revenue_breakdown`,
   `staff_freeze_compensation`, `staff_mark_compensation_paid`, `generate_recurring_expenses`,
@@ -76,6 +80,12 @@ Tutto il resto è interno e vive nello schema `internal`: code delle notifiche (
 e `queue_birthday`, perché l'edge function `schedule-notifications` le chiama **attraverso
 PostgREST** con la chiave di servizio, e `process_recurring_announcements`. Se un giorno quella
 edge function cambiasse modo di chiamarle, potrebbero seguire le altre.
+
+Per lo stesso motivo stanno in `public`, **solo per service_role**, le funzioni dei pagamenti online
+che chiamano le edge function (sessione 5): `stripe_apply_payment_state` (l'unico punto che scrive un
+pagamento nel registro), `stripe_checkout_expired`, `stripe_event_received`, `stripe_event_done`,
+`stripe_register_checkout_attempt`, `receipt_claim_send` e `receipt_mark_sent`. Nessun `GRANT` ad
+anon o authenticated: il test pgTAP e `verify-access` controllano che restino chiuse.
 
 ### Scritture dirette dalle app
 
@@ -118,6 +128,17 @@ edge function cambiasse modo di chiamarle, potrebbero seguire le altre.
 - **`receipt-pdf`** (sessione 4) ridisegna il PDF di una ricevuta leggendo `receipts` **con il token
   di chi chiede**, non con la chiave di servizio: decidono le RLS (oggi solo lo staff). Quando l'app
   mostrerà le ricevute al socio basterà una policy sul proprio `client_id`.
+- **Pagamenti online (sessione 5, [STRIPE_SETUP.md](STRIPE_SETUP.md)):**
+  - `stripe-webhook` gira **senza JWT** (`config.toml`): la sicurezza è la firma di Stripe,
+    verificata sul corpo grezzo. Scrive solo attraverso `stripe_apply_payment_state`, dopo aver
+    riletto il pagamento dall'API di Stripe: un evento inventato non basta a creare un incasso;
+  - `stripe-checkout`: la quota con il token di chi è loggato (`prepare_my_fee_payment` decide
+    importo e permesso), le donazioni anche con la sola chiave anon, con un limite orario per
+    impronta dell'IP;
+  - `stripe-refund`: col token di chi chiede, passa da `staff_prepare_stripe_refund` (solo Finanze);
+  - `member-application`: la domanda la registra `submit_member_application` col token della
+    persona; la function aggiunge IP e dispositivo presi dalla richiesta e manda il PDF;
+  - `send-receipt`: staff, e solo per ricevute che può leggere col proprio token.
 - **Bucket privati** (creati in produzione con gli script in `supabase/storage/`, non da
   migrazione: vedi sotto): `documenti-spese` per i documenti dei rimborsi ai volontari e delle
   uscite, leggibile e scrivibile solo con `can_access_finance()`. Il bucket `newsletter` (immagini,

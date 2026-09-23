@@ -9,7 +9,8 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { receiptFileName, renderReceiptPdf, type ReceiptPdfData } from '../_shared/receiptPdf.ts'
+import { receiptFileName, renderReceiptPdf } from '../_shared/receiptPdf.ts'
+import { loadReceiptPdfData } from '../_shared/receiptData.ts'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -46,50 +47,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
     },
   )
 
-  const { data, error } = await supabase
-    .from('receipts')
-    .select(`
-      full_number, issued_at, recipient_name, recipient_fiscal_code, recipient_address,
-      issuer_snapshot, causale, amount_cents, stamp_duty_cents, voided_at, void_reason,
-      transaction:transactions ( method, occurred_on )
-    `)
-    .eq('id', receiptId)
-    .maybeSingle()
-
-  // Chi non ha il permesso sulla tabella (per esempio la sola chiave pubblica) riceve la stessa
-  // risposta di chi chiede una ricevuta inesistente: non è un guasto, e non si scopre nulla
-  if (error && error.code === '42501') {
+  const loaded = await loadReceiptPdfData(supabase, receiptId)
+  // Inesistente, o non visibile a chi chiede (anche la sola chiave pubblica): stessa risposta, così
+  // non si scopre quali id esistono e non compare un falso guasto nei log
+  if (!loaded.ok && loaded.reason === 'RECEIPT_NOT_FOUND') {
     return jsonResponse({ ok: false, reason: 'RECEIPT_NOT_FOUND' }, 404)
   }
-  if (error) {
-    console.error('[receipt-pdf] lettura ricevuta:', error.message)
+  if (!loaded.ok) {
+    console.error('[receipt-pdf] lettura ricevuta:', loaded.message)
     return jsonResponse({ ok: false, reason: 'READ_FAILED' }, 500)
   }
-  // Inesistente o non visibile a chi chiede: stessa risposta, così non si scopre quali id esistono
-  if (!data) {
-    return jsonResponse({ ok: false, reason: 'RECEIPT_NOT_FOUND' }, 404)
-  }
-
-  const tx = Array.isArray(data.transaction) ? data.transaction[0] : data.transaction
-  const pdfData: ReceiptPdfData = {
-    full_number: data.full_number,
-    issued_at: data.issued_at,
-    recipient_name: data.recipient_name,
-    recipient_fiscal_code: data.recipient_fiscal_code,
-    recipient_address: data.recipient_address,
-    issuer_snapshot: (data.issuer_snapshot ?? {}) as ReceiptPdfData['issuer_snapshot'],
-    causale: data.causale,
-    amount_cents: data.amount_cents,
-    stamp_duty_cents: data.stamp_duty_cents,
-    voided_at: data.voided_at,
-    void_reason: data.void_reason,
-    method: tx?.method ?? null,
-    occurred_on: tx?.occurred_on ?? null,
-  }
+  const pdfData = loaded.data
 
   try {
     const pdf = await renderReceiptPdf(pdfData)
-    const fileName = receiptFileName(data.full_number)
+    const fileName = receiptFileName(pdfData.full_number)
     return new Response(pdf, {
       status: 200,
       headers: {

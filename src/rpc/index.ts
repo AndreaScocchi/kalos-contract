@@ -809,6 +809,60 @@ export async function getMyMemberCard(
 }
 
 /**
+ * Motivi per cui la propria quota non si può pagare online adesso.
+ * - `PAYMENTS_DISABLED`   pagamenti online spenti (interruttore `payments`)
+ * - `NO_APPLICATION`      né sociə né domanda di ammissione in corso
+ * - `YEAR_NOT_OPEN`       l'anno associativo non accetta quote
+ * - `FEE_AMOUNT_NOT_SET`  il Consiglio Direttivo non ha ancora deliberato l'importo
+ * - `NOTHING_TO_PAY`      quota deliberata a zero
+ * - `FEE_ALREADY_PAID`, `FEE_WAIVED`
+ */
+export type PrepareMyFeePaymentReason =
+  | 'NOT_AUTHENTICATED'
+  | 'PAYMENTS_DISABLED'
+  | 'NO_APPLICATION'
+  | 'YEAR_NOT_OPEN'
+  | 'FEE_AMOUNT_NOT_SET'
+  | 'NOTHING_TO_PAY'
+  | 'FEE_ALREADY_PAID'
+  | 'FEE_WAIVED';
+
+export type PrepareMyFeePaymentResult = {
+  ok: boolean;
+  reason?: PrepareMyFeePaymentReason;
+  member_fee_id?: string;
+  client_id?: string;
+  year?: number;
+  /** Importo deciso dal database (A8), mai da chi paga. */
+  amount_cents?: number;
+  email?: string | null;
+};
+
+/**
+ * Wrapper tipizzato per la RPC prepare_my_fee_payment.
+ * Controlla se la propria quota dell'anno si può pagare online e con quale importo. Il checkout vero
+ * lo apre l'edge function `stripe-checkout`, che chiama questa stessa funzione: qui serve alle
+ * interfacce per sapere in anticipo se mostrare il pulsante.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param year - Anno della quota; di default quello in corso
+ * @returns Promise<PrepareMyFeePaymentResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function prepareMyFeePayment(
+  client: SupabaseClient<Database>,
+  year?: number
+): Promise<PrepareMyFeePaymentResult> {
+  const { data, error } = await client.rpc('prepare_my_fee_payment', year ? { p_year: year } : {});
+
+  if (error) {
+    handleRpcError(error, 'prepare_my_fee_payment');
+  }
+
+  return data as PrepareMyFeePaymentResult;
+}
+
+/**
  * Wrapper tipizzato per la RPC book_trial_lesson.
  * Prenota la propria lezione di prova. Una per attività; occupa un posto come le altre prenotazioni
  * e non richiede un abbonamento.

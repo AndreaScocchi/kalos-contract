@@ -3788,7 +3788,10 @@ type Database = {
                     recipient_address: string | null;
                     recipient_fiscal_code: string | null;
                     recipient_name: string;
+                    send_claimed_at: string | null;
+                    send_error: string | null;
                     sent_at: string | null;
+                    sent_to: string | null;
                     stamp_duty_cents: number;
                     transaction_id: string;
                     updated_at: string;
@@ -3810,7 +3813,10 @@ type Database = {
                     recipient_address?: string | null;
                     recipient_fiscal_code?: string | null;
                     recipient_name: string;
+                    send_claimed_at?: string | null;
+                    send_error?: string | null;
                     sent_at?: string | null;
+                    sent_to?: string | null;
                     stamp_duty_cents?: number;
                     transaction_id: string;
                     updated_at?: string;
@@ -3832,7 +3838,10 @@ type Database = {
                     recipient_address?: string | null;
                     recipient_fiscal_code?: string | null;
                     recipient_name?: string;
+                    send_claimed_at?: string | null;
+                    send_error?: string | null;
                     sent_at?: string | null;
+                    sent_to?: string | null;
                     stamp_duty_cents?: number;
                     transaction_id?: string;
                     updated_at?: string;
@@ -3994,6 +4003,27 @@ type Database = {
                     }
                 ];
             };
+            stripe_checkout_attempts: {
+                Row: {
+                    created_at: string;
+                    id: number;
+                    ip_hash: string;
+                    purpose: Database["public"]["Enums"]["stripe_purpose"];
+                };
+                Insert: {
+                    created_at?: string;
+                    id?: never;
+                    ip_hash: string;
+                    purpose: Database["public"]["Enums"]["stripe_purpose"];
+                };
+                Update: {
+                    created_at?: string;
+                    id?: never;
+                    ip_hash?: string;
+                    purpose?: Database["public"]["Enums"]["stripe_purpose"];
+                };
+                Relationships: [];
+            };
             stripe_events: {
                 Row: {
                     attempts: number;
@@ -4038,12 +4068,15 @@ type Database = {
                     fee_cents: number | null;
                     fee_expense_id: string | null;
                     id: string;
+                    is_duplicate: boolean;
                     livemode: boolean;
+                    metadata: Json;
                     net_cents: number | null;
-                    payment_intent_id: string;
+                    payment_intent_id: string | null;
                     payment_method_type: string | null;
                     purpose: Database["public"]["Enums"]["stripe_purpose"];
                     receipt_email: string | null;
+                    source: Database["public"]["Enums"]["transaction_source"] | null;
                     status: Database["public"]["Enums"]["stripe_payment_status"];
                     succeeded_at: string | null;
                     target_id: string | null;
@@ -4060,12 +4093,15 @@ type Database = {
                     fee_cents?: number | null;
                     fee_expense_id?: string | null;
                     id?: string;
+                    is_duplicate?: boolean;
                     livemode?: boolean;
+                    metadata?: Json;
                     net_cents?: number | null;
-                    payment_intent_id: string;
+                    payment_intent_id?: string | null;
                     payment_method_type?: string | null;
                     purpose: Database["public"]["Enums"]["stripe_purpose"];
                     receipt_email?: string | null;
+                    source?: Database["public"]["Enums"]["transaction_source"] | null;
                     status?: Database["public"]["Enums"]["stripe_payment_status"];
                     succeeded_at?: string | null;
                     target_id?: string | null;
@@ -4082,12 +4118,15 @@ type Database = {
                     fee_cents?: number | null;
                     fee_expense_id?: string | null;
                     id?: string;
+                    is_duplicate?: boolean;
                     livemode?: boolean;
+                    metadata?: Json;
                     net_cents?: number | null;
-                    payment_intent_id?: string;
+                    payment_intent_id?: string | null;
                     payment_method_type?: string | null;
                     purpose?: Database["public"]["Enums"]["stripe_purpose"];
                     receipt_email?: string | null;
+                    source?: Database["public"]["Enums"]["transaction_source"] | null;
                     status?: Database["public"]["Enums"]["stripe_payment_status"];
                     succeeded_at?: string | null;
                     target_id?: string | null;
@@ -4129,6 +4168,7 @@ type Database = {
                     status: string | null;
                     stripe_payment_id: string;
                     transaction_id: string | null;
+                    updated_at: string;
                 };
                 Insert: {
                     amount_cents: number;
@@ -4140,6 +4180,7 @@ type Database = {
                     status?: string | null;
                     stripe_payment_id: string;
                     transaction_id?: string | null;
+                    updated_at?: string;
                 };
                 Update: {
                     amount_cents?: number;
@@ -4151,6 +4192,7 @@ type Database = {
                     status?: string | null;
                     stripe_payment_id?: string;
                     transaction_id?: string | null;
+                    updated_at?: string;
                 };
                 Relationships: [
                     {
@@ -5491,6 +5533,12 @@ type Database = {
                 };
                 Returns: boolean;
             };
+            prepare_my_fee_payment: {
+                Args: {
+                    p_year?: number;
+                };
+                Returns: Json;
+            };
             process_recurring_announcements: {
                 Args: never;
                 Returns: undefined;
@@ -5546,6 +5594,21 @@ type Database = {
             queue_subscription_expiry: {
                 Args: never;
                 Returns: Json;
+            };
+            receipt_claim_send: {
+                Args: {
+                    p_receipt_id: string;
+                    p_resend?: boolean;
+                };
+                Returns: Json;
+            };
+            receipt_mark_sent: {
+                Args: {
+                    p_error?: string;
+                    p_receipt_id: string;
+                    p_to: string;
+                };
+                Returns: undefined;
             };
             register_device_token: {
                 Args: {
@@ -5676,6 +5739,13 @@ type Database = {
                 };
                 Returns: Json;
             };
+            staff_prepare_stripe_refund: {
+                Args: {
+                    p_amount_cents: number;
+                    p_transaction_id: string;
+                };
+                Returns: Json;
+            };
             staff_refund_transaction: {
                 Args: {
                     p_amount_cents: number;
@@ -5723,6 +5793,43 @@ type Database = {
                     p_status: Database["public"]["Enums"]["booking_status"];
                 };
                 Returns: Json;
+            };
+            stripe_apply_payment_state: {
+                Args: {
+                    p_payload: Json;
+                };
+                Returns: Json;
+            };
+            stripe_checkout_expired: {
+                Args: {
+                    p_checkout_session_id: string;
+                };
+                Returns: Json;
+            };
+            stripe_event_done: {
+                Args: {
+                    p_error?: string;
+                    p_event_id: string;
+                };
+                Returns: undefined;
+            };
+            stripe_event_received: {
+                Args: {
+                    p_event_id: string;
+                    p_livemode: boolean;
+                    p_object_id: string;
+                    p_type: string;
+                };
+                Returns: Json;
+            };
+            stripe_register_checkout_attempt: {
+                Args: {
+                    p_ip_hash: string;
+                    p_limit?: number;
+                    p_purpose: Database["public"]["Enums"]["stripe_purpose"];
+                    p_window_minutes?: number;
+                };
+                Returns: boolean;
             };
             submit_feedback: {
                 Args: {
@@ -6332,6 +6439,38 @@ declare function getMyMembershipStatus(client: SupabaseClient<Database>): Promis
  */
 declare function getMyMemberCard(client: SupabaseClient<Database>): Promise<GetMyMemberCardResult>;
 /**
+ * Motivi per cui la propria quota non si può pagare online adesso.
+ * - `PAYMENTS_DISABLED`   pagamenti online spenti (interruttore `payments`)
+ * - `NO_APPLICATION`      né sociə né domanda di ammissione in corso
+ * - `YEAR_NOT_OPEN`       l'anno associativo non accetta quote
+ * - `FEE_AMOUNT_NOT_SET`  il Consiglio Direttivo non ha ancora deliberato l'importo
+ * - `NOTHING_TO_PAY`      quota deliberata a zero
+ * - `FEE_ALREADY_PAID`, `FEE_WAIVED`
+ */
+type PrepareMyFeePaymentReason = 'NOT_AUTHENTICATED' | 'PAYMENTS_DISABLED' | 'NO_APPLICATION' | 'YEAR_NOT_OPEN' | 'FEE_AMOUNT_NOT_SET' | 'NOTHING_TO_PAY' | 'FEE_ALREADY_PAID' | 'FEE_WAIVED';
+type PrepareMyFeePaymentResult = {
+    ok: boolean;
+    reason?: PrepareMyFeePaymentReason;
+    member_fee_id?: string;
+    client_id?: string;
+    year?: number;
+    /** Importo deciso dal database (A8), mai da chi paga. */
+    amount_cents?: number;
+    email?: string | null;
+};
+/**
+ * Wrapper tipizzato per la RPC prepare_my_fee_payment.
+ * Controlla se la propria quota dell'anno si può pagare online e con quale importo. Il checkout vero
+ * lo apre l'edge function `stripe-checkout`, che chiama questa stessa funzione: qui serve alle
+ * interfacce per sapere in anticipo se mostrare il pulsante.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param year - Anno della quota; di default quello in corso
+ * @returns Promise<PrepareMyFeePaymentResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function prepareMyFeePayment(client: SupabaseClient<Database>, year?: number): Promise<PrepareMyFeePaymentResult>;
+/**
  * Wrapper tipizzato per la RPC book_trial_lesson.
  * Prenota la propria lezione di prova. Una per attività; occupa un posto come le altre prenotazioni
  * e non richiede un abbonamento.
@@ -6500,4 +6639,4 @@ type GetEventsWithAvailabilityParams = {
  */
 declare function getEventsWithAvailability(client: SupabaseClient<Database>, params?: GetEventsWithAvailabilityParams): Promise<EventWithAvailability[]>;
 
-export { type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetPublicEventsParams, type GetPublicScheduleParams, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type PassActionResult, type PassBenefitType, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type Views, type WaitlistResult, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication };
+export { type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetPublicEventsParams, type GetPublicScheduleParams, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type PassActionResult, type PassBenefitType, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type Views, type WaitlistResult, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyFeePayment, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication };

@@ -56,6 +56,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
     .eq('id', receiptId)
     .maybeSingle()
 
+  // Chi non ha il permesso sulla tabella (per esempio la sola chiave pubblica) riceve la stessa
+  // risposta di chi chiede una ricevuta inesistente: non è un guasto, e non si scopre nulla
+  if (error && error.code === '42501') {
+    return jsonResponse({ ok: false, reason: 'RECEIPT_NOT_FOUND' }, 404)
+  }
   if (error) {
     console.error('[receipt-pdf] lettura ricevuta:', error.message)
     return jsonResponse({ ok: false, reason: 'READ_FAILED' }, 500)

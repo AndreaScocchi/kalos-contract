@@ -215,6 +215,22 @@ npm run verify:migrations   # Check migration integrity
 - Marks booking canceled
 - Returns: `{ok, reason?}`
 
+### Soci e incassi dal gestionale (v0.3.1, sessione 4)
+
+| Funzione | Cosa fa |
+|---|---|
+| `staff_settle_transaction(p_transaction_id, p_method?, p_occurred_on?, p_issue_receipt?, p_causale?)` | Salda un incasso "da saldare": `pending` → `paid` con metodo e data veri, più la ricevuta. Tutto lo staff |
+| `staff_pay_member_fee(p_client_id, p_year, p_amount_cents?, p_method?, p_occurred_on?, p_issue_receipt?, p_note?)` | Quota di un anno in un gesto: crea la riga se manca, rifiuta il doppio pagamento, incasso e ricevuta |
+| `staff_get_member_statuses(p_client_ids[])` | `{ members_only, statuses: { client_id: stato } }` con gli stati di `internal.member_booking_status` |
+| `issue_receipt` (corretta) | Codice fiscale e indirizzo presi anche dalla domanda ancora in attesa: la quota si paga prima della delibera |
+
+**Edge function `receipt-pdf`:** `POST { receipt_id }` con il token dell'utente → PDF della ricevuta,
+ridisegnato dalla riga di `receipts` (dati congelati all'emissione) con `_shared/receiptPdf.ts`, lo
+stesso disegno che useranno email, Stripe e app. Nessun file salvato.
+
+**Storage:** i bucket si creano in produzione con gli script di `supabase/storage/`
+(`npx supabase db query --linked -f supabase/storage/<bucket>.sql`), non da migrazione.
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -281,7 +297,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.0**
+Current: **v0.3.1**
 
 Consumers reference via git tag:
 ```json

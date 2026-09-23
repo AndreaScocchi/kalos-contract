@@ -236,6 +236,86 @@ async function cancelBussolaRequest(client, requestId) {
   }
   return data;
 }
+async function submitMemberApplication(client, params) {
+  const payload = {
+    year: params.year,
+    first_name: params.firstName,
+    last_name: params.lastName,
+    birth_date: params.birthDate,
+    fiscal_code: params.fiscalCode,
+    birth_place: params.birthPlace,
+    birth_province: params.birthProvince,
+    address_street: params.addressStreet,
+    address_city: params.addressCity,
+    address_zip: params.addressZip,
+    address_province: params.addressProvince,
+    email: params.email,
+    phone: params.phone,
+    accepted_statute: params.acceptedStatute ? "true" : "false",
+    accepted_privacy: params.acceptedPrivacy ? "true" : "false",
+    image_release: params.imageRelease === void 0 ? void 0 : String(params.imageRelease),
+    health_declaration: params.healthDeclaration === void 0 ? void 0 : String(params.healthDeclaration),
+    guardian_full_name: params.guardianFullName,
+    guardian_fiscal_code: params.guardianFiscalCode,
+    guardian_relationship: params.guardianRelationship,
+    guardian_email: params.guardianEmail,
+    guardian_phone: params.guardianPhone,
+    guardian_consent: params.guardianConsent ? "true" : void 0,
+    channel: params.channel,
+    user_agent: params.userAgent
+  };
+  for (const key of Object.keys(payload)) {
+    if (payload[key] === void 0) delete payload[key];
+  }
+  const { data, error } = await client.rpc("submit_member_application", {
+    p_payload: payload
+  });
+  if (error) {
+    handleRpcError(error, "submit_member_application");
+  }
+  return data;
+}
+async function getMyMembershipStatus(client) {
+  const { data, error } = await client.rpc("get_my_membership_status");
+  if (error) {
+    handleRpcError(error, "get_my_membership_status");
+  }
+  return data;
+}
+async function getMyMemberCard(client) {
+  const { data, error } = await client.rpc("get_my_member_card");
+  if (error) {
+    handleRpcError(error, "get_my_member_card");
+  }
+  return data;
+}
+async function bookTrialLesson(client, lessonId) {
+  const { data, error } = await client.rpc("book_trial_lesson", {
+    p_lesson_id: lessonId
+  });
+  if (error) {
+    handleRpcError(error, "book_trial_lesson");
+  }
+  return data;
+}
+async function joinWaitlist(client, lessonId) {
+  const { data, error } = await client.rpc("join_waitlist", {
+    p_lesson_id: lessonId
+  });
+  if (error) {
+    handleRpcError(error, "join_waitlist");
+  }
+  return data;
+}
+async function leaveWaitlist(client, lessonId) {
+  const { data, error } = await client.rpc("leave_waitlist", {
+    p_lesson_id: lessonId
+  });
+  if (error) {
+    handleRpcError(error, "leave_waitlist");
+  }
+  return data;
+}
 
 // src/queries/public.ts
 function fromPublic(client, view) {
@@ -356,6 +436,7 @@ exports.assertSupabaseConfig = assertSupabaseConfig;
 exports.assignMembership = assignMembership;
 exports.bookEvent = bookEvent;
 exports.bookLesson = bookLesson;
+exports.bookTrialLesson = bookTrialLesson;
 exports.cancelBooking = cancelBooking;
 exports.cancelBussolaRequest = cancelBussolaRequest;
 exports.cancelEventBooking = cancelEventBooking;
@@ -364,16 +445,21 @@ exports.createSupabaseBrowserClient = createSupabaseBrowserClient;
 exports.createSupabaseExpoClient = createSupabaseExpoClient;
 exports.fromPublic = fromPublic;
 exports.getEventsWithAvailability = getEventsWithAvailability;
+exports.getMyMemberCard = getMyMemberCard;
 exports.getMyMembership = getMyMembership;
+exports.getMyMembershipStatus = getMyMembershipStatus;
 exports.getPublicActivities = getPublicActivities;
 exports.getPublicEvents = getPublicEvents;
 exports.getPublicOperators = getPublicOperators;
 exports.getPublicPricing = getPublicPricing;
 exports.getPublicSchedule = getPublicSchedule;
+exports.joinWaitlist = joinWaitlist;
+exports.leaveWaitlist = leaveWaitlist;
 exports.queueFeedbackRequest = queueFeedbackRequest;
 exports.requestBussola = requestBussola;
 exports.staffBookEvent = staffBookEvent;
 exports.staffCancelEventBooking = staffCancelEventBooking;
 exports.submitFeedback = submitFeedback;
+exports.submitMemberApplication = submitMemberApplication;
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

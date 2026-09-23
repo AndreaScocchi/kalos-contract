@@ -21,4 +21,11 @@ data class Expense(
     @SerialName("created_at") val createdAt: String,
     @SerialName("created_by") val createdBy: String? = null,
     @SerialName("updated_at") val updatedAt: String,
+    @SerialName("category_id") val categoryId: String? = null,
+    @SerialName("attachment_path") val attachmentPath: String? = null,
+    @SerialName("recurring_expense_id") val recurringExpenseId: String? = null,
+    @SerialName("confirmed_at") val confirmedAt: String? = null,
+    @SerialName("payout_id") val payoutId: String? = null,
+    @SerialName("volunteer_reimbursement_id") val volunteerReimbursementId: String? = null,
+    val source: ExpenseSource,
 )

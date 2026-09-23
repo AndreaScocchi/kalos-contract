@@ -82,7 +82,8 @@ function buildPrompt(campaign: {
     ? `\n- Data evento: ${new Date(campaign.event_date).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`
     : ''
 
-  return `Sei un esperto di marketing digitale per "Studio Kalos", un centro benessere e yoga.
+  return `Sei un esperto di marketing digitale per "Studio Kalòs APS", un'associazione di promozione sociale
+che propone yoga, meditazione e attività di benessere. Chi partecipa è sociə, non cliente.
 Il tuo compito e generare contenuti per una campagna marketing multicanale.
 
 INFORMAZIONI CAMPAGNA:

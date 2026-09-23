@@ -21,4 +21,5 @@ data class Lesson(
     @SerialName("is_individual") val isIndividual: Boolean,
     @SerialName("assigned_client_id") val assignedClientId: String? = null,
     @SerialName("assigned_subscription_id") val assignedSubscriptionId: String? = null,
+    @SerialName("location_id") val locationId: String? = null,
 )

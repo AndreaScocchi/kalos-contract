@@ -99,7 +99,11 @@ SELECT set_eq(
     'staff_set_member_fee(p_client_id uuid, p_year integer, p_status member_fee_status, p_amount_cents integer, p_note text)',
     'staff_unconvert_trial(p_trial_id uuid, p_reason text)',
     'submit_member_application(p_payload jsonb)',
-    'void_receipt(p_receipt_id uuid, p_reason text)'
+    'void_receipt(p_receipt_id uuid, p_reason text)',
+    -- Sessione 4 (2026-09-23): gestionale soci e incassi
+    'staff_get_member_statuses(p_client_ids uuid[])',
+    'staff_pay_member_fee(p_client_id uuid, p_year integer, p_amount_cents integer, p_method payment_method, p_occurred_on date, p_issue_receipt boolean, p_note text)',
+    'staff_settle_transaction(p_transaction_id uuid, p_method payment_method, p_occurred_on date, p_issue_receipt boolean, p_causale text)'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );

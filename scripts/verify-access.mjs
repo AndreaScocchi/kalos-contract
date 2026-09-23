@@ -107,9 +107,33 @@ async function expectReadDenied(actor, table) {
     `HTTP ${c.status}, righe visibili: ${c.n}`);
 }
 
+/**
+ * La riga esiste davvero (lo conferma service_role) ma questo ruolo non la vede: è la forma che
+ * prende il divieto quando la tabella è aperta ad authenticated e a filtrare sono le policy.
+ * Un "zero righe" da solo non proverebbe niente, perché lo dà anche una tabella vuota.
+ */
+async function expectRowsHidden(actor, table) {
+  const all = await count(service, table);
+  const mine = await count(actor, table);
+  check(`${actor.name}: ${table} non mostra righe altrui`,
+    all.n > 0 && (mine.status === 200 || mine.status === 206) && mine.n === 0,
+    `righe esistenti: ${all.n}, visibili: ${mine.n} (HTTP ${mine.status})`);
+}
+
 async function expectRpcDenied(actor, fn, args, label = fn) {
   const r = await rpc(actor, fn, args);
   check(`${actor.name}: ${label} rifiutata`, isDenied(r), describe(r));
+}
+
+/**
+ * Dalla sessione 3 le funzioni interne stanno nello schema `internal`, che PostgREST non espone:
+ * dall'API non sono "vietate", sono inesistenti (404 PGRST202). È una garanzia più forte del 403,
+ * perché non c'è nessun GRANT che possa riaprirle, ma va verificata per quello che è.
+ */
+async function expectRpcNotExposed(actor, fn, args, label = fn) {
+  const r = await rpc(actor, fn, args);
+  const notFound = r.status === 404 && (r.text || '').includes('PGRST202');
+  check(`${actor.name}: ${label} non esiste nell'API`, notFound || isDenied(r), describe(r));
 }
 
 async function expectRpcOk(actor, fn, args, label = fn) {
@@ -125,7 +149,11 @@ const FINANCE_1900 = { p_month_start: '1900-01-01', p_month_end: '1900-01-31' };
 
 async function anonChecks() {
   console.log('\n▸ anon — accessi che devono essere chiusi');
-  for (const t of ['clients', 'device_tokens', 'notification_logs', 'notification_queue', 'financial_monthly_summary']) {
+  for (const t of ['clients', 'device_tokens', 'notification_logs', 'notification_queue', 'financial_monthly_summary',
+    // Sessione 3: soci, incassi e compensi non si leggono senza accesso
+    'members', 'member_applications', 'member_fees', 'member_registry', 'transactions', 'receipts',
+    'volunteers', 'volunteer_reimbursements', 'compensation_models', 'compensation_entries',
+    'association_settings', 'trials', 'stripe_payments']) {
     await expectReadDenied(anon, t);
   }
   const ins = await insert(anon, 'device_tokens', { client_id: ZERO_UUID, expo_push_token: 'verify-access' });
@@ -135,9 +163,9 @@ async function anonChecks() {
   await expectRpcDenied(anon, 'get_monthly_revenue_by_client', FINANCE_1900);
   await expectRpcDenied(anon, 'get_monthly_revenue_by_plan', FINANCE_1900);
   // Nome di funzione inesistente: se fosse aperta, la chiamata finirebbe su un 404 innocuo.
-  await expectRpcDenied(anon, 'call_edge_function', { p_function_name: '__verify_access_noop__', p_body: {} });
+  await expectRpcNotExposed(anon, 'call_edge_function', { p_function_name: '__verify_access_noop__', p_body: {} });
   // Modalità test verso un cliente inesistente: se fosse aperta, non accoderebbe nulla.
-  await expectRpcDenied(anon, 'queue_announcement', {
+  await expectRpcNotExposed(anon, 'queue_announcement', {
     p_announcement_id: ZERO_UUID, p_title: 'verify-access', p_body: 'verify-access',
     p_scheduled_for: new Date().toISOString(), p_is_test: true, p_test_client_id: ZERO_UUID,
   });
@@ -147,12 +175,14 @@ async function anonChecks() {
     p_send_push: false, p_send_email: false,
   });
   // Funzioni interne di sola lettura: rappresentano tutte quelle chiuse dal "tutto chiuso".
-  await expectRpcDenied(anon, 'count_attended_lessons', { p_client_id: ZERO_UUID });
-  await expectRpcDenied(anon, 'get_notification_channel', { p_client_id: ZERO_UUID, p_category: 'birthday' });
+  await expectRpcNotExposed(anon, 'count_attended_lessons', { p_client_id: ZERO_UUID });
+  await expectRpcNotExposed(anon, 'get_notification_channel', { p_client_id: ZERO_UUID, p_category: 'birthday' });
 
   console.log('\n▸ anon — dati pubblici che il sito deve continuare a leggere');
   for (const t of ['public_site_activities', 'public_site_events', 'public_site_operators', 'public_site_schedule',
-    'public_site_pricing', 'activities', 'lessons', 'events', 'plans', 'operators', 'feature_flags']) {
+    'public_site_pricing', 'activities', 'lessons', 'events', 'plans', 'operators', 'feature_flags',
+    // Sessione 3: gruppi e luoghi alimentano le pagine del sito e la SEO per comune
+    'public_site_groups', 'public_site_locations', 'activity_groups', 'locations']) {
     const c = await count(anon, t);
     check(`anon: ${t} leggibile`, c.status === 200 || c.status === 206, `HTTP ${c.status}`);
   }
@@ -217,6 +247,17 @@ async function localChecks() {
     ), e as (
       insert into public.events (name, starts_at, capacity, is_active)
       values ('Evento verifica ${stamp}', '${iso(days(7))}', 20, true) returning id, name, starts_at
+    ), cm as (
+      insert into public.compensation_models (name, min_guaranteed_cents)
+      values ('Modello verifica ${stamp}', 2000) returning id
+    ), vol as (
+      insert into public.volunteers (full_name, started_on)
+      values ('Volontaria verifica ${stamp}', current_date) returning id
+    ), vr as (
+      insert into public.volunteer_reimbursements
+        (volunteer_id, spent_on, amount_cents, description, attachment_path)
+      select vol.id, current_date, 1500, 'Spesa di verifica', 'verifica/${stamp}.pdf'
+      from vol returning id
     )
     select a.id activity_id, o.id operator_id, p.id plan_id, l1.id lesson_id, l2.id lesson2_id,
            e.id event_id, e.name event_name, e.starts_at event_starts_at
@@ -296,6 +337,16 @@ async function localChecks() {
   await expectRpcOk(staff, 'staff_cancel_event_booking', { p_booking_id: staffEventBookingId });
 
   await expectRpcDenied(staff, 'get_monthly_revenue_by_client', FINANCE_1900);
+
+  // Sessione 3 — le operatrici registrano gli incassi ma non vedono le Finanze (E3)
+  const staffPay = await rpc(staff, 'staff_register_payment', {
+    p_payload: { kind: 'other', amount_cents: 500, method: 'cash', source: 'studio' },
+  });
+  check('operatrice: registra un incasso in studio',
+    staffPay.status === 200 && staffPay.json?.ok === true, describe(staffPay));
+  await expectRowsHidden(staff, 'compensation_models');
+  await expectRowsHidden(staff, 'volunteer_reimbursements');
+  await expectRpcDenied(staff, 'calculate_compensation_v2', { ...FINANCE_1900, p_operator_id: null });
   await expectRpcDenied(staff, 'calculate_operator_compensation', { ...FINANCE_1900, p_operator_id: null });
   await expectReadDenied(staff, 'financial_monthly_summary');
   const staffSelfRole = await patch(staff, `profiles?id=eq.${staff.userId}`, { role: 'admin' });
@@ -340,11 +391,22 @@ async function localChecks() {
   check('cliente: legge le proprie notifiche', logs.status === 200, describe(logs));
 
   await expectRpcDenied(cliente, 'get_monthly_revenue_by_client', FINANCE_1900);
-  await expectRpcDenied(cliente, 'call_edge_function', { p_function_name: '__verify_access_noop__', p_body: {} });
+
+  // Sessione 3 — soci e incassi
+  await expectRpcOk(cliente, 'get_my_membership_status', {});
+  const cardNoMember = await rpc(cliente, 'get_my_member_card', {});
+  check('cliente: senza iscrizione la tessera non esiste',
+    cardNoMember.status === 200 && cardNoMember.json?.reason === 'NOT_A_MEMBER', describe(cardNoMember));
+  const payAsClient = await rpc(cliente, 'staff_register_payment', { p_payload: { amount_cents: 100 } });
+  check('cliente: non può registrare incassi',
+    payAsClient.status === 200 && payAsClient.json?.reason === 'NOT_STAFF', describe(payAsClient));
+  await expectRowsHidden(cliente, 'transactions');
+  await expectRowsHidden(cliente, 'compensation_models');
+  await expectRpcNotExposed(cliente, 'call_edge_function', { p_function_name: '__verify_access_noop__', p_body: {} });
   await expectRpcDenied(cliente, 'queue_new_event', {
     p_event_id: ZERO_UUID, p_event_name: 'x', p_event_date: iso(new Date()), p_send_push: false, p_send_email: false,
   });
-  await expectRpcDenied(cliente, 'create_user_profile',
+  await expectRpcNotExposed(cliente, 'create_user_profile',
     { user_id: cliente.userId, full_name: 'x', phone: null, role: 'admin' });
   await expectReadDenied(cliente, 'financial_monthly_summary');
 

@@ -77,6 +77,22 @@ enum class CampaignType {
 }
 
 @Serializable
+enum class CompensationComponentKind {
+    @SerialName("fixed_per_lesson") FIXED_PER_LESSON,
+    @SerialName("fixed_per_hour") FIXED_PER_HOUR,
+    @SerialName("per_participant") PER_PARTICIPANT,
+    @SerialName("percent_of_revenue") PERCENT_OF_REVENUE,
+    @SerialName("room_fee_percent") ROOM_FEE_PERCENT,
+}
+
+@Serializable
+enum class CompensationEntryStatus {
+    @SerialName("pending") PENDING,
+    @SerialName("approved") APPROVED,
+    @SerialName("paid") PAID,
+}
+
+@Serializable
 enum class ContentStatus {
     @SerialName("pending") PENDING,
     @SerialName("generated") GENERATED,
@@ -86,6 +102,22 @@ enum class ContentStatus {
     @SerialName("published") PUBLISHED,
     @SerialName("failed") FAILED,
     @SerialName("skipped") SKIPPED,
+}
+
+@Serializable
+enum class EventType {
+    @SerialName("evento") EVENTO,
+    @SerialName("laboratorio") LABORATORIO,
+    @SerialName("incontro") INCONTRO,
+}
+
+@Serializable
+enum class ExpenseSource {
+    @SerialName("manual") MANUAL,
+    @SerialName("recurring") RECURRING,
+    @SerialName("payout") PAYOUT,
+    @SerialName("stripe_fee") STRIPE_FEE,
+    @SerialName("volunteer") VOLUNTEER,
 }
 
 @Serializable
@@ -112,6 +144,45 @@ enum class MarketingCampaignStatus {
     @SerialName("executing") EXECUTING,
     @SerialName("completed") COMPLETED,
     @SerialName("failed") FAILED,
+}
+
+@Serializable
+enum class MemberApplicationChannel {
+    @SerialName("app") APP,
+    @SerialName("site") SITE,
+    @SerialName("paper") PAPER,
+}
+
+@Serializable
+enum class MemberApplicationStatus {
+    @SerialName("pending") PENDING,
+    @SerialName("approved") APPROVED,
+    @SerialName("rejected") REJECTED,
+    @SerialName("withdrawn") WITHDRAWN,
+}
+
+@Serializable
+enum class MemberCeaseReason {
+    @SerialName("recesso") RECESSO,
+    @SerialName("esclusione") ESCLUSIONE,
+    @SerialName("decadenza") DECADENZA,
+    @SerialName("mancato_pagamento") MANCATO_PAGAMENTO,
+    @SerialName("decesso") DECESSO,
+}
+
+@Serializable
+enum class MemberFeeStatus {
+    @SerialName("due") DUE,
+    @SerialName("paid") PAID,
+    @SerialName("waived") WAIVED,
+    @SerialName("refunded") REFUNDED,
+}
+
+@Serializable
+enum class MemberStatus {
+    @SerialName("pending_admission") PENDING_ADMISSION,
+    @SerialName("active") ACTIVE,
+    @SerialName("ceased") CEASED,
 }
 
 @Serializable
@@ -166,6 +237,10 @@ enum class NotificationCategory {
     @SerialName("practice_resume") PRACTICE_RESUME,
     @SerialName("journal_reminder") JOURNAL_REMINDER,
     @SerialName("feedback_request") FEEDBACK_REQUEST,
+    @SerialName("waitlist_promotion") WAITLIST_PROMOTION,
+    @SerialName("member_application_decided") MEMBER_APPLICATION_DECIDED,
+    @SerialName("membership_fee_due") MEMBERSHIP_FEE_DUE,
+    @SerialName("trial_followup") TRIAL_FOLLOWUP,
 }
 
 @Serializable
@@ -190,6 +265,14 @@ enum class PassBenefitType {
     @SerialName("bussola") BUSSOLA,
     @SerialName("community_access") COMMUNITY_ACCESS,
     @SerialName("priority_booking") PRIORITY_BOOKING,
+    @SerialName("other") OTHER,
+}
+
+@Serializable
+enum class PaymentMethod {
+    @SerialName("cash") CASH,
+    @SerialName("bank_transfer") BANK_TRANSFER,
+    @SerialName("stripe") STRIPE,
     @SerialName("other") OTHER,
 }
 
@@ -224,9 +307,43 @@ enum class PracticeUserStatus {
 }
 
 @Serializable
+enum class ReimbursementStatus {
+    @SerialName("pending") PENDING,
+    @SerialName("approved") APPROVED,
+    @SerialName("paid") PAID,
+    @SerialName("rejected") REJECTED,
+}
+
+@Serializable
 enum class SocialPlatform {
     @SerialName("instagram") INSTAGRAM,
     @SerialName("facebook") FACEBOOK,
+}
+
+@Serializable
+enum class StaffEngagementType {
+    @SerialName("paid") PAID,
+    @SerialName("volunteer") VOLUNTEER,
+}
+
+@Serializable
+enum class StripePaymentStatus {
+    @SerialName("created") CREATED,
+    @SerialName("processing") PROCESSING,
+    @SerialName("succeeded") SUCCEEDED,
+    @SerialName("failed") FAILED,
+    @SerialName("canceled") CANCELED,
+    @SerialName("refunded") REFUNDED,
+    @SerialName("partially_refunded") PARTIALLY_REFUNDED,
+}
+
+@Serializable
+enum class StripePurpose {
+    @SerialName("membership_fee") MEMBERSHIP_FEE,
+    @SerialName("subscription") SUBSCRIPTION,
+    @SerialName("event") EVENT,
+    @SerialName("donation") DONATION,
+    @SerialName("other") OTHER,
 }
 
 @Serializable
@@ -238,9 +355,54 @@ enum class SubscriptionStatus {
 }
 
 @Serializable
+enum class TransactionKind {
+    @SerialName("membership_fee") MEMBERSHIP_FEE,
+    @SerialName("subscription") SUBSCRIPTION,
+    @SerialName("event") EVENT,
+    @SerialName("trial") TRIAL,
+    @SerialName("donation") DONATION,
+    @SerialName("commercial") COMMERCIAL,
+    @SerialName("other") OTHER,
+}
+
+@Serializable
+enum class TransactionSource {
+    @SerialName("studio") STUDIO,
+    @SerialName("app") APP,
+    @SerialName("site") SITE,
+}
+
+@Serializable
+enum class TransactionStatus {
+    @SerialName("pending") PENDING,
+    @SerialName("paid") PAID,
+    @SerialName("refunded") REFUNDED,
+    @SerialName("partially_refunded") PARTIALLY_REFUNDED,
+    @SerialName("void") VOID,
+}
+
+@Serializable
+enum class TrialStatus {
+    @SerialName("booked") BOOKED,
+    @SerialName("attended") ATTENDED,
+    @SerialName("no_show") NO_SHOW,
+    @SerialName("canceled") CANCELED,
+    @SerialName("converted") CONVERTED,
+}
+
+@Serializable
 enum class UserRole {
     @SerialName("user") USER,
     @SerialName("operator") OPERATOR,
     @SerialName("admin") ADMIN,
     @SerialName("finance") FINANCE,
+}
+
+@Serializable
+enum class WaitlistStatus {
+    @SerialName("waiting") WAITING,
+    @SerialName("offered") OFFERED,
+    @SerialName("booked") BOOKED,
+    @SerialName("expired") EXPIRED,
+    @SerialName("left") LEFT,
 }

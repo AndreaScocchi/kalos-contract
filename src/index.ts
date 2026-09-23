@@ -41,6 +41,12 @@ export {
   cancelMembership,
   requestBussola,
   cancelBussolaRequest,
+  submitMemberApplication,
+  getMyMembershipStatus,
+  getMyMemberCard,
+  bookTrialLesson,
+  joinWaitlist,
+  leaveWaitlist,
 } from './rpc';
 export type {
   BookLessonResult,
@@ -66,6 +72,14 @@ export type {
   PassActionResult,
   RequestBussolaParams,
   RequestBussolaResult,
+  MembershipStatus,
+  MemberFeeStatus,
+  SubmitMemberApplicationParams,
+  SubmitMemberApplicationResult,
+  GetMyMembershipStatusResult,
+  GetMyMemberCardResult,
+  TrialBookingResult,
+  WaitlistResult,
 } from './rpc';
 
 // Public queries

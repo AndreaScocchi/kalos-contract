@@ -141,7 +141,26 @@ npm run verify:migrations   # Check migration integrity
 | `events` | Special events |
 | `event_bookings` | Event registrations |
 | `promotions` | Discount codes |
-| `waitlist` | Class waiting list |
+| `waitlist` | Lista d'attesa delle lezioni piene (usata dalla sessione 3 in poi) |
+
+### Associazione, incassi e Finanze (dal 2026-09-23, contract v0.3.0)
+
+| Tabella | A cosa serve |
+|---|---|
+| `association_settings` | Dati dell'associazione, riga unica: da qui escono le ricevute |
+| `association_years` | Quota per anno solare: importo e data di decadenza, decisi dal Consiglio Direttivo |
+| `member_applications` | Domande di ammissione (art. 4), con le accettazioni registrate |
+| `members` | Libro soci (art. 22): numero, ammissione, cessazione |
+| `member_fees` | Quota dovuta o pagata, una riga per persona e anno |
+| `volunteers`, `volunteer_reimbursements` | Registro dei volontari e rimborsi con allegato obbligatorio |
+| `transactions` | Registro degli incassi; i rimborsi sono righe negative |
+| `receipts`, `receipt_sequences` | Ricevute numerate per anno, senza buchi |
+| `expense_categories`, `recurring_expenses` | Categorie modificabili e spese ricorrenti da confermare |
+| `compensation_models`, `compensation_components`, `compensation_tiers`, `compensation_assignments`, `compensation_entries` | Compensi a mattoni, congelati quando il mese si chiude |
+| `event_operators` | Chi tiene un evento, per calcolarne il compenso |
+| `activity_groups`, `locations` | Gruppi di attività e luoghi (sito e app) |
+| `trials` | Lezioni di prova: una per attività, con la conversione in primo ingresso |
+| `stripe_events`, `stripe_payments`, `stripe_refunds` | Pagamenti online (checkout e webhook: sessione 5) |
 
 ### Communication Tables
 
@@ -160,7 +179,7 @@ npm run verify:migrations   # Check migration integrity
 
 - `booking_status`: booked, canceled, attended, no_show
 - `subscription_status`: active, completed, expired, canceled
-- `notification_category`: lesson_reminder, subscription_expiry, booking_confirmation, booking_cancellation, waitlist_promotion, welcome, event_reminder, feedback_request, announcement
+- `notification_category`: lesson_reminder, subscription_expiry, entries_low, re_engagement, first_lesson, milestone, birthday, new_event, announcement, practice_reminder, practice_resume, journal_reminder, feedback_request, waitlist_promotion, member_application_decided, membership_fee_due, trial_followup
 - `notification_channel`: push, email
 - `notification_status`: pending, sent, failed, skipped
 
@@ -198,7 +217,8 @@ npm run verify:migrations   # Check migration integrity
 
 ### get_my_client_id()
 - Returns current user's client_id
-- Auto-creates client if needed
+- **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
+  `auth.users` alla registrazione, oppure da `submit_member_application` se manca.
 
 ### Notification RPCs
 
@@ -261,7 +281,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.1.5**
+Current: **v0.3.0**
 
 Consumers reference via git tag:
 ```json

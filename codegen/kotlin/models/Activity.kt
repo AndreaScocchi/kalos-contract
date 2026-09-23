@@ -29,4 +29,7 @@ data class Activity(
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("icon_name") val iconName: String? = null,
     val category: ActivityCategory,
+    @SerialName("group_id") val groupId: String? = null,
+    @SerialName("default_location_id") val defaultLocationId: String? = null,
+    @SerialName("trial_enabled") val trialEnabled: Boolean,
 )

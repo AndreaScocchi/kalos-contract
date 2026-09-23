@@ -604,3 +604,280 @@ export async function cancelBussolaRequest(
   return data as PassActionResult;
 }
 
+
+// ───────────────────────────────────────────────────────────────────────────
+// Soci, prove e lista d'attesa (contract v0.3.0, sessione 3 del piano APS)
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * Stato di una persona rispetto all'iscrizione all'associazione.
+ * - `none`               nessuna domanda inviata
+ * - `pending_admission`  domanda inviata, in attesa della delibera del Consiglio Direttivo
+ * - `active`             sociə a tutti gli effetti
+ * - `ceased`             non più sociə
+ * - `rejected`           domanda respinta
+ */
+export type MembershipStatus =
+  | 'none'
+  | 'pending_admission'
+  | 'active'
+  | 'ceased'
+  | 'rejected';
+
+/** Stato della quota associativa dell'anno in corso. */
+export type MemberFeeStatus = 'none' | 'due' | 'paid' | 'waived' | 'refunded';
+
+/** Dati della domanda di ammissione. I campi del genitore servono solo per i minorenni. */
+export type SubmitMemberApplicationParams = {
+  year?: number;
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  fiscalCode?: string;
+  birthPlace?: string;
+  birthProvince?: string;
+  addressStreet?: string;
+  addressCity?: string;
+  addressZip?: string;
+  addressProvince?: string;
+  email?: string;
+  phone?: string;
+  /** Deve essere true: senza accettazione la domanda viene rifiutata. */
+  acceptedStatute: boolean;
+  /** Deve essere true: senza accettazione la domanda viene rifiutata. */
+  acceptedPrivacy: boolean;
+  imageRelease?: boolean;
+  healthDeclaration?: boolean;
+  guardianFullName?: string;
+  guardianFiscalCode?: string;
+  guardianRelationship?: string;
+  guardianEmail?: string;
+  guardianPhone?: string;
+  guardianConsent?: boolean;
+  channel?: 'app' | 'site';
+  userAgent?: string;
+};
+
+export type SubmitMemberApplicationResult = {
+  ok: boolean;
+  reason?: string;
+  application_id?: string;
+  client_id?: string;
+  year?: number;
+  fee_cents?: number | null;
+};
+
+export type GetMyMembershipStatusResult = {
+  ok: boolean;
+  reason?: string;
+  status?: MembershipStatus;
+  year?: number;
+  member_number?: string | null;
+  admitted_on?: string | null;
+  application_id?: string | null;
+  application_status?: string | null;
+  fee_status?: MemberFeeStatus;
+  fee_cents?: number | null;
+};
+
+export type GetMyMemberCardResult = {
+  ok: boolean;
+  reason?: string;
+  member_number?: string;
+  full_name?: string;
+  status?: string;
+  admitted_on?: string;
+  year?: number;
+  fee_status?: MemberFeeStatus;
+  /** Contenuto del codice QR della tessera. */
+  card_token?: string;
+};
+
+export type TrialBookingResult = {
+  ok: boolean;
+  reason?: string;
+  booking_id?: string;
+  trial_id?: string;
+  member_status?: string;
+};
+
+export type WaitlistResult = {
+  ok: boolean;
+  reason?: string;
+  waitlist_id?: string;
+  position?: number;
+};
+
+/**
+ * Wrapper tipizzato per la RPC submit_member_application.
+ * Invia la propria domanda di ammissione a sociə: registra i dati, le accettazioni di statuto e
+ * privacy con data e ora, e apre la quota dell'anno. Se manca la scheda cliente, la crea.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param params - Dati della domanda
+ * @returns Promise<SubmitMemberApplicationResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function submitMemberApplication(
+  client: SupabaseClient<Database>,
+  params: SubmitMemberApplicationParams
+): Promise<SubmitMemberApplicationResult> {
+  const payload: Record<string, unknown> = {
+    year: params.year,
+    first_name: params.firstName,
+    last_name: params.lastName,
+    birth_date: params.birthDate,
+    fiscal_code: params.fiscalCode,
+    birth_place: params.birthPlace,
+    birth_province: params.birthProvince,
+    address_street: params.addressStreet,
+    address_city: params.addressCity,
+    address_zip: params.addressZip,
+    address_province: params.addressProvince,
+    email: params.email,
+    phone: params.phone,
+    accepted_statute: params.acceptedStatute ? 'true' : 'false',
+    accepted_privacy: params.acceptedPrivacy ? 'true' : 'false',
+    image_release: params.imageRelease === undefined ? undefined : String(params.imageRelease),
+    health_declaration:
+      params.healthDeclaration === undefined ? undefined : String(params.healthDeclaration),
+    guardian_full_name: params.guardianFullName,
+    guardian_fiscal_code: params.guardianFiscalCode,
+    guardian_relationship: params.guardianRelationship,
+    guardian_email: params.guardianEmail,
+    guardian_phone: params.guardianPhone,
+    guardian_consent: params.guardianConsent ? 'true' : undefined,
+    channel: params.channel,
+    user_agent: params.userAgent,
+  };
+
+  // L'indirizzo IP lo registra il database, non il client: un valore mandato da qui
+  // sarebbe quello che il dispositivo dichiara, non quello da cui la richiesta arriva davvero.
+  for (const key of Object.keys(payload)) {
+    if (payload[key] === undefined) delete payload[key];
+  }
+
+  const { data, error } = await client.rpc('submit_member_application', {
+    p_payload: payload as never,
+  });
+
+  if (error) {
+    handleRpcError(error, 'submit_member_application');
+  }
+
+  return data as SubmitMemberApplicationResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC get_my_membership_status.
+ * Stato della propria iscrizione e della quota dell'anno in corso.
+ *
+ * @param client - Il client Supabase autenticato
+ * @returns Promise<GetMyMembershipStatusResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function getMyMembershipStatus(
+  client: SupabaseClient<Database>
+): Promise<GetMyMembershipStatusResult> {
+  const { data, error } = await client.rpc('get_my_membership_status');
+
+  if (error) {
+    handleRpcError(error, 'get_my_membership_status');
+  }
+
+  return data as GetMyMembershipStatusResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC get_my_member_card.
+ * Tessera digitale: numero di sociə, nome, anno, stato della quota e contenuto del codice QR.
+ *
+ * @param client - Il client Supabase autenticato
+ * @returns Promise<GetMyMemberCardResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function getMyMemberCard(
+  client: SupabaseClient<Database>
+): Promise<GetMyMemberCardResult> {
+  const { data, error } = await client.rpc('get_my_member_card');
+
+  if (error) {
+    handleRpcError(error, 'get_my_member_card');
+  }
+
+  return data as GetMyMemberCardResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC book_trial_lesson.
+ * Prenota la propria lezione di prova. Una per attività; occupa un posto come le altre prenotazioni
+ * e non richiede un abbonamento.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param lessonId - id della lezione
+ * @returns Promise<TrialBookingResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function bookTrialLesson(
+  client: SupabaseClient<Database>,
+  lessonId: string
+): Promise<TrialBookingResult> {
+  const { data, error } = await client.rpc('book_trial_lesson', {
+    p_lesson_id: lessonId,
+  });
+
+  if (error) {
+    handleRpcError(error, 'book_trial_lesson');
+  }
+
+  return data as TrialBookingResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC join_waitlist.
+ * Si mette in lista d'attesa per una lezione piena. Quando si libera un posto arriva una notifica
+ * e si hanno due ore per prenotare.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param lessonId - id della lezione
+ * @returns Promise<WaitlistResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function joinWaitlist(
+  client: SupabaseClient<Database>,
+  lessonId: string
+): Promise<WaitlistResult> {
+  const { data, error } = await client.rpc('join_waitlist', {
+    p_lesson_id: lessonId,
+  });
+
+  if (error) {
+    handleRpcError(error, 'join_waitlist');
+  }
+
+  return data as WaitlistResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC leave_waitlist.
+ * Esce dalla lista d'attesa; se aveva un'offerta in corso, passa a chi viene dopo.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param lessonId - id della lezione
+ * @returns Promise<WaitlistResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function leaveWaitlist(
+  client: SupabaseClient<Database>,
+  lessonId: string
+): Promise<WaitlistResult> {
+  const { data, error } = await client.rpc('leave_waitlist', {
+    p_lesson_id: lessonId,
+  });
+
+  if (error) {
+    handleRpcError(error, 'leave_waitlist');
+  }
+
+  return data as WaitlistResult;
+}

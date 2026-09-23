@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { renderNewsletterContent, personalizeContent, toPlainText, firstName } from '../_shared/newsletterContent.ts'
+import { legalLineHtml } from '../_shared/legal.ts'
 import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, SEND_DELAY_MS, PRIMARY_DEFAULT_FROM_NAME, checkDailyCap } from '../_shared/ses.ts'
 
 type DeliveryMode = 'promotions' | 'primary'
@@ -117,7 +118,7 @@ function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string |
                     <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">
                       <a href="mailto:info.studiokalos@gmail.com" style="color: ${accentColor}; text-decoration: none;">info.studiokalos@gmail.com</a>
                     </p>
-                    <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">Localita Casello Ferroviario, 3 - 34079 Staranzano (GO)</p>
+                    <p style="margin: 0 0 4px 0; font-size: 13px; color: ${footerText};">${legalLineHtml()}</p>
                   </td>
                 </tr>
               </table>
@@ -165,7 +166,7 @@ function wrapTextInHtmlPrimary(text: string, unsubscribeUrl: string): string {
     <div style="color: ${primaryColor};">${htmlContent}</div>
     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0 12px 0;">
     <div style="font-size: 11px; color: ${footerText}; line-height: 1.5;">
-      Staranzano (GO) &middot; <a href="${unsubscribeUrl}" style="color: ${footerText}; text-decoration: underline;">annulla iscrizione</a>
+      ${legalLineHtml()} &middot; <a href="${unsubscribeUrl}" style="color: ${footerText}; text-decoration: underline;">annulla iscrizione</a>
     </div>
   </div>
 </body>

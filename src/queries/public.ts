@@ -22,9 +22,12 @@ export function fromPublic<T extends PublicViewName>(
   client: SupabaseClient<Database>,
   view: T
 ) {
-  // @ts-expect-error - Le views public_site_* non sono ancora presenti nel database types
-  // Verrà risolto quando le views verranno create e i types rigenerati
-  return client.from(view);
+  // Le view public_site_* stanno nei types generati solo in parte: quelle con relazioni
+  // riconoscibili sì (public_site_groups, public_site_locations), le altre no. Dando a `from`
+  // un'unione aperta di nomi, TypeScript prova a risolvere tutte le combinazioni e si perde
+  // ("Type instantiation is excessively deep"). Passiamo quindi dal client non tipizzato: i
+  // chiamanti qui sotto dichiarano comunque la forma dei dati che si aspettano.
+  return (client as unknown as SupabaseClient<any, 'public', any>).from(view);
 }
  
 /**

@@ -24,4 +24,6 @@ data class Event(
     @SerialName("price_cents") val priceCents: Int? = null,
     val currency: String? = null,
     @SerialName("time_slots") val timeSlots: JsonElement? = null,
+    @SerialName("location_id") val locationId: String? = null,
+    @SerialName("event_type") val eventType: EventType,
 )

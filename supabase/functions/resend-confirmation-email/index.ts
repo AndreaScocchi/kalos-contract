@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail, getFromEmail } from '../_shared/ses.ts'
+import { legalLineHtml, legalLine } from '../_shared/legal.ts'
 
 interface RequestBody {
   userId: string
@@ -186,7 +187,7 @@ function generateConfirmationEmailHtml(confirmationLink: string): string {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="text-align: center; margin-bottom: 30px;">
     <h1 style="color: #8B5CF6; margin: 0;">Kalos Studio</h1>
-    <p style="color: #666; margin-top: 5px;">Il tuo centro benessere</p>
+    <p style="color: #666; margin-top: 5px;">Associazione di Promozione Sociale</p>
   </div>
 
   <div style="background-color: #f9fafb; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
@@ -205,8 +206,9 @@ function generateConfirmationEmailHtml(confirmationLink: string): string {
   </div>
 
   <div style="text-align: center; font-size: 12px; color: #999;">
-    <p>Questa email è stata inviata da Kalos Studio.</p>
+    <p>Questa email è stata inviata da Studio Kalòs APS.</p>
     <p>Se non hai richiesto questa registrazione, puoi ignorare questa email.</p>
+    <p style="line-height: 1.6;">${legalLineHtml()}</p>
   </div>
 </body>
 </html>
@@ -226,7 +228,7 @@ ${confirmationLink}
 Se non hai richiesto questa registrazione, puoi ignorare questa email.
 
 ---
-Kalos Studio - Il tuo centro benessere
+${legalLine()}
 `
 }
 

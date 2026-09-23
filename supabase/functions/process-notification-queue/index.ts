@@ -5,6 +5,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { sendEmail, getFromEmail, delay, checkDailyCap } from '../_shared/ses.ts'
+import { legalLineHtml, legalLine } from '../_shared/legal.ts'
 
 const BATCH_SIZE = 50
 
@@ -63,8 +64,8 @@ function emailTemplate(title: string, body: string, ctaUrl: string): string {
       </a>
     </div>
   </div>
-  <p style="text-align: center; margin-top: 24px; font-size: 12px; color: #6B7280;">
-    Studio Kalos - Il tuo centro benessere
+  <p style="text-align: center; margin-top: 24px; font-size: 12px; color: #6B7280; line-height: 1.6;">
+    ${legalLineHtml()}
   </p>
 </body>
 </html>`
@@ -339,7 +340,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         to: client.email,
         subject: notification.title,
         html,
-        text: notification.body,
+        text: `${notification.body}\n\n—\n${legalLine()}`,
         tags: [
           { name: 'category', value: notification.category },
           { name: 'client_id', value: notification.client_id },

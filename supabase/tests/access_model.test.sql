@@ -7,7 +7,7 @@
 -- Più alcuni comportamenti critici, simulando i ruoli come fa PostgREST (SET ROLE + claims JWT).
 
 BEGIN;
-SELECT plan(22);
+SELECT plan(25);
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- 1. Elenco esplicito: funzioni
@@ -76,7 +76,30 @@ SELECT set_eq(
     'staff_cancel_event_booking(p_booking_id uuid)',
     'staff_get_user_email_status(p_user_id uuid)',
     'staff_update_booking_status(p_booking_id uuid, p_status booking_status)',
-    'submit_feedback(p_kind feedback_kind, p_target_id uuid, p_rating smallint, p_comment text)'
+    'submit_feedback(p_kind feedback_kind, p_target_id uuid, p_rating smallint, p_comment text)',
+    -- Sessione 3 (2026-09-23): soci, incassi, prove, lista d'attesa, compensi
+    'book_trial_lesson(p_lesson_id uuid)',
+    'calculate_compensation_v2(p_month_start date, p_month_end date, p_operator_id uuid)',
+    'confirm_expense(p_expense_id uuid, p_amount_cents integer)',
+    'generate_recurring_expenses(p_month date)',
+    'get_my_member_card()',
+    'get_my_membership_status()',
+    'issue_receipt(p_transaction_id uuid, p_causale text)',
+    'join_waitlist(p_lesson_id uuid)',
+    'leave_waitlist(p_lesson_id uuid)',
+    'staff_book_trial(p_lesson_id uuid, p_client_id uuid)',
+    'staff_create_client_and_book_trial(p_lesson_id uuid, p_first_name text, p_last_name text, p_phone text, p_email text)',
+    'staff_create_member_application(p_client_id uuid, p_payload jsonb)',
+    'staff_decide_member_applications(p_application_ids uuid[], p_approve boolean, p_resolution_date date, p_note text, p_rejection_reason text)',
+    'staff_freeze_compensation(p_month_start date, p_month_end date, p_operator_id uuid)',
+    'staff_mark_compensation_paid(p_entry_ids uuid[])',
+    'staff_pay_volunteer_reimbursement(p_reimbursement_id uuid)',
+    'staff_refund_transaction(p_transaction_id uuid, p_amount_cents integer, p_reason text)',
+    'staff_register_payment(p_payload jsonb)',
+    'staff_set_member_fee(p_client_id uuid, p_year integer, p_status member_fee_status, p_amount_cents integer, p_note text)',
+    'staff_unconvert_trial(p_trial_id uuid, p_reason text)',
+    'submit_member_application(p_payload jsonb)',
+    'void_receipt(p_receipt_id uuid, p_reason text)'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );
@@ -99,7 +122,9 @@ SELECT set_eq(
     'activities', 'events', 'feature_flags', 'lesson_occupancy', 'lessons', 'operators',
     'pass_tier_benefits', 'pass_tiers', 'plan_activities', 'plans', 'promotions',
     'public_site_activities', 'public_site_events', 'public_site_operators',
-    'public_site_pricing', 'public_site_schedule'
+    'public_site_pricing', 'public_site_schedule',
+    -- Sessione 3: gruppi di attività e luoghi sono dati pubblici del sito
+    'activity_groups', 'locations', 'public_site_groups', 'public_site_locations'
   ],
   'anon legge solo i dati pubblici del sito'
 );
@@ -119,10 +144,33 @@ SELECT is_empty(
   'authenticated non ha i privilegi che l''API non usa'
 );
 
+-- Prima della sessione 3 le policy pubbliche erano scritte senza `TO`, quindi valevano per il ruolo
+-- `public` (che comprende anon) senza dirlo. Ora ciascuna dichiara il proprio pubblico: l'elenco
+-- esplicito è più utile del divieto, perché dice esattamente cosa anon può leggere e da dove.
+SELECT set_eq(
+  $$ SELECT tablename || '.' || policyname FROM pg_policies
+     WHERE schemaname = 'public' AND 'anon' = ANY (roles) $$,
+  ARRAY[
+    'activities.activities_select_public',
+    'activity_groups.activity_groups_select_anon',
+    'events.events_select_public_active',
+    'feature_flags.feature_flags_select_all',
+    'lessons.lessons_select_anon',
+    'locations.locations_select_anon',
+    'operators.operators_select_public_active',
+    'pass_tier_benefits.pass_tier_benefits_select_all',
+    'pass_tiers.pass_tiers_select_all',
+    'plan_activities.plan_activities_select_public',
+    'plans.plans_select_public_active',
+    'promotions.promotions_select_public_active_now'
+  ],
+  'le policy che riguardano anon sono solo quelle dei dati pubblici del sito, e lo dichiarano'
+);
+
 SELECT is_empty(
   $$ SELECT tablename || '.' || policyname FROM pg_policies
-     WHERE schemaname = 'public' AND 'anon' = ANY (roles) AND tablename <> 'events' $$,
-  'nessuna policy dedicata ad anon fuori da events (vista pubblica degli eventi)'
+     WHERE schemaname = 'public' AND 'public' = ANY (roles) $$,
+  'nessuna policy senza TO: ognuna dichiara per quale ruolo vale'
 );
 
 SELECT is_empty(
@@ -180,8 +228,19 @@ SELECT is(
 SET LOCAL ROLE anon;
 SET LOCAL request.jwt.claims = '{"role": "anon"}';
 SELECT throws_ok('SELECT count(*) FROM public.clients', '42501', NULL, 'anon: clients non leggibile');
-SELECT throws_ok($$ SELECT public.call_edge_function('noop', '{}'::jsonb) $$, '42501', NULL,
-  'anon: call_edge_function non eseguibile');
+-- Dalla sessione 3 `call_edge_function` non sta più in `public` ma nello schema `internal`, che
+-- PostgREST non espone: per anon non è "vietata", è proprio inesistente. 42883 = undefined_function.
+SELECT throws_ok($$ SELECT public.call_edge_function('noop', '{}'::jsonb) $$, '42883', NULL,
+  'anon: call_edge_function non esiste più in public');
+
+SELECT ok(
+  NOT has_schema_privilege('anon', 'internal', 'USAGE')
+  AND NOT has_schema_privilege('authenticated', 'internal', 'USAGE'),
+  'anon e authenticated non hanno accesso allo schema internal'
+);
+
+SELECT throws_ok($$ SELECT internal.call_edge_function('noop', '{}'::jsonb) $$, '42501', NULL,
+  'anon: nemmeno per nome completo si arriva allo schema internal');
 SELECT throws_ok($$ SELECT * FROM public.get_monthly_revenue_by_client('1900-01-01', '1900-01-31') $$, '42501', NULL,
   'anon: Finanze non eseguibili');
 RESET ROLE;

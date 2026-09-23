@@ -13,4 +13,5 @@ data class Booking(
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("subscription_id") val subscriptionId: String? = null,
     @SerialName("client_id") val clientId: String? = null,
+    @SerialName("is_trial") val isTrial: Boolean,
 )

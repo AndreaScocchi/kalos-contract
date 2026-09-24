@@ -16,6 +16,9 @@
  * nella finestra, ricevute di pagamenti online non inviate per email da più di un'ora. Finché Stripe
  * non è attivo sono tutti zero.
  *
+ * Ricostruzione del sito (sessione 6): l'ultima chiamata al build hook di Netlify è fallita
+ * (`site_rebuild_state.last_ok = false`, motivo in `last_error`).
+ *
  * Legge solo conteggi (i log delle Actions sono pubblici). Stampa l'esito; esce con 1 se c'è un
  * problema, e il workflow manda l'avviso.
  */
@@ -33,11 +36,13 @@ const failedMax = Number(process.env.QUEUE_FAILED_MAX ?? 0);
 const stripeStuckMinutes = Number(process.env.STRIPE_STUCK_MINUTES ?? 60);
 const ago = (ms) => new Date(Date.now() - ms).toISOString();
 
-async function count(filter, table = 'notification_queue', select = 'id') {
+async function count(filter, table = 'notification_queue', select = 'id', { optional = false } = {}) {
   const res = await fetch(`${url}/rest/v1/${table}?select=${select}&${filter}`, {
     method: 'HEAD',
     headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact' },
   });
+  // Una tabella nuova non ancora in produzione (fra il merge e il db push) non è un guasto
+  if (optional && res.status === 404) return 0;
   if (!res.ok) throw new Error(`HTTP ${res.status} leggendo ${table}`);
   return Number((res.headers.get('content-range') || '').split('/')[1]);
 }
@@ -55,17 +60,20 @@ async function main() {
     `sent_at=is.null&voided_at=is.null&issued_at=lt.${stripeSince}&transaction.method=eq.stripe`,
     'receipts', 'id,transaction:transactions!inner(method)',
   );
+  const rebuildFailed = await count('last_ok=is.false', 'site_rebuild_state', 'id', { optional: true });
 
   const problems = [];
   if (stripeStuck > 0) problems.push(`${stripeStuck} eventi di Stripe non elaborati da più di ${stripeStuckMinutes} minuti (dettagli in stripe_events.error_message): pagamenti o rimborsi potrebbero mancare dal registro.`);
   if (disputes > 0) problems.push(`${disputes} eventi di contestazione (chargeback) nelle ultime ${failedHours} ore: vanno gestiti dalla dashboard di Stripe.`);
   if (unsentReceipts > 0) problems.push(`${unsentReceipts} ricevute di pagamenti online non inviate per email da più di ${stripeStuckMinutes} minuti (motivo in receipts.send_error): si reinviano dal gestionale, Incassi → Ricevute.`);
   if (stuck > 0) problems.push(`${stuck} notifiche pronte da più di ${stuckMinutes} minuti e mai elaborate: la coda è ferma (cron o edge function process-notification-queue).`);
+  if (rebuildFailed > 0) problems.push('L\'ultima ricostruzione del sito su Netlify non è partita (motivo in site_rebuild_state.last_error): le modifiche a luoghi, gruppi, attività ed eventi non sono ancora nelle pagine del sito.');
   if (failed > failedMax) problems.push(`${failed} notifiche fallite nelle ultime ${failedHours} ore (dettagli in notification_queue.error_message).`);
 
   if (problems.length === 0) {
     console.log(`✅ Coda notifiche: nessuna ferma da più di ${stuckMinutes} minuti, ${failed} fallite nelle ultime ${failedHours} ore.`);
     console.log('✅ Pagamenti online: nessun evento Stripe indietro, nessuna contestazione, nessuna ricevuta online non inviata.');
+    console.log('✅ Ricostruzione del sito: nessun errore dall\'ultima chiamata al build hook.');
     return;
   }
   for (const p of problems) console.log(`❌ ${p}`);

@@ -160,6 +160,7 @@ npm run verify:migrations   # Check migration integrity
 | `event_operators` | Chi tiene un evento, per calcolarne il compenso |
 | `activity_groups`, `locations` | Gruppi di attività e luoghi (sito e app) |
 | `trials` | Lezioni di prova: una per attività, con la conversione in primo ingresso |
+| `site_rebuild_state` | Riga unica: quando il sito va ricostruito e com'è andata l'ultima build (sessione 6) |
 | `stripe_events`, `stripe_payments`, `stripe_refunds` | Pagamenti online: memoria del webhook, pagamenti (con `source`, `metadata`, `is_duplicate`), rimborsi |
 | `stripe_checkout_attempts` | Limite orario dei checkout delle donazioni per impronta dell'IP (interna) |
 
@@ -180,7 +181,8 @@ npm run verify:migrations   # Check migration integrity
 
 - `booking_status`: booked, canceled, attended, no_show
 - `subscription_status`: active, completed, expired, canceled
-- `notification_category`: lesson_reminder, subscription_expiry, entries_low, re_engagement, first_lesson, milestone, birthday, new_event, announcement, practice_reminder, practice_resume, journal_reminder, feedback_request, waitlist_promotion, member_application_decided, membership_fee_due, trial_followup
+- `notification_category`: lesson_reminder, subscription_expiry, entries_low, re_engagement, first_lesson, milestone, birthday, new_event, announcement, practice_reminder, practice_resume, journal_reminder, feedback_request, waitlist_promotion, member_application_decided, membership_fee_due, trial_followup, trial_booked
+- `feedback_kind`: practice, lesson, onboarding, event, trial
 - `notification_channel`: push, email
 - `notification_status`: pending, sent, failed, skipped
 
@@ -256,6 +258,32 @@ email con il PDF della domanda). Condivise: `_shared/stripe.ts`, `receiptEmail.t
 **Storage:** i bucket si creano in produzione con gli script di `supabase/storage/`
 (`npx supabase db query --linked -f supabase/storage/<bucket>.sql`), non da migrazione.
 
+### Gruppi, luoghi, prove e lista d'attesa (v0.3.3, sessione 6)
+
+| Funzione | Chi | Cosa fa |
+|---|---|---|
+| `staff_add_to_waitlist(p_lesson_id, p_client_id)` | staff | Mette in fila per una lezione piena (anche chi non ha l'app: `waitlist.user_id` ora può essere NULL) |
+| `staff_remove_from_waitlist(p_waitlist_id)` | staff | Toglie dalla fila; se aveva un posto offerto, passa al successivo |
+| `submit_trial_feedback(p_trial_id, p_rating, p_answers?, p_comment?)` | cliente | Questionario dopo la prova (feedback `kind = 'trial'`, risposte in `metadata.answers`). Domande in `src/labels.ts` (`TRIAL_FEEDBACK_QUESTIONS`) |
+| `staff_book_trial`, `staff_create_client_and_book_trial` | staff | Come prima, più la conferma `trial_booked` con l'invito all'app; la scheda creata al volo si toglie se la prova non va |
+| `book_lesson`, `staff_book_lesson`, `join_waitlist` | — | Stessa firma: **un posto offerto a chi è in fila conta come occupato** (risposta `FULL` con `waitlist_offer: true`) |
+
+- **Prove:** una prova disdetta si riprenota (la riga si riusa); lo stato segue la prenotazione
+  (trigger `bookings_sync_trial_status`), tranne quando è già `converted`.
+- **Lista d'attesa:** offerte su disdetta, aumento dei posti e dal job `internal.cron_waitlist`
+  (pg_cron ogni 5 minuti, solo in produzione); chi prenota esce dalla fila da solə.
+- **Promemoria** (`queue_lesson_reminders`): luogo e orario nel testo, testo dedicato alle prove, e
+  niente invio a chi ha spento push ed email per i promemoria.
+- **Ricostruzione del sito:** trigger su `locations`, `activity_groups`, `activities`, `events` (e
+  l'interruttore `cinque_per_mille`) → `site_rebuild_state.requested_at`; il job
+  `internal.cron_site_rebuild` (pg_cron ogni 5 minuti, solo in produzione) dopo 3 minuti di quiete
+  chiama l'edge function **`site-rebuild`**, che chiama il build hook di Netlify (secret
+  `NETLIFY_BUILD_HOOK_URL`) e scrive l'esito; ops-health avvisa se fallisce.
+- **Interruttore `cinque_per_mille`**, spento: sito e app mostrano il 5x1000 solo acceso.
+- **View del sito:** `public_site_events` nasconde gli eventi non pubblicati e aggiunge indirizzo del
+  luogo e contributo; `public_site_activities` aggiunge nome del luogo predefinito e `trial_enabled`.
+- **Etichette condivise** (`src/labels.ts`): `EVENT_TYPE_LABELS`, `EVENT_TYPE_LABELS_PLURAL`.
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -322,7 +350,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.2**
+Current: **v0.3.3**
 
 Consumers reference via git tag:
 ```json

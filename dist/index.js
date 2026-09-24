@@ -323,6 +323,62 @@ async function leaveWaitlist(client, lessonId) {
   }
   return data;
 }
+async function submitTrialFeedback(client, params) {
+  var _a;
+  const { data, error } = await client.rpc("submit_trial_feedback", {
+    p_trial_id: params.trialId,
+    p_rating: params.rating,
+    p_answers: (_a = params.answers) != null ? _a : {},
+    p_comment: params.comment
+  });
+  if (error) {
+    handleRpcError(error, "submit_trial_feedback");
+  }
+  return data;
+}
+
+// src/labels.ts
+var EVENT_TYPE_LABELS = {
+  evento: "Evento",
+  laboratorio: "Laboratorio",
+  incontro: "Incontro"
+};
+var EVENT_TYPE_LABELS_PLURAL = {
+  evento: "Eventi",
+  laboratorio: "Laboratori",
+  incontro: "Incontri"
+};
+var TRIAL_FEEDBACK_RATING_QUESTION = "Com'\xE8 andata la lezione di prova?";
+var TRIAL_FEEDBACK_QUESTIONS = [
+  {
+    key: "accoglienza",
+    question: "Ti sei sentit\u0259 a tuo agio?",
+    options: [
+      { value: "si", label: "S\xEC" },
+      { value: "abbastanza", label: "Abbastanza" },
+      { value: "no", label: "Non molto" }
+    ]
+  },
+  {
+    key: "livello",
+    question: "Il livello della lezione era adatto a te?",
+    options: [
+      { value: "giusto", label: "Giusto per me" },
+      { value: "facile", label: "Troppo facile" },
+      { value: "impegnativo", label: "Troppo impegnativo" }
+    ]
+  },
+  {
+    key: "continuare",
+    question: "Pensi di continuare?",
+    options: [
+      { value: "si", label: "S\xEC" },
+      { value: "forse", label: "Forse" },
+      { value: "no", label: "Per ora no" }
+    ]
+  }
+];
+var TRIAL_FEEDBACK_COMMENT_QUESTION = "Vuoi dirci altro?";
 
 // src/queries/public.ts
 function fromPublic(client, view) {
@@ -439,6 +495,11 @@ async function getEventsWithAvailability(client, params) {
   return result;
 }
 
+exports.EVENT_TYPE_LABELS = EVENT_TYPE_LABELS;
+exports.EVENT_TYPE_LABELS_PLURAL = EVENT_TYPE_LABELS_PLURAL;
+exports.TRIAL_FEEDBACK_COMMENT_QUESTION = TRIAL_FEEDBACK_COMMENT_QUESTION;
+exports.TRIAL_FEEDBACK_QUESTIONS = TRIAL_FEEDBACK_QUESTIONS;
+exports.TRIAL_FEEDBACK_RATING_QUESTION = TRIAL_FEEDBACK_RATING_QUESTION;
 exports.assertSupabaseConfig = assertSupabaseConfig;
 exports.assignMembership = assignMembership;
 exports.bookEvent = bookEvent;
@@ -469,5 +530,6 @@ exports.staffBookEvent = staffBookEvent;
 exports.staffCancelEventBooking = staffCancelEventBooking;
 exports.submitFeedback = submitFeedback;
 exports.submitMemberApplication = submitMemberApplication;
+exports.submitTrialFeedback = submitTrialFeedback;
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

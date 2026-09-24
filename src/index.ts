@@ -48,6 +48,7 @@ export {
   bookTrialLesson,
   joinWaitlist,
   leaveWaitlist,
+  submitTrialFeedback,
 } from './rpc';
 export type {
   BookLessonResult,
@@ -83,7 +84,20 @@ export type {
   PrepareMyFeePaymentResult,
   TrialBookingResult,
   WaitlistResult,
+  TrialFeedbackAnswers,
+  SubmitTrialFeedbackParams,
+  SubmitTrialFeedbackResult,
 } from './rpc';
+
+// Etichette e domande condivise fra sito, gestionale e app
+export {
+  EVENT_TYPE_LABELS,
+  EVENT_TYPE_LABELS_PLURAL,
+  TRIAL_FEEDBACK_QUESTIONS,
+  TRIAL_FEEDBACK_RATING_QUESTION,
+  TRIAL_FEEDBACK_COMMENT_QUESTION,
+} from './labels';
+export type { TrialFeedbackQuestion } from './labels';
 
 // Public queries
 export {

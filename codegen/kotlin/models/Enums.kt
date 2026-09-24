@@ -126,6 +126,7 @@ enum class FeedbackKind {
     @SerialName("lesson") LESSON,
     @SerialName("onboarding") ONBOARDING,
     @SerialName("event") EVENT,
+    @SerialName("trial") TRIAL,
 }
 
 @Serializable
@@ -241,6 +242,7 @@ enum class NotificationCategory {
     @SerialName("member_application_decided") MEMBER_APPLICATION_DECIDED,
     @SerialName("membership_fee_due") MEMBERSHIP_FEE_DUE,
     @SerialName("trial_followup") TRIAL_FOLLOWUP,
+    @SerialName("trial_booked") TRIAL_BOOKED,
 }
 
 @Serializable

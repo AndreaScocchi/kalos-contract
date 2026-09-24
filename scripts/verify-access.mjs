@@ -155,7 +155,9 @@ async function anonChecks() {
     'volunteers', 'volunteer_reimbursements', 'compensation_models', 'compensation_entries',
     'association_settings', 'trials', 'stripe_payments',
     // Sessione 5: pagamenti online
-    'stripe_refunds', 'stripe_events', 'stripe_checkout_attempts']) {
+    'stripe_refunds', 'stripe_events', 'stripe_checkout_attempts',
+    // Sessione 6: lista d'attesa, feedback e stato della ricostruzione del sito
+    'waitlist', 'feedback', 'site_rebuild_state']) {
     await expectReadDenied(anon, t);
   }
   const ins = await insert(anon, 'device_tokens', { client_id: ZERO_UUID, expo_push_token: 'verify-access' });
@@ -185,6 +187,12 @@ async function anonChecks() {
   await expectRpcDenied(anon, 'receipt_claim_send', { p_receipt_id: ZERO_UUID, p_resend: false });
   await expectRpcDenied(anon, 'stripe_checkout_expired', { p_checkout_session_id: 'cs_verify_access' });
   await expectRpcDenied(anon, 'prepare_my_fee_payment', {});
+  // Sessione 6: lista d'attesa lato staff, questionario dopo la prova, job interni
+  await expectRpcDenied(anon, 'staff_add_to_waitlist', { p_lesson_id: ZERO_UUID, p_client_id: ZERO_UUID });
+  await expectRpcDenied(anon, 'staff_remove_from_waitlist', { p_waitlist_id: ZERO_UUID });
+  await expectRpcDenied(anon, 'submit_trial_feedback', { p_trial_id: ZERO_UUID, p_rating: 5 });
+  await expectRpcNotExposed(anon, 'cron_site_rebuild', {});
+  await expectRpcNotExposed(anon, 'cron_waitlist', {});
 
   console.log('\n▸ anon — dati pubblici che il sito deve continuare a leggere');
   for (const t of ['public_site_activities', 'public_site_events', 'public_site_operators', 'public_site_schedule',
@@ -369,6 +377,16 @@ async function localChecks() {
     statuses.status === 200 && typeof statuses.json?.statuses?.[clientId] === 'string', describe(statuses));
   await expectRowsHidden(staff, 'compensation_models');
   await expectRowsHidden(staff, 'volunteer_reimbursements');
+  // Sessione 6 — lista d'attesa dal gestionale (qui la lezione non è piena: la regola risponde)
+  const wlNotFull = await rpc(staff, 'staff_add_to_waitlist', { p_lesson_id: lesson.id, p_client_id: clientId });
+  check('operatrice: mette in lista d\'attesa (solo per le lezioni piene)',
+    wlNotFull.status === 200 && wlNotFull.json?.reason === 'LESSON_NOT_FULL', describe(wlNotFull));
+  const wlRemove = await rpc(staff, 'staff_remove_from_waitlist', { p_waitlist_id: ZERO_UUID });
+  check('operatrice: toglie dalla lista d\'attesa',
+    wlRemove.status === 200 && wlRemove.json?.reason === 'NOT_IN_WAITLIST', describe(wlRemove));
+  const staffTrials = await count(staff, 'trials');
+  check('operatrice: legge le prove (pagina Prove)', staffTrials.status === 200 || staffTrials.status === 206, `HTTP ${staffTrials.status}`);
+  await expectReadDenied(staff, 'site_rebuild_state');
   // Sessione 5 — i pagamenti online e i loro rimborsi sono cosa delle Finanze. Una riga "aperta" di
   // prova (nessun pagamento, nessun incasso) serve a provare che esiste ma l'operatrice non la vede.
   await insert(service, 'stripe_payments', {
@@ -459,6 +477,14 @@ async function localChecks() {
   await expectRpcNotExposed(cliente, 'create_user_profile',
     { user_id: cliente.userId, full_name: 'x', phone: null, role: 'admin' });
   await expectReadDenied(cliente, 'financial_monthly_summary');
+  // Sessione 6 — la lista d'attesa la gestisce lo staff; il questionario vale solo per le proprie prove
+  const wlAsClient = await rpc(cliente, 'staff_add_to_waitlist', { p_lesson_id: lesson.id, p_client_id: clientId });
+  check('cliente: non mette altrə in lista d\'attesa',
+    wlAsClient.status === 200 && wlAsClient.json?.reason === 'NOT_STAFF', describe(wlAsClient));
+  const trialFb = await rpc(cliente, 'submit_trial_feedback', { p_trial_id: ZERO_UUID, p_rating: 5 });
+  check('cliente: il questionario si manda solo per una propria prova',
+    trialFb.status === 200 && trialFb.json?.reason === 'TRIAL_NOT_FOUND', describe(trialFb));
+  await expectReadDenied(cliente, 'site_rebuild_state');
 
   console.log('\n▸ admin — gestionale e Finanze');
   const month = { p_month_start: iso(new Date()).slice(0, 8) + '01', p_month_end: iso(days(30)).slice(0, 10) };
@@ -485,6 +511,9 @@ async function localChecks() {
     svcState.status === 200 && svcState.json?.reason === 'MISSING_PAYMENT_INTENT', describe(svcState));
   const queue = await count(service, 'notification_queue');
   check('service_role: legge la coda notifiche (process-notification-queue)', queue.status === 200, `HTTP ${queue.status}`);
+  const rebuildReport = await patch(service, 'site_rebuild_state?id=eq.true', { reported_at: iso(new Date()), last_ok: null });
+  check('service_role: scrive l\'esito della ricostruzione del sito (site-rebuild)',
+    rebuildReport.status === 200 && rebuildReport.json?.length === 1, describe(rebuildReport));
 
   // Scritture delle edge function con service_role: fino alla sessione 1 fallivano per permessi mancanti.
   const unsub = await patch(service, `clients?id=eq.${clientId}`, { newsletter_subscribed: false });

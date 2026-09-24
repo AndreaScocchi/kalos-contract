@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 data class Waitlist(
     val id: String,
     @SerialName("lesson_id") val lessonId: String,
-    @SerialName("user_id") val userId: String,
+    @SerialName("user_id") val userId: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("client_id") val clientId: String? = null,
     val status: WaitlistStatus,

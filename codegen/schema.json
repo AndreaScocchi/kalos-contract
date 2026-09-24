@@ -96,7 +96,8 @@
       "practice",
       "lesson",
       "onboarding",
-      "event"
+      "event",
+      "trial"
     ],
     "feedback_status": [
       "new",
@@ -187,7 +188,8 @@
       "waitlist_promotion",
       "member_application_decided",
       "membership_fee_due",
-      "trial_followup"
+      "trial_followup",
+      "trial_booked"
     ],
     "notification_channel": [
       "push",
@@ -3736,6 +3738,15 @@
           "isArray": false,
           "nullable": false,
           "hasDefault": true
+        },
+        {
+          "name": "trial_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
         }
       ]
     },
@@ -7402,6 +7413,83 @@
       ]
     },
     {
+      "name": "site_rebuild_state",
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "boolean",
+          "udtName": "bool",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "requested_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "requested_by",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "triggered_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "reported_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "last_ok",
+          "dataType": "boolean",
+          "udtName": "bool",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "last_status",
+          "dataType": "integer",
+          "udtName": "int4",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "last_error",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        }
+      ]
+    },
+    {
       "name": "social_connections",
       "columns": [
         {
@@ -8892,7 +8980,7 @@
           "udtName": "uuid",
           "isEnum": false,
           "isArray": false,
-          "nullable": false,
+          "nullable": true,
           "hasDefault": false
         },
         {

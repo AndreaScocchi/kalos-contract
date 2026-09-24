@@ -20,4 +20,5 @@ data class Feedback(
     val metadata: JsonElement? = null,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String,
+    @SerialName("trial_id") val trialId: String? = null,
 )

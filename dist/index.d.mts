@@ -1913,6 +1913,7 @@ type Database = {
                     practice_id: string | null;
                     rating: number | null;
                     status: Database["public"]["Enums"]["feedback_status"];
+                    trial_id: string | null;
                     updated_at: string;
                 };
                 Insert: {
@@ -1927,6 +1928,7 @@ type Database = {
                     practice_id?: string | null;
                     rating?: number | null;
                     status?: Database["public"]["Enums"]["feedback_status"];
+                    trial_id?: string | null;
                     updated_at?: string;
                 };
                 Update: {
@@ -1941,6 +1943,7 @@ type Database = {
                     practice_id?: string | null;
                     rating?: number | null;
                     status?: Database["public"]["Enums"]["feedback_status"];
+                    trial_id?: string | null;
                     updated_at?: string;
                 };
                 Relationships: [
@@ -1991,6 +1994,13 @@ type Database = {
                         columns: ["practice_id"];
                         isOneToOne: false;
                         referencedRelation: "practices";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "feedback_trial_id_fkey";
+                        columns: ["trial_id"];
+                        isOneToOne: false;
+                        referencedRelation: "trials";
                         referencedColumns: ["id"];
                     }
                 ];
@@ -3932,6 +3942,39 @@ type Database = {
                     }
                 ];
             };
+            site_rebuild_state: {
+                Row: {
+                    id: boolean;
+                    last_error: string | null;
+                    last_ok: boolean | null;
+                    last_status: number | null;
+                    reported_at: string | null;
+                    requested_at: string | null;
+                    requested_by: string | null;
+                    triggered_at: string | null;
+                };
+                Insert: {
+                    id?: boolean;
+                    last_error?: string | null;
+                    last_ok?: boolean | null;
+                    last_status?: number | null;
+                    reported_at?: string | null;
+                    requested_at?: string | null;
+                    requested_by?: string | null;
+                    triggered_at?: string | null;
+                };
+                Update: {
+                    id?: boolean;
+                    last_error?: string | null;
+                    last_ok?: boolean | null;
+                    last_status?: number | null;
+                    reported_at?: string | null;
+                    requested_at?: string | null;
+                    requested_by?: string | null;
+                    triggered_at?: string | null;
+                };
+                Relationships: [];
+            };
             social_connections: {
                 Row: {
                     access_token: string;
@@ -4824,7 +4867,7 @@ type Database = {
                     position: number | null;
                     status: Database["public"]["Enums"]["waitlist_status"];
                     updated_at: string;
-                    user_id: string;
+                    user_id: string | null;
                 };
                 Insert: {
                     client_id?: string | null;
@@ -4837,7 +4880,7 @@ type Database = {
                     position?: number | null;
                     status?: Database["public"]["Enums"]["waitlist_status"];
                     updated_at?: string;
-                    user_id: string;
+                    user_id?: string | null;
                 };
                 Update: {
                     client_id?: string | null;
@@ -4850,7 +4893,7 @@ type Database = {
                     position?: number | null;
                     status?: Database["public"]["Enums"]["waitlist_status"];
                     updated_at?: string;
-                    user_id?: string;
+                    user_id?: string | null;
                 };
                 Relationships: [
                     {
@@ -4951,6 +4994,7 @@ type Database = {
                     color: string | null;
                     created_at: string | null;
                     default_location_city: string | null;
+                    default_location_name: string | null;
                     default_location_slug: string | null;
                     description: string | null;
                     discipline: string | null;
@@ -4969,6 +5013,7 @@ type Database = {
                     program_objectives: Json | null;
                     slug: string | null;
                     target_audience: Json | null;
+                    trial_enabled: boolean | null;
                     updated_at: string | null;
                     why_participate: Json | null;
                 };
@@ -4992,17 +5037,22 @@ type Database = {
             public_site_events: {
                 Row: {
                     created_at: string | null;
+                    currency: string | null;
                     description: string | null;
                     end_date: string | null;
                     event_type: Database["public"]["Enums"]["event_type"] | null;
                     id: string | null;
                     image_url: string | null;
                     link_url: string | null;
+                    location_address: string | null;
                     location_city: string | null;
                     location_id: string | null;
                     location_map_url: string | null;
                     location_name: string | null;
+                    location_province: string | null;
                     location_slug: string | null;
+                    location_zip: string | null;
+                    price_cents: number | null;
                     registration_url: string | null;
                     start_date: string | null;
                     title: string | null;
@@ -5634,6 +5684,13 @@ type Database = {
                 };
                 Returns: Json;
             };
+            staff_add_to_waitlist: {
+                Args: {
+                    p_client_id: string;
+                    p_lesson_id: string;
+                };
+                Returns: Json;
+            };
             staff_book_event: {
                 Args: {
                     p_client_id: string;
@@ -5760,6 +5817,12 @@ type Database = {
                 };
                 Returns: Json;
             };
+            staff_remove_from_waitlist: {
+                Args: {
+                    p_waitlist_id: string;
+                };
+                Returns: Json;
+            };
             staff_set_member_fee: {
                 Args: {
                     p_amount_cents?: number;
@@ -5846,6 +5909,15 @@ type Database = {
                 };
                 Returns: Json;
             };
+            submit_trial_feedback: {
+                Args: {
+                    p_answers?: Json;
+                    p_comment?: string;
+                    p_rating: number;
+                    p_trial_id: string;
+                };
+                Returns: Json;
+            };
             void_receipt: {
                 Args: {
                     p_reason: string;
@@ -5868,7 +5940,7 @@ type Database = {
             content_status: "pending" | "generated" | "edited" | "scheduled" | "sent" | "published" | "failed" | "skipped";
             event_type: "evento" | "laboratorio" | "incontro";
             expense_source: "manual" | "recurring" | "payout" | "stripe_fee" | "volunteer";
-            feedback_kind: "practice" | "lesson" | "onboarding" | "event";
+            feedback_kind: "practice" | "lesson" | "onboarding" | "event" | "trial";
             feedback_status: "new" | "reviewed" | "archived";
             marketing_campaign_status: "draft" | "ai_generating" | "pending_review" | "scheduled" | "executing" | "completed" | "failed";
             member_application_channel: "app" | "site" | "paper";
@@ -5880,7 +5952,7 @@ type Database = {
             newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
             newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
             newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
-            notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder" | "feedback_request" | "waitlist_promotion" | "member_application_decided" | "membership_fee_due" | "trial_followup";
+            notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder" | "feedback_request" | "waitlist_promotion" | "member_application_decided" | "membership_fee_due" | "trial_followup" | "trial_booked";
             notification_channel: "push" | "email";
             notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
             pass_benefit_type: "subscription_discount" | "event_discount" | "bussola" | "community_access" | "priority_booking" | "other";
@@ -6005,6 +6077,12 @@ type BookLessonResult = {
     ok: boolean;
     reason?: string;
     booking_id?: string | number;
+    /**
+     * Dalla v0.3.3: con reason = 'FULL', true se la lezione ha ancora posti ma sono tenuti per chi è
+     * in lista d'attesa e ha ricevuto l'offerta (fino a `offer_expires_at`).
+     */
+    waitlist_offer?: boolean;
+    offer_expires_at?: string;
 };
 /**
  * Risultato della chiamata RPC cancel_booking
@@ -6402,6 +6480,12 @@ type TrialBookingResult = {
     booking_id?: string;
     trial_id?: string;
     member_status?: string;
+    /** Come per BookLessonResult: posto tenuto per un'offerta della lista d'attesa. */
+    waitlist_offer?: boolean;
+    offer_expires_at?: string;
+    /** Solo staff_create_client_and_book_trial: la scheda usata, e se è nata ora. */
+    client_id?: string | null;
+    client_created?: boolean;
 };
 type WaitlistResult = {
     ok: boolean;
@@ -6502,6 +6586,60 @@ declare function joinWaitlist(client: SupabaseClient<Database>, lessonId: string
  * @throws Error se la chiamata RPC fallisce
  */
 declare function leaveWaitlist(client: SupabaseClient<Database>, lessonId: string): Promise<WaitlistResult>;
+/**
+ * Risposte chiuse del questionario dopo la prova: le chiavi sono quelle di
+ * `TRIAL_FEEDBACK_QUESTIONS` (src/labels.ts), i valori una delle loro opzioni.
+ */
+type TrialFeedbackAnswers = Partial<Record<'accoglienza' | 'livello' | 'continuare', string>>;
+type SubmitTrialFeedbackParams = {
+    trialId: string;
+    /** Voto 1-5, obbligatorio. */
+    rating: number;
+    answers?: TrialFeedbackAnswers;
+    comment?: string;
+};
+type SubmitTrialFeedbackResult = {
+    ok: boolean;
+    /** NOT_ELIGIBLE (prova non ancora fatta), INVALID_RATING, INVALID_ANSWERS, TRIAL_NOT_FOUND… */
+    reason?: string;
+    feedback_id?: string;
+};
+/**
+ * Wrapper tipizzato per la RPC submit_trial_feedback (dalla v0.3.3).
+ * Il questionario dopo la lezione di prova (F6): solo per una prova fatta; reinviarlo lo corregge.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param params - Prova, voto, risposte chiuse e commento
+ * @returns Promise<SubmitTrialFeedbackResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function submitTrialFeedback(client: SupabaseClient<Database>, params: SubmitTrialFeedbackParams): Promise<SubmitTrialFeedbackResult>;
+
+/**
+ * Etichette e testi condivisi fra sito, gestionale e app, così che la stessa cosa si chiami allo
+ * stesso modo ovunque.
+ */
+
+type EventType = Database['public']['Enums']['event_type'];
+/** Tipo dell'evento (B3): etichetta singolare, per badge e filtri. */
+declare const EVENT_TYPE_LABELS: Record<EventType, string>;
+/** Tipo dell'evento al plurale, per i filtri ("Tutti", "Eventi", "Laboratori", "Incontri"). */
+declare const EVENT_TYPE_LABELS_PLURAL: Record<EventType, string>;
+type TrialFeedbackQuestion = {
+    key: 'accoglienza' | 'livello' | 'continuare';
+    question: string;
+    options: {
+        value: string;
+        label: string;
+    }[];
+};
+/**
+ * Questionario dopo la lezione di prova (F6). Le chiavi e i valori sono gli stessi che
+ * `submit_trial_feedback` accetta: cambiarli qui senza una migrazione fa rifiutare le risposte.
+ */
+declare const TRIAL_FEEDBACK_RATING_QUESTION = "Com'\u00E8 andata la lezione di prova?";
+declare const TRIAL_FEEDBACK_QUESTIONS: TrialFeedbackQuestion[];
+declare const TRIAL_FEEDBACK_COMMENT_QUESTION = "Vuoi dirci altro?";
 
 /**
  * Tipo per i nomi delle views pubbliche del sito.
@@ -6639,4 +6777,4 @@ type GetEventsWithAvailabilityParams = {
  */
 declare function getEventsWithAvailability(client: SupabaseClient<Database>, params?: GetEventsWithAvailabilityParams): Promise<EventWithAvailability[]>;
 
-export { type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetPublicEventsParams, type GetPublicScheduleParams, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type PassActionResult, type PassBenefitType, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type Views, type WaitlistResult, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyFeePayment, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication };
+export { type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetPublicEventsParams, type GetPublicScheduleParams, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type PassActionResult, type PassBenefitType, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type Views, type WaitlistResult, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyFeePayment, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback };

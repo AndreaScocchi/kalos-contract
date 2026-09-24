@@ -29,4 +29,6 @@ data class AssociationSetting(
     @SerialName("stamp_duty_cents") val stampDutyCents: Int,
     @SerialName("updated_by") val updatedBy: String? = null,
     @SerialName("updated_at") val updatedAt: String,
+    @SerialName("opening_cash_cents") val openingCashCents: Int,
+    @SerialName("opening_bank_cents") val openingBankCents: Int,
 )

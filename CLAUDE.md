@@ -56,6 +56,9 @@ createSupabaseExpoClient({
   url: string,
   anonKey: string,
   storage: Storage,              // Required
+  storageKey?: string,           // Default 'sb-auth-token' (la webapp e la nuova app la condividono)
+  detectSessionInUrl?: boolean,  // true solo sul web (token di reset nell'hash)
+  lock?: LockFunc,               // Da iOS/Android: processLock di supabase-js (v0.3.5)
 })
 
 // Validation
@@ -320,6 +323,14 @@ Contabilità per cassa dell'associazione, dal 19/08/2026, con il rendiconto nell
 
 Test: `supabase/tests/finanze.test.sql` (66).
 
+### v0.3.5 (sessione 8)
+
+- La **lista d'attesa si scrive solo con le funzioni**: tolte due policy del 2024 rimaste attive
+  (migrazione `20260924200000`). `access_model.test.sql` ora elenca anche le scritture dirette
+  concesse ai clienti.
+- `createSupabaseExpoClient` accetta `lock` (additivo): la nuova app Expo (`kalos-app`) passa
+  `processLock` su iOS e Android.
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -386,7 +397,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.4**
+Current: **v0.3.5**
 
 Consumers reference via git tag:
 ```json

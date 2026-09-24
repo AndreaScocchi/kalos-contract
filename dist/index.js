@@ -71,7 +71,8 @@ function createSupabaseExpoClient(config) {
       detectSessionInUrl,
       storage,
       // Supabase accetta storage custom con questa interfaccia
-      storageKey
+      storageKey,
+      ...config.lock ? { lock: config.lock } : {}
     }
   });
 }

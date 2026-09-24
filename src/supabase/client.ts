@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClientOptions } from '@supabase/supabase-js';
 import type { Database } from '../types/database';
 
 /**
@@ -122,6 +123,13 @@ export type SupabaseExpoClientConfig = {
    * Default: false (non supportato in Expo nativo, ma utile per web).
    */
   detectSessionInUrl?: boolean;
+  /**
+   * Lock con cui auth-js serializza lettura e rinnovo della sessione. Sul web usa già i Web
+   * Locks del browser; su iOS e Android, senza un lock, due rinnovi del token possono
+   * accavallarsi. Da React Native: `lock: processLock` (esportato da `@supabase/supabase-js`).
+   * Default: quello di auth-js.
+   */
+  lock?: NonNullable<SupabaseClientOptions<'public'>['auth']>['lock'];
 };
 
 /**
@@ -153,6 +161,7 @@ export function createSupabaseExpoClient(
       detectSessionInUrl,
       storage: storage as any, // Supabase accetta storage custom con questa interfaccia
       storageKey,
+      ...(config.lock ? { lock: config.lock } : {}),
     },
   });
 }

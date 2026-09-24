@@ -7,7 +7,7 @@
 -- Più alcuni comportamenti critici, simulando i ruoli come fa PostgREST (SET ROLE + claims JWT).
 
 BEGIN;
-SELECT plan(25);
+SELECT plan(26);
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- 1. Elenco esplicito: funzioni
@@ -107,7 +107,11 @@ SELECT set_eq(
     -- Sessione 5 (2026-09-24): pagamenti online. Le funzioni del webhook (`stripe_*`,
     -- `receipt_claim_send`, `receipt_mark_sent`) restano solo a service_role.
     'prepare_my_fee_payment(p_year integer)',
-    'staff_prepare_stripe_refund(p_transaction_id uuid, p_amount_cents integer)'
+    'staff_prepare_stripe_refund(p_transaction_id uuid, p_amount_cents integer)',
+    -- Sessione 6 (2026-09-24): lista d'attesa lato staff, questionario dopo la prova
+    'staff_add_to_waitlist(p_lesson_id uuid, p_client_id uuid)',
+    'staff_remove_from_waitlist(p_waitlist_id uuid)',
+    'submit_trial_feedback(p_trial_id uuid, p_rating smallint, p_answers jsonb, p_comment text)'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );
@@ -193,6 +197,12 @@ SELECT is_empty(
      WHERE oid = 'public.financial_monthly_summary'::regclass
        AND (has_table_privilege('authenticated', oid, 'SELECT') OR has_table_privilege('anon', oid, 'SELECT')) $$,
   'la stima delle entrate non è leggibile da operatrici e clienti'
+);
+
+SELECT ok(
+  NOT has_table_privilege('anon', 'public.site_rebuild_state', 'SELECT, INSERT, UPDATE, DELETE')
+  AND NOT has_table_privilege('authenticated', 'public.site_rebuild_state', 'SELECT, INSERT, UPDATE, DELETE'),
+  'lo stato della ricostruzione del sito lo vedono solo il job, l''edge function e ops-health'
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────

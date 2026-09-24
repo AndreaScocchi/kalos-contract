@@ -8,6 +8,12 @@ export type BookLessonResult = {
   ok: boolean;
   reason?: string;
   booking_id?: string | number;
+  /**
+   * Dalla v0.3.3: con reason = 'FULL', true se la lezione ha ancora posti ma sono tenuti per chi è
+   * in lista d'attesa e ha ricevuto l'offerta (fino a `offer_expires_at`).
+   */
+  waitlist_offer?: boolean;
+  offer_expires_at?: string;
 };
 
 /**
@@ -699,6 +705,12 @@ export type TrialBookingResult = {
   booking_id?: string;
   trial_id?: string;
   member_status?: string;
+  /** Come per BookLessonResult: posto tenuto per un'offerta della lista d'attesa. */
+  waitlist_offer?: boolean;
+  offer_expires_at?: string;
+  /** Solo staff_create_client_and_book_trial: la scheda usata, e se è nata ora. */
+  client_id?: string | null;
+  client_created?: boolean;
 };
 
 export type WaitlistResult = {
@@ -934,4 +946,52 @@ export async function leaveWaitlist(
   }
 
   return data as WaitlistResult;
+}
+
+/**
+ * Risposte chiuse del questionario dopo la prova: le chiavi sono quelle di
+ * `TRIAL_FEEDBACK_QUESTIONS` (src/labels.ts), i valori una delle loro opzioni.
+ */
+export type TrialFeedbackAnswers = Partial<Record<'accoglienza' | 'livello' | 'continuare', string>>;
+
+export type SubmitTrialFeedbackParams = {
+  trialId: string;
+  /** Voto 1-5, obbligatorio. */
+  rating: number;
+  answers?: TrialFeedbackAnswers;
+  comment?: string;
+};
+
+export type SubmitTrialFeedbackResult = {
+  ok: boolean;
+  /** NOT_ELIGIBLE (prova non ancora fatta), INVALID_RATING, INVALID_ANSWERS, TRIAL_NOT_FOUND… */
+  reason?: string;
+  feedback_id?: string;
+};
+
+/**
+ * Wrapper tipizzato per la RPC submit_trial_feedback (dalla v0.3.3).
+ * Il questionario dopo la lezione di prova (F6): solo per una prova fatta; reinviarlo lo corregge.
+ *
+ * @param client - Il client Supabase autenticato
+ * @param params - Prova, voto, risposte chiuse e commento
+ * @returns Promise<SubmitTrialFeedbackResult>
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function submitTrialFeedback(
+  client: SupabaseClient<Database>,
+  params: SubmitTrialFeedbackParams
+): Promise<SubmitTrialFeedbackResult> {
+  const { data, error } = await client.rpc('submit_trial_feedback', {
+    p_trial_id: params.trialId,
+    p_rating: params.rating,
+    p_answers: params.answers ?? {},
+    p_comment: params.comment,
+  });
+
+  if (error) {
+    handleRpcError(error, 'submit_trial_feedback');
+  }
+
+  return data as SubmitTrialFeedbackResult;
 }

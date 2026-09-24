@@ -1,6 +1,6 @@
 # Pagamenti online con Stripe
 
-Quota associativa dal sito ("Diventa socio") e donazioni con carta, dalla sessione 5 del
+Quota associativa dal sito ("Diventa sociə") e donazioni con carta, dalla sessione 5 del
 [piano](../docs/PIANO-APS-E-NUOVA-APP.md). Gli acquisti in app (abbonamenti, eventi) arrivano con la
 sessione 9 sullo stesso webhook.
 

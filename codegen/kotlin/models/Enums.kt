@@ -77,6 +77,12 @@ enum class CampaignType {
 }
 
 @Serializable
+enum class CashAccount {
+    @SerialName("cash") CASH,
+    @SerialName("bank") BANK,
+}
+
+@Serializable
 enum class CompensationComponentKind {
     @SerialName("fixed_per_lesson") FIXED_PER_LESSON,
     @SerialName("fixed_per_hour") FIXED_PER_HOUR,

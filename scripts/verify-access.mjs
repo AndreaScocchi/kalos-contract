@@ -157,7 +157,10 @@ async function anonChecks() {
     // Sessione 5: pagamenti online
     'stripe_refunds', 'stripe_events', 'stripe_checkout_attempts',
     // Sessione 6: lista d'attesa, feedback e stato della ricostruzione del sito
-    'waitlist', 'feedback', 'site_rebuild_state']) {
+    'waitlist', 'feedback', 'site_rebuild_state',
+    // Sessione 7: Finanze
+    'expenses', 'account_transfers', 'compensation_payments', 'operator_compensation_settings',
+    'rendiconto_voci']) {
     await expectReadDenied(anon, t);
   }
   const ins = await insert(anon, 'device_tokens', { client_id: ZERO_UUID, expo_push_token: 'verify-access' });
@@ -193,6 +196,12 @@ async function anonChecks() {
   await expectRpcDenied(anon, 'submit_trial_feedback', { p_trial_id: ZERO_UUID, p_rating: 5 });
   await expectRpcNotExposed(anon, 'cron_site_rebuild', {});
   await expectRpcNotExposed(anon, 'cron_waitlist', {});
+  // Sessione 7: Finanze (date del 1900: anche se fossero aperte, non mostrerebbero nulla)
+  await expectRpcDenied(anon, 'finance_income_lines', { p_from: '1900-01-01', p_to: '1900-01-31' });
+  await expectRpcDenied(anon, 'finance_income_allocations', { p_from: '1900-01-01', p_to: '1900-01-31' });
+  await expectRpcDenied(anon, 'finance_account_balances', { p_at: '1900-01-01' });
+  await expectRpcDenied(anon, 'staff_pay_compensation', { p_operator_id: ZERO_UUID, p_month_start: '1900-01-01' });
+  await expectRpcNotExposed(anon, 'income_voce', { p_kind: 'donation', p_is_commercial: false, p_is_member: false });
 
   console.log('\n▸ anon — dati pubblici che il sito deve continuare a leggere');
   for (const t of ['public_site_activities', 'public_site_events', 'public_site_operators', 'public_site_schedule',
@@ -485,6 +494,66 @@ async function localChecks() {
   check('cliente: il questionario si manda solo per una propria prova',
     trialFb.status === 200 && trialFb.json?.reason === 'TRIAL_NOT_FOUND', describe(trialFb));
   await expectReadDenied(cliente, 'site_rebuild_state');
+
+  // Sessione 7 — le Finanze le usano admin e Tesoriere (ruolo finance); le operatrici no (E3)
+  console.log('\n▸ Tesoriere — Finanze');
+  const tesoriere = await staffUser('tesoriere', 'finance');
+  const today = iso(new Date()).slice(0, 10);
+  const monthStart = today.slice(0, 8) + '01';
+  const period = { p_from: monthStart, p_to: iso(days(30)).slice(0, 10) };
+  await expectRpcOk(tesoriere, 'finance_income_lines', period);
+  await expectRpcOk(tesoriere, 'finance_income_allocations', period);
+  await expectRpcOk(tesoriere, 'finance_account_balances', { p_at: today });
+  await expectRpcOk(tesoriere, 'generate_recurring_expenses', { p_month: monthStart });
+  const voci = await count(tesoriere, 'rendiconto_voci');
+  check('Tesoriere: legge le voci del rendiconto', voci.n >= 50, `HTTP ${voci.status} n=${voci.n}`);
+  const cat = await select(tesoriere, 'expense_categories?select=id&slug=eq.materiali');
+  const exp = await insert(tesoriere, 'expenses', {
+    amount_cents: 1234, expense_date: today, category_id: cat.json?.[0]?.id, payment_method: 'cash',
+    notes: `Uscita verifica ${stamp}`,
+  });
+  check('Tesoriere: registra un\'uscita a mano (la vecchia categoria la allinea il database)',
+    exp.status === 201 && exp.json?.[0]?.category === 'materials' && !!exp.json?.[0]?.confirmed_at, describe(exp));
+  const transfer = await insert(tesoriere, 'account_transfers',
+    { occurred_on: today, from_account: 'cash', to_account: 'bank', amount_cents: 100, note: 'verifica' });
+  check('Tesoriere: registra un giroconto fra cassa e banca', transfer.status === 201, describe(transfer));
+  const tesModel = await expectRpcOk(tesoriere, 'staff_save_compensation_model', {
+    p_payload: { name: `Modello Tesoriere ${stamp}`, components: [{ kind: 'fixed_per_lesson', value_cents: 2000 }] },
+  });
+  await expectRpcOk(tesoriere, 'preview_compensation',
+    { p_model_id: tesModel?.model_id, p_duration_minutes: 60, p_participants: 5, p_revenue_cents: 0 });
+  const withholding = await insert(tesoriere, 'operator_compensation_settings',
+    { operator_id: operatorRow.id, withholding_percent: 20 });
+  check('Tesoriere: imposta la ritenuta d\'acconto di una persona', withholding.status === 201, describe(withholding));
+  await expectRpcOk(tesoriere, 'staff_freeze_compensation',
+    { p_month_start: monthStart, p_month_end: iso(days(30)).slice(0, 10), p_operator_id: operatorRow.id });
+  const nothingToPay = await rpc(tesoriere, 'staff_pay_compensation', { p_operator_id: operatorRow.id, p_month_start: monthStart });
+  check('Tesoriere: le lezioni non ancora fatte non si congelano né si pagano',
+    nothingToPay.status === 200 && nothingToPay.json?.reason === 'NOTHING_TO_PAY', describe(nothingToPay));
+  const directEntry = await insert(tesoriere, 'compensation_entries', {
+    operator_id: operatorRow.id, period_month: monthStart, lesson_id: lesson.id,
+    occurred_at: iso(new Date()), duration_minutes: 60, amount_cents: 1,
+  });
+  check('Tesoriere: i compensi congelati si scrivono solo con le funzioni', isDenied(directEntry), describe(directEntry));
+  // Una commissione come la scrive il database dopo un pagamento con carta
+  const fee = await insert(service, 'expenses', {
+    amount_cents: 99, expense_date: today, category: 'other', source: 'stripe_fee',
+    notes: `Commissione verifica ${stamp}`, confirmed_at: iso(new Date()),
+  });
+  check('service_role: scrive una commissione Stripe (trigger dei pagamenti)', fee.status === 201, describe(fee));
+  const delFee = await call(tesoriere, 'DELETE', `/rest/v1/expenses?id=eq.${fee.json?.[0]?.id}`);
+  check('Tesoriere: un\'uscita automatica non si cancella dall\'interfaccia',
+    delFee.status >= 400 && (delFee.text || '').includes('AUTOMATIC_EXPENSE'), describe(delFee));
+
+  console.log('\n▸ operatrice — le Finanze restano chiuse');
+  await expectRpcDenied(staff, 'finance_income_lines', period);
+  await expectRpcDenied(staff, 'finance_account_balances', { p_at: today });
+  const staffPayComp = await rpc(staff, 'staff_pay_compensation', { p_operator_id: operatorRow.id, p_month_start: monthStart });
+  check('operatrice: non paga compensi',
+    staffPayComp.status === 200 && staffPayComp.json?.reason === 'NOT_FINANCE', describe(staffPayComp));
+  for (const t of ['expenses', 'account_transfers', 'operator_compensation_settings', 'rendiconto_voci']) {
+    await expectRowsHidden(staff, t);
+  }
 
   console.log('\n▸ admin — gestionale e Finanze');
   const month = { p_month_start: iso(new Date()).slice(0, 8) + '01', p_month_end: iso(days(30)).slice(0, 10) };

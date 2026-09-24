@@ -5,6 +5,12 @@
 BEGIN;
 SELECT plan(9);
 
+-- I pagamenti qui sotto sono "di prova" (livemode = false): dalla sessione 5 scrivono uscite e
+-- registro solo con l'interruttore locale, che il seed crea. Lo si accende qui, così il test non
+-- dipende dal seed.
+INSERT INTO public.feature_flags (key, enabled) VALUES ('stripe_test_ledger', true)
+ON CONFLICT (key) DO UPDATE SET enabled = true;
+
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
   ('14000000-0000-0000-0000-000000000001', 'tesoreria@test.kalos', '{"full_name":"Tesoreria"}', 'authenticated', 'authenticated'),
   ('14000000-0000-0000-0000-000000000002', 'pagante@test.kalos', '{"full_name":"Chi Paga"}', 'authenticated', 'authenticated');

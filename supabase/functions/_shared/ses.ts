@@ -147,7 +147,18 @@ export async function sendEmail(options: EmailOptions): Promise<{ data: EmailRes
     }))
   }
 
-  const body = JSON.stringify(payload)
+  return await postSendEmail(client, endpoint, JSON.stringify(payload))
+}
+
+/**
+ * POST all'endpoint SendEmail di SES v2, con i tentativi sui limiti di velocità. Condiviso da
+ * `sendEmail` (contenuto Simple) e `sendRawEmail` (messaggio MIME con allegati).
+ */
+async function postSendEmail(
+  client: AwsClient,
+  endpoint: string,
+  body: string,
+): Promise<{ data: EmailResponse | null; error: EmailError | null }> {
   const backoffMs = [500, 1500, 3500]
 
   for (let attempt = 0; attempt <= backoffMs.length; attempt++) {
@@ -392,4 +403,148 @@ export async function checkDailyCap(requested: number): Promise<DailyCapResult> 
   const available = Math.max(0, cap - sentLast24Hours)
 
   return { allowed: requested <= available, available, cap, sentLast24Hours }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Email con allegati (ricevute, PDF della domanda di ammissione)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Il contenuto Simple di SES non porta allegati: serve un messaggio MIME completo, spedito come
+// `Content.Raw`. Oggetto e nome del mittente si codificano a mano (RFC 2047), il corpo e gli
+// allegati in base64 a righe di 76 caratteri. La policy IAM di `kalos-ses-sender` ammette già
+// `ses:SendRawEmail` dallo stesso indirizzo (AWS_SES_SETUP.md §4).
+
+export interface EmailAttachment {
+  filename: string
+  content: Uint8Array
+  contentType: string
+}
+
+export interface RawEmailOptions extends EmailOptions {
+  attachments?: EmailAttachment[]
+}
+
+const CRLF = '\r\n'
+
+/** base64 di byte qualsiasi, anche grandi (btoa da solo vuole stringhe "binarie" corte). */
+export function bytesToBase64(bytes: Uint8Array): string {
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(binary)
+}
+
+function wrapBase64(value: string): string {
+  return value.replace(/.{1,76}/g, (line) => line + CRLF).replace(/\r\n$/, '')
+}
+
+/**
+ * Intestazione con caratteri non ASCII come encoded-word (RFC 2047). Le parole restano sotto i 75
+ * caratteri: il testo si spezza su pezzi di al massimo 45 byte, senza tagliare un carattere a metà.
+ */
+export function encodeHeaderValue(value: string): string {
+  // eslint-disable-next-line no-control-regex
+  if (!/[^\x00-\x7F]/.test(value)) return value
+  const encoder = new TextEncoder()
+  const words: string[] = []
+  let current = ''
+  for (const ch of Array.from(value)) {
+    if (encoder.encode(current + ch).length > 45) {
+      words.push(current)
+      current = ch
+    } else {
+      current += ch
+    }
+  }
+  if (current) words.push(current)
+  return words.map((w) => `=?UTF-8?B?${bytesToBase64(encoder.encode(w))}?=`).join(`${CRLF} `)
+}
+
+function randomBoundary(prefix: string): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(12))
+  return `${prefix}_${Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')}`
+}
+
+/** Nome di file sicuro per le intestazioni: solo ASCII, niente virgolette. */
+function safeFilename(name: string): string {
+  return name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-')
+}
+
+/** Il messaggio MIME completo. Esportato per i test. */
+export function buildMimeMessage(options: RawEmailOptions): string {
+  const encoder = new TextEncoder()
+  const mixed = randomBoundary('mixed')
+  const alt = randomBoundary('alt')
+
+  const headers = [
+    `From: ${encodeDisplayName(options.from)}`,
+    `To: ${options.to}`,
+    ...(options.replyTo ? [`Reply-To: ${options.replyTo}`] : []),
+    `Subject: ${encodeHeaderValue(options.subject)}`,
+    'MIME-Version: 1.0',
+    ...Object.entries(options.headers ?? {}).map(([name, value]) => `${name}: ${encodeHeaderValue(value)}`),
+    `Content-Type: multipart/mixed; boundary="${mixed}"`,
+  ]
+
+  const text = options.text ?? options.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+
+  const parts: string[] = [
+    `--${mixed}`,
+    `Content-Type: multipart/alternative; boundary="${alt}"`,
+    '',
+    `--${alt}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    wrapBase64(bytesToBase64(encoder.encode(text))),
+    `--${alt}`,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    wrapBase64(bytesToBase64(encoder.encode(options.html))),
+    `--${alt}--`,
+  ]
+
+  for (const attachment of options.attachments ?? []) {
+    const filename = safeFilename(attachment.filename)
+    parts.push(
+      `--${mixed}`,
+      `Content-Type: ${attachment.contentType}; name="${filename}"`,
+      `Content-Disposition: attachment; filename="${filename}"`,
+      'Content-Transfer-Encoding: base64',
+      '',
+      wrapBase64(bytesToBase64(attachment.content)),
+    )
+  }
+  parts.push(`--${mixed}--`, '')
+
+  return headers.join(CRLF) + CRLF + CRLF + parts.join(CRLF)
+}
+
+/** Invia un'email con allegati. Stessa forma di risposta di `sendEmail`. */
+export async function sendRawEmail(options: RawEmailOptions): Promise<{ data: EmailResponse | null; error: EmailError | null }> {
+  const client = getClient()
+  if (!client) {
+    return { data: null, error: { statusCode: 500, message: 'SES credentials not configured', name: 'ConfigError' } }
+  }
+
+  const endpoint = `https://email.${getRegion()}.amazonaws.com/v2/email/outbound-emails`
+  const configurationSet = Deno.env.get('SES_CONFIGURATION_SET')
+
+  const payload: Record<string, unknown> = {
+    FromEmailAddress: encodeDisplayName(options.from),
+    Destination: { ToAddresses: [options.to] },
+    Content: { Raw: { Data: bytesToBase64(new TextEncoder().encode(buildMimeMessage(options))) } },
+  }
+  if (configurationSet) payload.ConfigurationSetName = configurationSet
+  if (options.tags && options.tags.length > 0) {
+    payload.EmailTags = options.tags.map(t => ({
+      Name: sanitizeTagValue(t.name),
+      Value: sanitizeTagValue(t.value),
+    }))
+  }
+
+  return await postSendEmail(client, endpoint, JSON.stringify(payload))
 }

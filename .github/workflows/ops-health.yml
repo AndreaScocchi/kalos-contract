@@ -1,6 +1,7 @@
 name: Controllo coda notifiche e backup
 
-# Ogni due ore, di giorno: controlla che la coda delle notifiche venga elaborata e che l'ultimo
+# Ogni due ore, di giorno: controlla che la coda delle notifiche venga elaborata, che i pagamenti
+# online non siano rimasti indietro (eventi Stripe, contestazioni, ricevute non inviate) e che l'ultimo
 # backup notturno sia recente. Se qualcosa non va, email di avviso via SES (una per controllo,
 # finché il problema resta). Soglie e dettagli: BACKUP.md e scripts/backup/ops-health.mjs.
 #
@@ -33,7 +34,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Coda delle notifiche
+      - name: Coda delle notifiche e pagamenti online
         id: queue
         continue-on-error: true
         env:
@@ -60,6 +61,6 @@ jobs:
         if: steps.queue.outcome == 'failure' || steps.backup.outcome == 'failure'
         run: |
           scripts/backup/send-alert.sh \
-            "⚠️ Studio Kalòs: problema su notifiche o backup" \
+            "⚠️ Studio Kalòs: problema su notifiche, pagamenti o backup" \
             "$(cat "$RUNNER_TEMP/queue.txt" "$RUNNER_TEMP/backup.txt" 2>/dev/null)"
           exit 1

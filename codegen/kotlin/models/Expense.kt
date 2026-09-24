@@ -28,4 +28,6 @@ data class Expense(
     @SerialName("payout_id") val payoutId: String? = null,
     @SerialName("volunteer_reimbursement_id") val volunteerReimbursementId: String? = null,
     val source: ExpenseSource,
+    @SerialName("payment_method") val paymentMethod: PaymentMethod,
+    @SerialName("rendiconto_voce") val rendicontoVoce: String? = null,
 )

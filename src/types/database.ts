@@ -34,6 +34,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_transfers: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          created_by: string | null
+          from_account: Database["public"]["Enums"]["cash_account"]
+          id: string
+          note: string | null
+          occurred_on: string
+          to_account: Database["public"]["Enums"]["cash_account"]
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          created_by?: string | null
+          from_account: Database["public"]["Enums"]["cash_account"]
+          id?: string
+          note?: string | null
+          occurred_on?: string
+          to_account: Database["public"]["Enums"]["cash_account"]
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          created_by?: string | null
+          from_account?: Database["public"]["Enums"]["cash_account"]
+          id?: string
+          note?: string | null
+          occurred_on?: string
+          to_account?: Database["public"]["Enums"]["cash_account"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_transfers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activities: {
         Row: {
           active_months: Json | null
@@ -300,6 +344,8 @@ export type Database = {
           ledger_start_date: string
           legal_name: string
           legal_representative: string | null
+          opening_bank_cents: number
+          opening_cash_cents: number
           pec: string | null
           phone: string | null
           receipt_footer: string | null
@@ -324,6 +370,8 @@ export type Database = {
           ledger_start_date?: string
           legal_name: string
           legal_representative?: string | null
+          opening_bank_cents?: number
+          opening_cash_cents?: number
           pec?: string | null
           phone?: string | null
           receipt_footer?: string | null
@@ -348,6 +396,8 @@ export type Database = {
           ledger_start_date?: string
           legal_name?: string
           legal_representative?: string | null
+          opening_bank_cents?: number
+          opening_cash_cents?: number
           pec?: string | null
           phone?: string | null
           receipt_footer?: string | null
@@ -1183,6 +1233,7 @@ export type Database = {
           operator_id: string
           paid_at: string | null
           participants: number
+          payment_id: string | null
           period_month: string
           revenue_cents: number
           status: Database["public"]["Enums"]["compensation_entry_status"]
@@ -1206,6 +1257,7 @@ export type Database = {
           operator_id: string
           paid_at?: string | null
           participants?: number
+          payment_id?: string | null
           period_month: string
           revenue_cents?: number
           status?: Database["public"]["Enums"]["compensation_entry_status"]
@@ -1229,6 +1281,7 @@ export type Database = {
           operator_id?: string
           paid_at?: string | null
           participants?: number
+          payment_id?: string | null
           period_month?: string
           revenue_cents?: number
           status?: Database["public"]["Enums"]["compensation_entry_status"]
@@ -1319,6 +1372,13 @@ export type Database = {
             referencedRelation: "public_site_schedule"
             referencedColumns: ["operator_id"]
           },
+          {
+            foreignKeyName: "compensation_entries_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "compensation_payments"
+            referencedColumns: ["id"]
+          },
         ]
       }
       compensation_models: {
@@ -1361,6 +1421,106 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compensation_payments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          entries_cents: number
+          gross_cents: number
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          net_cents: number
+          net_expense_id: string | null
+          note: string | null
+          operator_id: string
+          paid_on: string
+          period_month: string
+          updated_at: string
+          withholding_cents: number
+          withholding_expense_id: string | null
+          withholding_percent: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          entries_cents: number
+          gross_cents: number
+          id?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          net_cents: number
+          net_expense_id?: string | null
+          note?: string | null
+          operator_id: string
+          paid_on: string
+          period_month: string
+          updated_at?: string
+          withholding_cents?: number
+          withholding_expense_id?: string | null
+          withholding_percent?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          entries_cents?: number
+          gross_cents?: number
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          net_cents?: number
+          net_expense_id?: string | null
+          note?: string | null
+          operator_id?: string
+          paid_on?: string
+          period_month?: string
+          updated_at?: string
+          withholding_cents?: number
+          withholding_expense_id?: string | null
+          withholding_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compensation_payments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_payments_net_expense_id_fkey"
+            columns: ["net_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_payments_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_payments_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_operators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_payments_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_schedule"
+            referencedColumns: ["operator_id"]
+          },
+          {
+            foreignKeyName: "compensation_payments_withholding_expense_id_fkey"
+            columns: ["withholding_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
         ]
@@ -1694,7 +1854,15 @@ export type Database = {
           slug?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expense_categories_rendiconto_bucket_fkey"
+            columns: ["rendiconto_bucket"]
+            isOneToOne: false
+            referencedRelation: "rendiconto_voci"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       expenses: {
         Row: {
@@ -1713,8 +1881,10 @@ export type Database = {
           lesson_id: string | null
           notes: string | null
           operator_id: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
           payout_id: string | null
           recurring_expense_id: string | null
+          rendiconto_voce: string | null
           source: Database["public"]["Enums"]["expense_source"]
           updated_at: string
           vendor: string | null
@@ -1736,8 +1906,10 @@ export type Database = {
           lesson_id?: string | null
           notes?: string | null
           operator_id?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           payout_id?: string | null
           recurring_expense_id?: string | null
+          rendiconto_voce?: string | null
           source?: Database["public"]["Enums"]["expense_source"]
           updated_at?: string
           vendor?: string | null
@@ -1759,8 +1931,10 @@ export type Database = {
           lesson_id?: string | null
           notes?: string | null
           operator_id?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           payout_id?: string | null
           recurring_expense_id?: string | null
+          rendiconto_voce?: string | null
           source?: Database["public"]["Enums"]["expense_source"]
           updated_at?: string
           vendor?: string | null
@@ -1871,6 +2045,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "recurring_expenses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_rendiconto_voce_fkey"
+            columns: ["rendiconto_voce"]
+            isOneToOne: false
+            referencedRelation: "rendiconto_voci"
+            referencedColumns: ["code"]
           },
           {
             foreignKeyName: "expenses_volunteer_reimbursement_id_fkey"
@@ -3087,6 +3268,59 @@ export type Database = {
           },
         ]
       }
+      operator_compensation_settings: {
+        Row: {
+          note: string | null
+          operator_id: string
+          updated_at: string
+          updated_by: string | null
+          withholding_percent: number
+        }
+        Insert: {
+          note?: string | null
+          operator_id: string
+          updated_at?: string
+          updated_by?: string | null
+          withholding_percent?: number
+        }
+        Update: {
+          note?: string | null
+          operator_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          withholding_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operator_compensation_settings_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: true
+            referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operator_compensation_settings_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: true
+            referencedRelation: "public_site_operators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operator_compensation_settings_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: true
+            referencedRelation: "public_site_schedule"
+            referencedColumns: ["operator_id"]
+          },
+          {
+            foreignKeyName: "operator_compensation_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operators: {
         Row: {
           bio: string | null
@@ -3903,6 +4137,7 @@ export type Database = {
           label: string
           last_generated_month: string | null
           notes: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
           starts_on: string
           updated_at: string
           vendor: string | null
@@ -3919,6 +4154,7 @@ export type Database = {
           label: string
           last_generated_month?: string | null
           notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           starts_on?: string
           updated_at?: string
           vendor?: string | null
@@ -3935,6 +4171,7 @@ export type Database = {
           label?: string
           last_generated_month?: string | null
           notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           starts_on?: string
           updated_at?: string
           vendor?: string | null
@@ -3955,6 +4192,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rendiconto_voci: {
+        Row: {
+          code: string
+          kind: string
+          label: string
+          number: number | null
+          position: number
+          section: string
+          section_label: string
+        }
+        Insert: {
+          code: string
+          kind: string
+          label: string
+          number?: number | null
+          position: number
+          section: string
+          section_label: string
+        }
+        Update: {
+          code?: string
+          kind?: string
+          label?: string
+          number?: number | null
+          position?: number
+          section?: string
+          section_label?: string
+        }
+        Relationships: []
       }
       site_rebuild_state: {
         Row: {
@@ -4412,6 +4679,7 @@ export type Database = {
           note: string | null
           occurred_on: string
           refund_of_id: string | null
+          rendiconto_voce: string | null
           source: Database["public"]["Enums"]["transaction_source"]
           status: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_id: string | null
@@ -4436,6 +4704,7 @@ export type Database = {
           note?: string | null
           occurred_on?: string
           refund_of_id?: string | null
+          rendiconto_voce?: string | null
           source: Database["public"]["Enums"]["transaction_source"]
           status?: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_id?: string | null
@@ -4460,6 +4729,7 @@ export type Database = {
           note?: string | null
           occurred_on?: string
           refund_of_id?: string | null
+          rendiconto_voce?: string | null
           source?: Database["public"]["Enums"]["transaction_source"]
           status?: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_id?: string | null
@@ -4508,6 +4778,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "transactions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_rendiconto_voce_fkey"
+            columns: ["rendiconto_voce"]
+            isOneToOne: false
+            referencedRelation: "rendiconto_voci"
+            referencedColumns: ["code"]
           },
           {
             foreignKeyName: "transactions_stripe_payment_id_fkey"
@@ -5320,6 +5597,7 @@ export type Database = {
           p_operator_id?: string
         }
         Returns: {
+          activity_id: string
           amount_cents: number
           breakdown: Json
           duration_minutes: number
@@ -5372,11 +5650,68 @@ export type Database = {
       cancel_event_booking: { Args: { p_booking_id: string }; Returns: Json }
       cancel_membership: { Args: { p_membership_id: string }; Returns: Json }
       confirm_expense: {
-        Args: { p_amount_cents?: number; p_expense_id: string }
+        Args: {
+          p_amount_cents?: number
+          p_expense_date?: string
+          p_expense_id: string
+          p_payment_method?: Database["public"]["Enums"]["payment_method"]
+        }
         Returns: Json
       }
       deactivate_device_token: { Args: { p_token: string }; Returns: Json }
       delete_campaign: { Args: { campaign_id: string }; Returns: undefined }
+      finance_account_balances: { Args: { p_at: string }; Returns: Json }
+      finance_income_allocations: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          activity_id: string
+          activity_name: string
+          amount_cents: number
+          bookings: number
+          bucket: string
+          event_id: string
+          event_name: string
+          group_id: string
+          group_name: string
+          kind: Database["public"]["Enums"]["transaction_kind"]
+          occurred_on: string
+          transaction_id: string
+        }[]
+      }
+      finance_income_lines: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          account: Database["public"]["Enums"]["cash_account"]
+          amount_cents: number
+          client_id: string
+          client_name: string
+          created_at: string
+          description: string
+          event_id: string
+          event_name: string
+          is_commercial: boolean
+          is_member: boolean
+          kind: Database["public"]["Enums"]["transaction_kind"]
+          method: Database["public"]["Enums"]["payment_method"]
+          note: string
+          occurred_on: string
+          receipt_id: string
+          receipt_number: string
+          receipt_voided: boolean
+          refund_of_id: string
+          source: Database["public"]["Enums"]["transaction_source"]
+          status: Database["public"]["Enums"]["transaction_status"]
+          subscription_id: string
+          subscription_name: string
+          transaction_id: string
+          voce: string
+          voce_override: string
+        }[]
+      }
+      finance_set_opening_balances: {
+        Args: { p_bank_cents: number; p_cash_cents: number }
+        Returns: Json
+      }
       generate_recurring_expenses: { Args: { p_month?: string }; Returns: Json }
       generate_slug_from_discipline: {
         Args: { discipline_text: string }
@@ -5465,6 +5800,15 @@ export type Database = {
         Returns: boolean
       }
       prepare_my_fee_payment: { Args: { p_year?: number }; Returns: Json }
+      preview_compensation: {
+        Args: {
+          p_duration_minutes: number
+          p_model_id: string
+          p_participants: number
+          p_revenue_cents: number
+        }
+        Returns: Json
+      }
       process_recurring_announcements: { Args: never; Returns: undefined }
       promote_profile_to_operator: {
         Args: { p_profile_id: string }
@@ -5593,8 +5937,16 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
-      staff_mark_compensation_paid: {
-        Args: { p_entry_ids: string[] }
+      staff_pay_compensation: {
+        Args: {
+          p_gross_cents?: number
+          p_method?: Database["public"]["Enums"]["payment_method"]
+          p_month_start: string
+          p_note?: string
+          p_operator_id: string
+          p_paid_on?: string
+          p_withholding_percent?: number
+        }
         Returns: Json
       }
       staff_pay_member_fee: {
@@ -5610,7 +5962,11 @@ export type Database = {
         Returns: Json
       }
       staff_pay_volunteer_reimbursement: {
-        Args: { p_reimbursement_id: string }
+        Args: {
+          p_method?: Database["public"]["Enums"]["payment_method"]
+          p_paid_on?: string
+          p_reimbursement_id: string
+        }
         Returns: Json
       }
       staff_prepare_stripe_refund: {
@@ -5628,6 +5984,10 @@ export type Database = {
       staff_register_payment: { Args: { p_payload: Json }; Returns: Json }
       staff_remove_from_waitlist: {
         Args: { p_waitlist_id: string }
+        Returns: Json
+      }
+      staff_save_compensation_model: {
+        Args: { p_payload: Json }
         Returns: Json
       }
       staff_set_member_fee: {
@@ -5652,6 +6012,14 @@ export type Database = {
       }
       staff_unconvert_trial: {
         Args: { p_reason: string; p_trial_id: string }
+        Returns: Json
+      }
+      staff_undo_compensation_payment: {
+        Args: { p_payment_id: string }
+        Returns: Json
+      }
+      staff_unfreeze_compensation: {
+        Args: { p_month_start: string; p_operator_id?: string }
         Returns: Json
       }
       staff_update_booking_status: {
@@ -5745,6 +6113,7 @@ export type Database = {
         | "diretto"
         | "esclusivo"
       campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo"
+      cash_account: "cash" | "bank"
       compensation_component_kind:
         | "fixed_per_lesson"
         | "fixed_per_hour"
@@ -6059,6 +6428,7 @@ export const Constants = {
         "esclusivo",
       ],
       campaign_type: ["promo", "evento", "annuncio", "corso_nuovo"],
+      cash_account: ["cash", "bank"],
       compensation_component_kind: [
         "fixed_per_lesson",
         "fixed_per_hour",

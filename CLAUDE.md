@@ -163,6 +163,7 @@ npm run verify:migrations   # Check migration integrity
 | `site_rebuild_state` | Riga unica: quando il sito va ricostruito e com'è andata l'ultima build (sessione 6) |
 | `stripe_events`, `stripe_payments`, `stripe_refunds` | Pagamenti online: memoria del webhook, pagamenti (con `source`, `metadata`, `is_duplicate`), rimborsi |
 | `stripe_checkout_attempts` | Limite orario dei checkout delle donazioni per impronta dell'IP (interna) |
+| `rendiconto_voci`, `account_transfers`, `operator_compensation_settings`, `compensation_payments` | Finanze (sessione 7): voci del Modello D, giroconti, ritenuta per persona, pagamenti dei compensi |
 
 ### Communication Tables
 
@@ -284,6 +285,41 @@ email con il PDF della domanda). Condivise: `_shared/stripe.ts`, `receiptEmail.t
   luogo e contributo; `public_site_activities` aggiunge nome del luogo predefinito e `trial_enabled`.
 - **Etichette condivise** (`src/labels.ts`): `EVENT_TYPE_LABELS`, `EVENT_TYPE_LABELS_PLURAL`.
 
+### Finanze (v0.3.4, sessione 7)
+
+Contabilità per cassa dell'associazione, dal 19/08/2026, con il rendiconto nello schema del
+**Modello D** degli enti del Terzo Settore (DM 5 marzo 2020). Tutto solo Finanze
+(`can_access_finance()`: admin e Tesoriere).
+
+| Oggetto | Cosa fa |
+|---|---|
+| `rendiconto_voci` | Le 58 voci del Modello D (entrate e uscite A–E, imposte, investimenti e disinvestimenti). Sola lettura: le categorie di uscita (`expense_categories.rendiconto_bucket`) e le righe (`expenses.rendiconto_voce`, `transactions.rendiconto_voce`) ci puntano; un trigger rifiuta una voce di entrata su un'uscita e viceversa |
+| `account_transfers` | Giroconti fra cassa e banca (enum `cash_account`) |
+| `association_settings.opening_cash_cents` / `opening_bank_cents` | Saldi al 19/08/2026; si impostano con `finance_set_opening_balances` |
+| `expenses.payment_method` | Conto dell'uscita (contanti = cassa, il resto banca). Trigger `internal.expenses_before_write`: allinea `category` da `category_id`, conferma le uscite a mano, e dall'API impedisce di inserire, cambiare o cancellare le uscite automatiche (`payout`, `stripe_fee`, `volunteer`) |
+| `operator_compensation_settings` | Ritenuta d'acconto per persona (tabella a parte: `operators` è leggibile dal sito) |
+| `compensation_payments` | Un pagamento per persona e mese: lordo, ritenuta, netto, uscite collegate. `compensation_entries.payment_id`. I compensi congelati ora si scrivono solo con le funzioni |
+
+| Funzione | Cosa fa |
+|---|---|
+| `finance_income_lines(p_from, p_to)` | Entrate del periodo, riga per riga (rimborsi in negativo): conto, voce del rendiconto (`internal.income_voce`: A1 quote, A4 donazioni, A3/A7 contributi da associatə/terzi secondo `internal.client_is_member_on`, B per le commerciali), ricevuta, abbonamento, evento |
+| `finance_income_allocations(p_from, p_to)` | Entrate per attività ed evento: un abbonamento si divide in proporzione alle lezioni prenotate con esso (resto dei centesimi alle quote più grandi); `unused` = abbonamento senza prenotazioni, `unlinked` = incasso non collegato |
+| `finance_account_balances(p_at)` | Saldi di cassa e banca a fine giornata |
+| `finance_set_opening_balances(p_cash_cents, p_bank_cents)` | Saldi iniziali |
+| `staff_register_payment` | Stessa firma: accetta `rendiconto_voce` nel payload, solo dalle Finanze |
+| `generate_recurring_expenses(p_month?)` | Recupera i mesi mancanti fino a quello in corso (mai oltre); una ricorrenza riattivata riparte dal mese in corso |
+| `confirm_expense(p_expense_id, p_amount_cents?, p_expense_date?, p_payment_method?)` | Conferma con importo, data e metodo veri; l'importo della ritenuta non si cambia (`AMOUNT_LOCKED`) |
+| `staff_pay_volunteer_reimbursement(p_reimbursement_id, p_paid_on?, p_method?)` | L'uscita è del giorno del pagamento |
+| `calculate_compensation_v2` | Mese in ora italiana, durata vera della lezione, operatrici archiviate incluse; in più `activity_id` |
+| `staff_freeze_compensation` | Congela solo quello che è già avvenuto; risponde anche `future` e `no_model` |
+| `staff_unfreeze_compensation(p_month_start, p_operator_id?)` | Riapre i congelati non pagati |
+| `staff_pay_compensation(p_operator_id, p_month_start, p_paid_on?, p_method?, p_withholding_percent?, p_gross_cents?, p_note?)` | Paga una persona per un mese: netto come uscita del giorno, ritenuta come uscita da confermare con scadenza il 16 del mese dopo (F24). Sostituisce `staff_mark_compensation_paid` |
+| `staff_undo_compensation_payment(p_payment_id)` | Annulla un pagamento sbagliato |
+| `staff_save_compensation_model(p_payload)` | Modello, mattoni e scaglioni in un colpo solo (`INVALID_MODEL` e niente di scritto se un mattone è sbagliato) |
+| `preview_compensation(p_model_id, p_duration_minutes, p_participants, p_revenue_cents)` | Prova di un modello |
+
+Test: `supabase/tests/finanze.test.sql` (66).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -350,7 +386,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.3**
+Current: **v0.3.4**
 
 Consumers reference via git tag:
 ```json

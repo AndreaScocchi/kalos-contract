@@ -68,8 +68,13 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   (staff), `submit_trial_feedback` (cliente, solo per una propria prova fatta);
 - **Finanze:** `calculate_operator_compensation`, `calculate_compensation_v2`,
   `get_monthly_revenue_by_*`, `get_financial_kpis`, `get_revenue_breakdown`,
-  `staff_freeze_compensation`, `staff_mark_compensation_paid`, `generate_recurring_expenses`,
-  `confirm_expense`, `staff_pay_volunteer_reimbursement` (tutte con `can_access_finance()`);
+  `staff_freeze_compensation`, `generate_recurring_expenses`, `confirm_expense`,
+  `staff_pay_volunteer_reimbursement` e, dalla sessione 7, `finance_income_lines`,
+  `finance_income_allocations`, `finance_account_balances`, `finance_set_opening_balances`,
+  `staff_unfreeze_compensation`, `staff_pay_compensation` (al posto di
+  `staff_mark_compensation_paid`), `staff_undo_compensation_payment`,
+  `staff_save_compensation_model`, `preview_compensation` (tutte con `can_access_finance()`).
+  `staff_register_payment` accetta la voce del rendiconto solo dalle Finanze;
 - due funzioni pure chiamate dai trigger `SECURITY INVOKER` su `announcements` e `activities`.
 
 Tutto il resto è interno e vive nello schema `internal`: code delle notifiche (`queue_*`),
@@ -82,6 +87,17 @@ Tutto il resto è interno e vive nello schema `internal`: code delle notifiche (
 e `queue_birthday`, perché l'edge function `schedule-notifications` le chiama **attraverso
 PostgREST** con la chiave di servizio, e `process_recurring_announcements`. Se un giorno quella
 edge function cambiasse modo di chiamarle, potrebbero seguire le altre.
+
+**Finanze (sessione 7).** `rendiconto_voci` si legge solo con `can_access_finance()` e non si scrive
+dall'API (lo schema del rendiconto cambia con una migrazione). `account_transfers` e
+`operator_compensation_settings` sono delle Finanze in lettura e scrittura. `compensation_payments` e
+`compensation_entries` si leggono dalle Finanze ma si scrivono **solo con le funzioni** (congela,
+riapri, paga, annulla), che tengono insieme compensi, pagamenti e uscite. Su `expenses` il trigger
+`internal.expenses_before_write` è `SECURITY INVOKER` di proposito: da `current_user` distingue l'API
+(authenticated) dalle funzioni e dai trigger (postgres) e dalle edge function (service_role), e
+all'API vieta di inserire, cambiare o cancellare le uscite automatiche (compensi, commissioni
+Stripe, rimborsi ai volontari). La policy `expenses_delete_finance` permette al Tesoriere di
+cancellare le uscite scritte a mano (prima solo l'admin).
 
 **`site_rebuild_state`** (sessione 6) sta in `public` con RLS attivo, nessuna policy e nessun grant ad
 anon e authenticated: la scrive il job `internal.cron_site_rebuild`, la aggiorna l'edge function

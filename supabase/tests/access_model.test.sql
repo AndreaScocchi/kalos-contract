@@ -80,7 +80,6 @@ SELECT set_eq(
     -- Sessione 3 (2026-09-23): soci, incassi, prove, lista d'attesa, compensi
     'book_trial_lesson(p_lesson_id uuid)',
     'calculate_compensation_v2(p_month_start date, p_month_end date, p_operator_id uuid)',
-    'confirm_expense(p_expense_id uuid, p_amount_cents integer)',
     'generate_recurring_expenses(p_month date)',
     'get_my_member_card()',
     'get_my_membership_status()',
@@ -92,8 +91,6 @@ SELECT set_eq(
     'staff_create_member_application(p_client_id uuid, p_payload jsonb)',
     'staff_decide_member_applications(p_application_ids uuid[], p_approve boolean, p_resolution_date date, p_note text, p_rejection_reason text)',
     'staff_freeze_compensation(p_month_start date, p_month_end date, p_operator_id uuid)',
-    'staff_mark_compensation_paid(p_entry_ids uuid[])',
-    'staff_pay_volunteer_reimbursement(p_reimbursement_id uuid)',
     'staff_refund_transaction(p_transaction_id uuid, p_amount_cents integer, p_reason text)',
     'staff_register_payment(p_payload jsonb)',
     'staff_set_member_fee(p_client_id uuid, p_year integer, p_status member_fee_status, p_amount_cents integer, p_note text)',
@@ -111,7 +108,21 @@ SELECT set_eq(
     -- Sessione 6 (2026-09-24): lista d'attesa lato staff, questionario dopo la prova
     'staff_add_to_waitlist(p_lesson_id uuid, p_client_id uuid)',
     'staff_remove_from_waitlist(p_waitlist_id uuid)',
-    'submit_trial_feedback(p_trial_id uuid, p_rating smallint, p_answers jsonb, p_comment text)'
+    'submit_trial_feedback(p_trial_id uuid, p_rating smallint, p_answers jsonb, p_comment text)',
+    -- Sessione 7 (2026-09-24): Finanze. Tutte controllano can_access_finance() al loro interno.
+    -- `confirm_expense` e `staff_pay_volunteer_reimbursement` hanno cambiato firma (data e metodo),
+    -- `staff_mark_compensation_paid` è sostituita da `staff_pay_compensation`.
+    'confirm_expense(p_expense_id uuid, p_amount_cents integer, p_expense_date date, p_payment_method payment_method)',
+    'finance_account_balances(p_at date)',
+    'finance_income_allocations(p_from date, p_to date)',
+    'finance_income_lines(p_from date, p_to date)',
+    'finance_set_opening_balances(p_cash_cents integer, p_bank_cents integer)',
+    'preview_compensation(p_model_id uuid, p_duration_minutes integer, p_participants integer, p_revenue_cents bigint)',
+    'staff_pay_compensation(p_operator_id uuid, p_month_start date, p_paid_on date, p_method payment_method, p_withholding_percent numeric, p_gross_cents bigint, p_note text)',
+    'staff_pay_volunteer_reimbursement(p_reimbursement_id uuid, p_paid_on date, p_method payment_method)',
+    'staff_save_compensation_model(p_payload jsonb)',
+    'staff_undo_compensation_payment(p_payment_id uuid)',
+    'staff_unfreeze_compensation(p_month_start date, p_operator_id uuid)'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );

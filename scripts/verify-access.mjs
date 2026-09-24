@@ -494,6 +494,18 @@ async function localChecks() {
   check('cliente: il questionario si manda solo per una propria prova',
     trialFb.status === 200 && trialFb.json?.reason === 'TRIAL_NOT_FOUND', describe(trialFb));
   await expectReadDenied(cliente, 'site_rebuild_state');
+  // Sessione 8 — la lista d'attesa si scrive solo con le funzioni: né righe nuove né cancellazioni
+  const wlDirect = await insert(cliente, 'waitlist', {
+    lesson_id: lesson.id, client_id: clientId, user_id: cliente.userId, status: 'offered', position: 1,
+  });
+  check('cliente: non scrive righe nella lista d\'attesa', isDenied(wlDirect), describe(wlDirect));
+  const wlRow = await insert(service, 'waitlist', { lesson_id: lesson.id, client_id: clientId, user_id: cliente.userId });
+  const wlId = wlRow.json?.[0]?.id;
+  await call(cliente, 'DELETE', `/rest/v1/waitlist?id=eq.${wlId}`);
+  const wlStill = await select(service, `waitlist?select=id&id=eq.${wlId}`);
+  check('cliente: non cancella righe della lista d\'attesa',
+    !!wlId && wlStill.json?.length === 1, `riga di prova: ${wlId ?? describe(wlRow)}, rimasta: ${describe(wlStill)}`);
+  if (wlId) await call(service, 'DELETE', `/rest/v1/waitlist?id=eq.${wlId}`);
 
   // Sessione 7 — le Finanze le usano admin e Tesoriere (ruolo finance); le operatrici no (E3)
   console.log('\n▸ Tesoriere — Finanze');

@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, SupabaseClientOptions } from '@supabase/supabase-js';
 import * as _supabase_postgrest_js from '@supabase/postgrest-js';
 
 type Json = string | number | boolean | null | {
@@ -6438,6 +6438,13 @@ type SupabaseExpoClientConfig = {
      * Default: false (non supportato in Expo nativo, ma utile per web).
      */
     detectSessionInUrl?: boolean;
+    /**
+     * Lock con cui auth-js serializza lettura e rinnovo della sessione. Sul web usa già i Web
+     * Locks del browser; su iOS e Android, senza un lock, due rinnovi del token possono
+     * accavallarsi. Da React Native: `lock: processLock` (esportato da `@supabase/supabase-js`).
+     * Default: quello di auth-js.
+     */
+    lock?: NonNullable<SupabaseClientOptions<'public'>['auth']>['lock'];
 };
 /**
  * Crea un Supabase client per Expo/React Native.

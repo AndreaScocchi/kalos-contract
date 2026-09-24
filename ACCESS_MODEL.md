@@ -64,6 +64,8 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   propria quota; l'importo lo decide il database) e `staff_prepare_stripe_refund` (solo Finanze).
   Dalla sessione 5 `staff_refund_transaction` rifiuta gli incassi online (`USE_STRIPE_REFUND`): si
   rimborsano sulla carta, dall'edge function `stripe-refund`;
+- **lista d'attesa e prove (sessione 6):** `staff_add_to_waitlist` e `staff_remove_from_waitlist`
+  (staff), `submit_trial_feedback` (cliente, solo per una propria prova fatta);
 - **Finanze:** `calculate_operator_compensation`, `calculate_compensation_v2`,
   `get_monthly_revenue_by_*`, `get_financial_kpis`, `get_revenue_breakdown`,
   `staff_freeze_compensation`, `staff_mark_compensation_paid`, `generate_recurring_expenses`,
@@ -80,6 +82,10 @@ Tutto il resto è interno e vive nello schema `internal`: code delle notifiche (
 e `queue_birthday`, perché l'edge function `schedule-notifications` le chiama **attraverso
 PostgREST** con la chiave di servizio, e `process_recurring_announcements`. Se un giorno quella
 edge function cambiasse modo di chiamarle, potrebbero seguire le altre.
+
+**`site_rebuild_state`** (sessione 6) sta in `public` con RLS attivo, nessuna policy e nessun grant ad
+anon e authenticated: la scrive il job `internal.cron_site_rebuild`, la aggiorna l'edge function
+`site-rebuild` (service_role) con l'esito del build hook di Netlify, e ops-health la legge.
 
 Per lo stesso motivo stanno in `public`, **solo per service_role**, le funzioni dei pagamenti online
 che chiamano le edge function (sessione 5): `stripe_apply_payment_state` (l'unico punto che scrive un
@@ -139,6 +145,9 @@ anon o authenticated: il test pgTAP e `verify-access` controllano che restino ch
   - `member-application`: la domanda la registra `submit_member_application` col token della
     persona; la function aggiunge IP e dispositivo presi dalla richiesta e manda il PDF;
   - `send-receipt`: staff, e solo per ricevute che può leggere col proprio token.
+- **`site-rebuild`** (sessione 6): accetta solo la chiave di servizio (la chiama il job
+  `internal.cron_site_rebuild` via `call_edge_function`) e chiama il build hook di Netlify del sito,
+  il cui indirizzo sta nel secret `NETLIFY_BUILD_HOOK_URL`, mai nel database né nel repo.
 - **Bucket privati** (creati in produzione con gli script in `supabase/storage/`, non da
   migrazione: vedi sotto): `documenti-spese` per i documenti dei rimborsi ai volontari e delle
   uscite, leggibile e scrivibile solo con `can_access_finance()`. Il bucket `newsletter` (immagini,

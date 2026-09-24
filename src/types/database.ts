@@ -1921,6 +1921,7 @@ export type Database = {
           practice_id: string | null
           rating: number | null
           status: Database["public"]["Enums"]["feedback_status"]
+          trial_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1935,6 +1936,7 @@ export type Database = {
           practice_id?: string | null
           rating?: number | null
           status?: Database["public"]["Enums"]["feedback_status"]
+          trial_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1949,6 +1951,7 @@ export type Database = {
           practice_id?: string | null
           rating?: number | null
           status?: Database["public"]["Enums"]["feedback_status"]
+          trial_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1999,6 +2002,13 @@ export type Database = {
             columns: ["practice_id"]
             isOneToOne: false
             referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_trial_id_fkey"
+            columns: ["trial_id"]
+            isOneToOne: false
+            referencedRelation: "trials"
             referencedColumns: ["id"]
           },
         ]
@@ -3946,6 +3956,39 @@ export type Database = {
           },
         ]
       }
+      site_rebuild_state: {
+        Row: {
+          id: boolean
+          last_error: string | null
+          last_ok: boolean | null
+          last_status: number | null
+          reported_at: string | null
+          requested_at: string | null
+          requested_by: string | null
+          triggered_at: string | null
+        }
+        Insert: {
+          id?: boolean
+          last_error?: string | null
+          last_ok?: boolean | null
+          last_status?: number | null
+          reported_at?: string | null
+          requested_at?: string | null
+          requested_by?: string | null
+          triggered_at?: string | null
+        }
+        Update: {
+          id?: boolean
+          last_error?: string | null
+          last_ok?: boolean | null
+          last_status?: number | null
+          reported_at?: string | null
+          requested_at?: string | null
+          requested_by?: string | null
+          triggered_at?: string | null
+        }
+        Relationships: []
+      }
       social_connections: {
         Row: {
           access_token: string
@@ -4838,7 +4881,7 @@ export type Database = {
           position: number | null
           status: Database["public"]["Enums"]["waitlist_status"]
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           client_id?: string | null
@@ -4851,7 +4894,7 @@ export type Database = {
           position?: number | null
           status?: Database["public"]["Enums"]["waitlist_status"]
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           client_id?: string | null
@@ -4864,7 +4907,7 @@ export type Database = {
           position?: number | null
           status?: Database["public"]["Enums"]["waitlist_status"]
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -4967,6 +5010,7 @@ export type Database = {
           color: string | null
           created_at: string | null
           default_location_city: string | null
+          default_location_name: string | null
           default_location_slug: string | null
           description: string | null
           discipline: string | null
@@ -4985,6 +5029,7 @@ export type Database = {
           program_objectives: Json | null
           slug: string | null
           target_audience: Json | null
+          trial_enabled: boolean | null
           updated_at: string | null
           why_participate: Json | null
         }
@@ -5008,17 +5053,22 @@ export type Database = {
       public_site_events: {
         Row: {
           created_at: string | null
+          currency: string | null
           description: string | null
           end_date: string | null
           event_type: Database["public"]["Enums"]["event_type"] | null
           id: string | null
           image_url: string | null
           link_url: string | null
+          location_address: string | null
           location_city: string | null
           location_id: string | null
           location_map_url: string | null
           location_name: string | null
+          location_province: string | null
           location_slug: string | null
+          location_zip: string | null
+          price_cents: number | null
           registration_url: string | null
           start_date: string | null
           title: string | null
@@ -5478,6 +5528,10 @@ export type Database = {
         Args: { p_enabled: boolean; p_end?: string; p_start?: string }
         Returns: Json
       }
+      staff_add_to_waitlist: {
+        Args: { p_client_id: string; p_lesson_id: string }
+        Returns: Json
+      }
       staff_book_event: {
         Args: { p_client_id: string; p_event_id: string }
         Returns: Json
@@ -5572,6 +5626,10 @@ export type Database = {
         Returns: Json
       }
       staff_register_payment: { Args: { p_payload: Json }; Returns: Json }
+      staff_remove_from_waitlist: {
+        Args: { p_waitlist_id: string }
+        Returns: Json
+      }
       staff_set_member_fee: {
         Args: {
           p_amount_cents?: number
@@ -5640,6 +5698,15 @@ export type Database = {
         Returns: Json
       }
       submit_member_application: { Args: { p_payload: Json }; Returns: Json }
+      submit_trial_feedback: {
+        Args: {
+          p_answers?: Json
+          p_comment?: string
+          p_rating: number
+          p_trial_id: string
+        }
+        Returns: Json
+      }
       void_receipt: {
         Args: { p_reason: string; p_receipt_id: string }
         Returns: Json
@@ -5701,7 +5768,7 @@ export type Database = {
         | "payout"
         | "stripe_fee"
         | "volunteer"
-      feedback_kind: "practice" | "lesson" | "onboarding" | "event"
+      feedback_kind: "practice" | "lesson" | "onboarding" | "event" | "trial"
       feedback_status: "new" | "reviewed" | "archived"
       marketing_campaign_status:
         | "draft"
@@ -5765,6 +5832,7 @@ export type Database = {
         | "member_application_decided"
         | "membership_fee_due"
         | "trial_followup"
+        | "trial_booked"
       notification_channel: "push" | "email"
       notification_status:
         | "pending"
@@ -6017,7 +6085,7 @@ export const Constants = {
         "stripe_fee",
         "volunteer",
       ],
-      feedback_kind: ["practice", "lesson", "onboarding", "event"],
+      feedback_kind: ["practice", "lesson", "onboarding", "event", "trial"],
       feedback_status: ["new", "reviewed", "archived"],
       marketing_campaign_status: [
         "draft",
@@ -6087,6 +6155,7 @@ export const Constants = {
         "member_application_decided",
         "membership_fee_due",
         "trial_followup",
+        "trial_booked",
       ],
       notification_channel: ["push", "email"],
       notification_status: [

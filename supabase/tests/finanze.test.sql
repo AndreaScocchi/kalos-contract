@@ -7,7 +7,7 @@
 -- database vuoto.
 
 BEGIN;
-SELECT plan(66);
+SELECT plan(71);
 
 -- ── Persone ──────────────────────────────────────────────────────────────────
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
@@ -71,10 +71,13 @@ INSERT INTO public.transactions (id, client_id, kind, amount_cents, method, sour
   ('aa000000-0000-0000-0000-000000000006', '27000000-0000-0000-0000-000000000002', 'other',          1000, 'cash',          'studio', 'void',     '2026-09-12', NULL, NULL, NULL, NULL),
   ('aa000000-0000-0000-0000-000000000008', '27000000-0000-0000-0000-000000000002', 'other',           700, 'cash',          'studio', 'paid',     '2026-08-01', NULL, NULL, NULL, 'Gestione precedente'),
   ('aa000000-0000-0000-0000-000000000011', '27000000-0000-0000-0000-000000000002', 'event',          1500, 'bank_transfer', 'studio', 'paid',     '2026-09-26', NULL, '4c000000-0000-0000-0000-000000000001', NULL, NULL),
-  ('aa000000-0000-0000-0000-000000000012', '27000000-0000-0000-0000-000000000002', 'subscription',    800, 'cash',          'studio', 'paid',     '2026-09-27', NULL, NULL, NULL, 'Abbonamento senza collegamento');
+  ('aa000000-0000-0000-0000-000000000012', '27000000-0000-0000-0000-000000000002', 'subscription',    800, 'cash',          'studio', 'paid',     '2026-09-27', NULL, NULL, NULL, 'Abbonamento senza collegamento'),
+  ('aa000000-0000-0000-0000-000000000013', '27000000-0000-0000-0000-000000000002', 'subscription',    600, 'cash',          'studio', 'void',     '2026-09-16', NULL, NULL, NULL, 'Registrato per errore');
 INSERT INTO public.transactions (id, client_id, kind, amount_cents, method, source, status, occurred_on, refund_of_id, description) VALUES
   ('aa000000-0000-0000-0000-000000000007', '27000000-0000-0000-0000-000000000002', 'subscription', -500, 'bank_transfer', 'studio', 'paid', '2026-09-15', 'aa000000-0000-0000-0000-000000000002', 'Rimborso'),
-  ('aa000000-0000-0000-0000-000000000010', '27000000-0000-0000-0000-000000000001', 'subscription', -100, 'cash',          'studio', 'paid', '2026-09-20', 'aa000000-0000-0000-0000-000000000001', 'Rimborso');
+  ('aa000000-0000-0000-0000-000000000010', '27000000-0000-0000-0000-000000000001', 'subscription', -100, 'cash',          'studio', 'paid', '2026-09-20', 'aa000000-0000-0000-0000-000000000001', 'Rimborso'),
+  -- rimborso di un incasso annullato: denaro mai arrivato, non deve uscire dalla cassa
+  ('aa000000-0000-0000-0000-000000000014', '27000000-0000-0000-0000-000000000002', 'subscription', -300, 'cash',          'studio', 'paid', '2026-09-17', 'aa000000-0000-0000-0000-000000000013', 'Rimborso');
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Chi non è delle Finanze non passa
@@ -125,6 +128,11 @@ SELECT is(
   'E-A3:1000, E-A7:2000, E-A1:2500, E-A4:5000, E-A7:-500, E-A3:-100, E-A7:1500, E-A7:800',
   'voci: contributo di una socia A3, di un terzo A7, quota A1, donazione A4; i rimborsi seguono l''incasso; esclusi da saldare, annullati e gestione precedente'
 );
+
+SELECT is(
+  (SELECT count(*)::int FROM public.finance_income_lines('2026-09-01', '2026-09-30')
+    WHERE transaction_id IN ('aa000000-0000-0000-0000-000000000013', 'aa000000-0000-0000-0000-000000000014')),
+  0, 'né un incasso annullato né il rimborso di denaro mai arrivato sono entrate');
 
 SELECT is(
   (SELECT voce || '|' || account::text FROM public.finance_income_lines('2026-09-01', '2026-09-30')
@@ -246,6 +254,14 @@ SELECT is((SELECT count(*)::int FROM public.expenses WHERE notes = 'S7 da cancel
 -- Spese ricorrenti
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- Questi controlli usano mesi relativi a oggi: per non dipendere dal giorno in cui girano, la
+-- contabilità comincia per un momento nel 2020 (le proposte restano da confermare, quindi i saldi non
+-- cambiano). Il limite vero del 19/08 si prova subito dopo.
+RESET ROLE;
+CREATE TEMP TABLE s7_ledger AS SELECT ledger_start_date AS d FROM public.association_settings;
+UPDATE public.association_settings SET ledger_start_date = '2020-01-01';
+SET LOCAL ROLE authenticated;
+
 INSERT INTO public.recurring_expenses (id, category_id, label, amount_cents, day_of_month, starts_on, payment_method) VALUES
   ('4d000000-0000-0000-0000-000000000001', (SELECT id FROM public.expense_categories WHERE slug = 'utenze'), 'S7 luce', 3000, 5,
    (date_trunc('month', CURRENT_DATE) - interval '2 months')::date, 'cash'),
@@ -282,6 +298,19 @@ SELECT is(
 
 SELECT is(public.generate_recurring_expenses()->>'created', '0', 'ogni mese nasce una volta sola');
 
+RESET ROLE;
+UPDATE public.association_settings SET ledger_start_date = (SELECT d FROM s7_ledger);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO public.recurring_expenses (id, category_id, label, amount_cents, day_of_month, starts_on)
+VALUES ('4e000000-0000-0000-0000-000000000001', (SELECT id FROM public.expense_categories WHERE slug = 'affitto'),
+        'S7 affitto da giugno', 10000, 1, '2026-06-01');
+SELECT ok((public.generate_recurring_expenses()->>'ok')::boolean, 'una ricorrenza che parte prima della costituzione');
+SELECT is(
+  (SELECT count(*)::int FROM public.expenses
+    WHERE recurring_expense_id = '4e000000-0000-0000-0000-000000000001' AND expense_date < '2026-08-19'),
+  0, '…non propone i mesi prima del 19/08: quelle spese non erano dell''associazione');
+
 SELECT is(
   public.confirm_expense(
     (SELECT id FROM public.expenses WHERE recurring_expense_id = '4d000000-0000-0000-0000-000000000001' ORDER BY expense_date LIMIT 1),
@@ -306,6 +335,8 @@ RESET ROLE;
 INSERT INTO public.operators (id, name, role, engagement_type) VALUES
   ('7a000000-0000-0000-0000-000000000001', 'S7 Occasionale', 'istruttrice', 'paid'),
   ('7a000000-0000-0000-0000-000000000002', 'S7 Forfettaria', 'istruttrice', 'paid');
+INSERT INTO public.operators (id, name, role, engagement_type, is_active) VALUES
+  ('7a000000-0000-0000-0000-000000000003', 'S7 Andata via', 'istruttrice', 'paid', false);
 -- Una lezione passata e una futura per la prima, in due mesi diversi
 INSERT INTO public.lessons (id, activity_id, operator_id, starts_at, ends_at, capacity) VALUES
   ('4b000000-0000-0000-0000-000000000011', '47000000-0000-0000-0000-000000000001', '7a000000-0000-0000-0000-000000000001',
@@ -344,6 +375,9 @@ INSERT INTO public.compensation_assignments (operator_id, activity_id, model_id,
 INSERT INTO public.operator_compensation_settings (operator_id, withholding_percent)
 VALUES ('7a000000-0000-0000-0000-000000000001', 20);
 
+SELECT is((SELECT count(*)::int FROM public.operators WHERE id = '7a000000-0000-0000-0000-000000000003'), 1,
+  'il Tesoriere vede anche chi non lavora più con noi (nomi nei compensi passati e nella Certificazione Unica)');
+
 SELECT is(
   (SELECT string_agg(to_char(occurred_at AT TIME ZONE 'Europe/Rome', 'DD/MM HH24:MI'), ', ')
      FROM public.calculate_compensation_v2('2025-10-01', '2025-10-31', '7a000000-0000-0000-0000-000000000002')
@@ -367,6 +401,11 @@ SELECT is(
        (date_trunc('month', now()) + interval '2 months' - interval '1 day')::date,
        '7a000000-0000-0000-0000-000000000001') AS r) x),
   '1|1', 'si congela solo la lezione già fatta; quella futura resta fuori');
+
+SELECT is(
+  (SELECT period_month FROM public.compensation_entries WHERE lesson_id = '4b000000-0000-0000-0000-000000000011'),
+  (date_trunc('month', now()) - interval '1 month')::date,
+  'il mese di competenza è quello della lezione');
 
 SELECT is(
   public.staff_freeze_compensation(

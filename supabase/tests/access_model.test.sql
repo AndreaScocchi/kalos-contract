@@ -7,7 +7,7 @@
 -- Più alcuni comportamenti critici, simulando i ruoli come fa PostgREST (SET ROLE + claims JWT).
 
 BEGIN;
-SELECT plan(26);
+SELECT plan(27);
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- 1. Elenco esplicito: funzioni
@@ -194,6 +194,42 @@ SELECT is_empty(
   $$ SELECT tablename || '.' || policyname FROM pg_policies
      WHERE schemaname = 'public' AND 'public' = ANY (roles) $$,
   'nessuna policy senza TO: ognuna dichiara per quale ruolo vale'
+);
+
+-- Scritture dirette legate all'utente (sessione 8). Dove le regole contano (prenotazioni, lista
+-- d'attesa, soci, incassi) si scrive solo con le funzioni; le tabelle qui sotto sono dati propri
+-- senza regole da far rispettare. Due policy vecchie sulla lista d'attesa erano rimaste attive
+-- accanto alle funzioni: con questo elenco una policy nuova di questo tipo non passa inosservata.
+SELECT set_eq(
+  $$ SELECT tablename || '.' || policyname FROM pg_policies
+     WHERE schemaname = 'public' AND 'authenticated' = ANY (roles) AND cmd <> 'SELECT'
+       AND (coalesce(qual, '') || ' ' || coalesce(with_check, '')) ~ '(auth\.uid\(\)|get_my_client_id\(\))' $$,
+  ARRAY[
+    'bug_reports.bug_reports_insert_authenticated',
+    'device_tokens.device_tokens_delete_own',
+    'device_tokens.device_tokens_insert_own',
+    'device_tokens.device_tokens_update_own',
+    'feedback.feedback_insert_own',
+    'feedback.feedback_update_own',
+    'journal_entries.journal_entries_delete_own',
+    'journal_entries.journal_entries_insert_own',
+    'journal_entries.journal_entries_update_own',
+    'notification_preferences.notification_preferences_insert_own',
+    'notification_preferences.notification_preferences_update_own',
+    'notification_reads.notification_reads_delete_own',
+    'notification_reads.notification_reads_insert_own',
+    'notification_settings.notification_settings_insert_own',
+    'notification_settings.notification_settings_update_own',
+    'practice_user_state.practice_user_state_insert_own',
+    'practice_user_state.practice_user_state_update_own',
+    'profiles.profiles_update_own_or_staff',
+    -- solo staff: collegamenti social della propria operatrice
+    'social_connections.social_connections_own_delete',
+    'social_connections.social_connections_own_update',
+    'user_preferences.user_preferences_insert_own',
+    'user_preferences.user_preferences_update_own'
+  ],
+  'le scritture dirette legate all''utente sono solo quelle dei dati propri, e la lista d''attesa non c''è'
 );
 
 SELECT is_empty(

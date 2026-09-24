@@ -117,6 +117,13 @@ anon o authenticated: il test pgTAP e `verify-access` controllano che restino ch
 | `bookings`, `event_bookings` | solo staff | I clienti passano da `book_lesson`, `cancel_booking`, `book_event` e `cancel_event_booking`, che applicano capienza, scadenze e la regola "solo soci" (interruttore `members_only`). |
 | `clients`, `subscriptions`, `lessons`, … | solo staff | via policy `is_staff()` |
 | dati personali del cliente (notifiche, preferenze, diario, pratica) | il cliente, solo le proprie righe | policy su `get_my_client_id()` |
+| `waitlist` | solo staff | I clienti passano da `join_waitlist` e `leave_waitlist`: stato, posizione e offerte li decidono le funzioni. Due policy del 2024 (`waitlist_insert_own`, `waitlist_delete_own_or_staff`) erano rimaste attive accanto a queste: tolte nella sessione 8 (migrazione `20260924200000`). |
+
+**Elenco esplicito (dalla sessione 8).** `access_model.test.sql` elenca tutte le policy di scrittura
+per `authenticated` legate all'utente (`auth.uid()` o `get_my_client_id()`): diario, stato delle
+pratiche, preferenze, letture e impostazioni delle notifiche, token dei dispositivi, feedback,
+segnalazioni, profilo, `user_preferences` e i collegamenti social delle operatrici. Una policy nuova
+di questo tipo fa fallire il test: se serve davvero, la si aggiunge all'elenco e a questa tabella.
 
 ## Regole per chi modifica lo schema
 

@@ -287,6 +287,13 @@ async function getMyMemberCard(client) {
   }
   return data;
 }
+async function prepareMyFeePayment(client, year) {
+  const { data, error } = await client.rpc("prepare_my_fee_payment", year ? { p_year: year } : {});
+  if (error) {
+    handleRpcError(error, "prepare_my_fee_payment");
+  }
+  return data;
+}
 async function bookTrialLesson(client, lessonId) {
   const { data, error } = await client.rpc("book_trial_lesson", {
     p_lesson_id: lessonId
@@ -430,6 +437,6 @@ async function getEventsWithAvailability(client, params) {
   return result;
 }
 
-export { assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication };
+export { assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyFeePayment, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

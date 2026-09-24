@@ -45,14 +45,15 @@ export interface ReceiptPdfData {
   occurred_on: string | null
 }
 
-// Colori del brand (BRAND.md §2): blu notte per il testo, arancio per l'accento.
-const INK = rgb(0x0f / 255, 0x2d / 255, 0x3b / 255)
-const MUTED = rgb(0x5a / 255, 0x6b / 255, 0x73 / 255)
-const RULE = rgb(0xd9 / 255, 0xd4 / 255, 0xc6 / 255)
-const ACCENT = rgb(0xf7 / 255, 0x5c / 255, 0x2c / 255)
+// Colori del brand (BRAND.md §2): blu notte per il testo, arancio per l'accento. Esportati per il PDF
+// della domanda di ammissione (`applicationPdf.ts`), che ha lo stesso aspetto.
+export const INK = rgb(0x0f / 255, 0x2d / 255, 0x3b / 255)
+export const MUTED = rgb(0x5a / 255, 0x6b / 255, 0x73 / 255)
+export const RULE = rgb(0xd9 / 255, 0xd4 / 255, 0xc6 / 255)
+export const ACCENT = rgb(0xf7 / 255, 0x5c / 255, 0x2c / 255)
 const VOID = rgb(0xb5 / 255, 0x48 / 255, 0x2e / 255)
 
-const METHOD_LABELS: Record<string, string> = {
+export const METHOD_LABELS: Record<string, string> = {
   cash: 'Contanti',
   bank_transfer: 'Bonifico bancario',
   stripe: 'Pagamento elettronico',
@@ -88,7 +89,7 @@ export function formatDateIt(value: string | null | undefined): string {
 }
 
 /** Riduce il testo ai caratteri che Helvetica sa disegnare, invece di far fallire il PDF. */
-function makeSanitizer(font: PDFFont): (text: string) => string {
+export function makeSanitizer(font: PDFFont): (text: string) => string {
   const supported = new Set(font.getCharacterSet())
   const fallback: Record<string, string> = { 'ə': 'e', 'Ə': 'E', 'ł': 'l', 'Ł': 'L', 'đ': 'd', 'Đ': 'D', '’': "'", '‘': "'" }
   return (text: string) =>
@@ -102,7 +103,7 @@ function makeSanitizer(font: PDFFont): (text: string) => string {
       .join('')
 }
 
-function wrap(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+export function wrap(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const lines: string[] = []
   for (const paragraph of text.split('\n')) {
     const words = paragraph.split(/\s+/).filter(Boolean)

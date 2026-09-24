@@ -4,11 +4,12 @@ package it.kalos.contract.models
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class StripePayment(
     val id: String,
-    @SerialName("payment_intent_id") val paymentIntentId: String,
+    @SerialName("payment_intent_id") val paymentIntentId: String? = null,
     @SerialName("checkout_session_id") val checkoutSessionId: String? = null,
     @SerialName("client_id") val clientId: String? = null,
     val purpose: StripePurpose,
@@ -27,4 +28,7 @@ data class StripePayment(
     @SerialName("created_at") val createdAt: String,
     @SerialName("succeeded_at") val succeededAt: String? = null,
     @SerialName("updated_at") val updatedAt: String,
+    val source: TransactionSource? = null,
+    val metadata: JsonElement,
+    @SerialName("is_duplicate") val isDuplicate: Boolean,
 )

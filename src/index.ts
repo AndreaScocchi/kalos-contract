@@ -44,6 +44,7 @@ export {
   submitMemberApplication,
   getMyMembershipStatus,
   getMyMemberCard,
+  prepareMyFeePayment,
   bookTrialLesson,
   joinWaitlist,
   leaveWaitlist,
@@ -78,6 +79,8 @@ export type {
   SubmitMemberApplicationResult,
   GetMyMembershipStatusResult,
   GetMyMemberCardResult,
+  PrepareMyFeePaymentReason,
+  PrepareMyFeePaymentResult,
   TrialBookingResult,
   WaitlistResult,
 } from './rpc';

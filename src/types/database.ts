@@ -3802,7 +3802,10 @@ export type Database = {
           recipient_address: string | null
           recipient_fiscal_code: string | null
           recipient_name: string
+          send_claimed_at: string | null
+          send_error: string | null
           sent_at: string | null
+          sent_to: string | null
           stamp_duty_cents: number
           transaction_id: string
           updated_at: string
@@ -3824,7 +3827,10 @@ export type Database = {
           recipient_address?: string | null
           recipient_fiscal_code?: string | null
           recipient_name: string
+          send_claimed_at?: string | null
+          send_error?: string | null
           sent_at?: string | null
+          sent_to?: string | null
           stamp_duty_cents?: number
           transaction_id: string
           updated_at?: string
@@ -3846,7 +3852,10 @@ export type Database = {
           recipient_address?: string | null
           recipient_fiscal_code?: string | null
           recipient_name?: string
+          send_claimed_at?: string | null
+          send_error?: string | null
           sent_at?: string | null
+          sent_to?: string | null
           stamp_duty_cents?: number
           transaction_id?: string
           updated_at?: string
@@ -4008,6 +4017,27 @@ export type Database = {
           },
         ]
       }
+      stripe_checkout_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          ip_hash: string
+          purpose: Database["public"]["Enums"]["stripe_purpose"]
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          ip_hash: string
+          purpose: Database["public"]["Enums"]["stripe_purpose"]
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          ip_hash?: string
+          purpose?: Database["public"]["Enums"]["stripe_purpose"]
+        }
+        Relationships: []
+      }
       stripe_events: {
         Row: {
           attempts: number
@@ -4052,12 +4082,15 @@ export type Database = {
           fee_cents: number | null
           fee_expense_id: string | null
           id: string
+          is_duplicate: boolean
           livemode: boolean
+          metadata: Json
           net_cents: number | null
-          payment_intent_id: string
+          payment_intent_id: string | null
           payment_method_type: string | null
           purpose: Database["public"]["Enums"]["stripe_purpose"]
           receipt_email: string | null
+          source: Database["public"]["Enums"]["transaction_source"] | null
           status: Database["public"]["Enums"]["stripe_payment_status"]
           succeeded_at: string | null
           target_id: string | null
@@ -4074,12 +4107,15 @@ export type Database = {
           fee_cents?: number | null
           fee_expense_id?: string | null
           id?: string
+          is_duplicate?: boolean
           livemode?: boolean
+          metadata?: Json
           net_cents?: number | null
-          payment_intent_id: string
+          payment_intent_id?: string | null
           payment_method_type?: string | null
           purpose: Database["public"]["Enums"]["stripe_purpose"]
           receipt_email?: string | null
+          source?: Database["public"]["Enums"]["transaction_source"] | null
           status?: Database["public"]["Enums"]["stripe_payment_status"]
           succeeded_at?: string | null
           target_id?: string | null
@@ -4096,12 +4132,15 @@ export type Database = {
           fee_cents?: number | null
           fee_expense_id?: string | null
           id?: string
+          is_duplicate?: boolean
           livemode?: boolean
+          metadata?: Json
           net_cents?: number | null
-          payment_intent_id?: string
+          payment_intent_id?: string | null
           payment_method_type?: string | null
           purpose?: Database["public"]["Enums"]["stripe_purpose"]
           receipt_email?: string | null
+          source?: Database["public"]["Enums"]["transaction_source"] | null
           status?: Database["public"]["Enums"]["stripe_payment_status"]
           succeeded_at?: string | null
           target_id?: string | null
@@ -4143,6 +4182,7 @@ export type Database = {
           status: string | null
           stripe_payment_id: string
           transaction_id: string | null
+          updated_at: string
         }
         Insert: {
           amount_cents: number
@@ -4154,6 +4194,7 @@ export type Database = {
           status?: string | null
           stripe_payment_id: string
           transaction_id?: string | null
+          updated_at?: string
         }
         Update: {
           amount_cents?: number
@@ -4165,6 +4206,7 @@ export type Database = {
           status?: string | null
           stripe_payment_id?: string
           transaction_id?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -5372,6 +5414,7 @@ export type Database = {
         Args: { p_announcement_id?: string; p_notification_log_id?: string }
         Returns: boolean
       }
+      prepare_my_fee_payment: { Args: { p_year?: number }; Returns: Json }
       process_recurring_announcements: { Args: never; Returns: undefined }
       promote_profile_to_operator: {
         Args: { p_profile_id: string }
@@ -5410,6 +5453,14 @@ export type Database = {
           }
       queue_re_engagement: { Args: never; Returns: Json }
       queue_subscription_expiry: { Args: never; Returns: Json }
+      receipt_claim_send: {
+        Args: { p_receipt_id: string; p_resend?: boolean }
+        Returns: Json
+      }
+      receipt_mark_sent: {
+        Args: { p_error?: string; p_receipt_id: string; p_to: string }
+        Returns: undefined
+      }
       register_device_token: {
         Args: {
           p_app_version?: string
@@ -5508,6 +5559,10 @@ export type Database = {
         Args: { p_reimbursement_id: string }
         Returns: Json
       }
+      staff_prepare_stripe_refund: {
+        Args: { p_amount_cents: number; p_transaction_id: string }
+        Returns: Json
+      }
       staff_refund_transaction: {
         Args: {
           p_amount_cents: number
@@ -5547,6 +5602,33 @@ export type Database = {
           p_status: Database["public"]["Enums"]["booking_status"]
         }
         Returns: Json
+      }
+      stripe_apply_payment_state: { Args: { p_payload: Json }; Returns: Json }
+      stripe_checkout_expired: {
+        Args: { p_checkout_session_id: string }
+        Returns: Json
+      }
+      stripe_event_done: {
+        Args: { p_error?: string; p_event_id: string }
+        Returns: undefined
+      }
+      stripe_event_received: {
+        Args: {
+          p_event_id: string
+          p_livemode: boolean
+          p_object_id: string
+          p_type: string
+        }
+        Returns: Json
+      }
+      stripe_register_checkout_attempt: {
+        Args: {
+          p_ip_hash: string
+          p_limit?: number
+          p_purpose: Database["public"]["Enums"]["stripe_purpose"]
+          p_window_minutes?: number
+        }
+        Returns: boolean
       }
       submit_feedback: {
         Args: {

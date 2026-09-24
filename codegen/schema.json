@@ -7240,6 +7240,33 @@
           "isArray": false,
           "nullable": false,
           "hasDefault": true
+        },
+        {
+          "name": "sent_to",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "send_claimed_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "send_error",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
         }
       ]
     },
@@ -7542,6 +7569,47 @@
       ]
     },
     {
+      "name": "stripe_checkout_attempts",
+      "columns": [
+        {
+          "name": "id",
+          "dataType": "bigint",
+          "udtName": "int8",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "ip_hash",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "purpose",
+          "dataType": "stripe_purpose",
+          "udtName": "stripe_purpose",
+          "isEnum": true,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "created_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        }
+      ]
+    },
+    {
       "name": "stripe_events",
       "columns": [
         {
@@ -7636,7 +7704,7 @@
           "udtName": "text",
           "isEnum": false,
           "isArray": false,
-          "nullable": false,
+          "nullable": true,
           "hasDefault": false
         },
         {
@@ -7800,6 +7868,33 @@
           "isArray": false,
           "nullable": false,
           "hasDefault": true
+        },
+        {
+          "name": "source",
+          "dataType": "transaction_source",
+          "udtName": "transaction_source",
+          "isEnum": true,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "metadata",
+          "dataType": "jsonb",
+          "udtName": "jsonb",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "is_duplicate",
+          "dataType": "boolean",
+          "udtName": "bool",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
         }
       ]
     },
@@ -7880,6 +7975,15 @@
         },
         {
           "name": "created_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "updated_at",
           "dataType": "timestamp with time zone",
           "udtName": "timestamptz",
           "isEnum": false,

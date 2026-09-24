@@ -160,7 +160,8 @@ npm run verify:migrations   # Check migration integrity
 | `event_operators` | Chi tiene un evento, per calcolarne il compenso |
 | `activity_groups`, `locations` | Gruppi di attività e luoghi (sito e app) |
 | `trials` | Lezioni di prova: una per attività, con la conversione in primo ingresso |
-| `stripe_events`, `stripe_payments`, `stripe_refunds` | Pagamenti online (checkout e webhook: sessione 5) |
+| `stripe_events`, `stripe_payments`, `stripe_refunds` | Pagamenti online: memoria del webhook, pagamenti (con `source`, `metadata`, `is_duplicate`), rimborsi |
+| `stripe_checkout_attempts` | Limite orario dei checkout delle donazioni per impronta dell'IP (interna) |
 
 ### Communication Tables
 
@@ -227,6 +228,30 @@ npm run verify:migrations   # Check migration integrity
 **Edge function `receipt-pdf`:** `POST { receipt_id }` con il token dell'utente → PDF della ricevuta,
 ridisegnato dalla riga di `receipts` (dati congelati all'emissione) con `_shared/receiptPdf.ts`, lo
 stesso disegno che useranno email, Stripe e app. Nessun file salvato.
+
+### Pagamenti online con Stripe (v0.3.2, sessione 5)
+
+Tutto in **[STRIPE_SETUP.md](STRIPE_SETUP.md)**: come funziona, account, webhook, secret, go-live,
+spegnimento d'emergenza, prove in locale senza account (`scripts/stripe-local/`).
+
+| Funzione | Chi | Cosa fa |
+|---|---|---|
+| `prepare_my_fee_payment(p_year?)` | cliente | Si può pagare online la propria quota? Importo deciso dal DB; crea la riga della quota se manca |
+| `staff_prepare_stripe_refund(p_transaction_id, p_amount_cents)` | Finanze | Controlli prima del rimborso sulla carta |
+| `stripe_apply_payment_state(p_payload)` | solo service_role | **L'unico punto che scrive un pagamento**: incasso, quota, ricevuta, commissione, rimborsi. Idempotente, serializzato sulla riga |
+| `stripe_checkout_expired`, `stripe_event_received`, `stripe_event_done`, `stripe_register_checkout_attempt`, `receipt_claim_send`, `receipt_mark_sent` | solo service_role | Servizio del webhook e dell'invio delle ricevute |
+| `issue_receipt`, `staff_refund_transaction` | staff / Finanze | Stessa firma; il corpo sta in `internal.issue_receipt_core` e `internal.refund_transaction_core`. `staff_refund_transaction` rifiuta gli incassi online (`USE_STRIPE_REFUND`) |
+
+**Mai dati di prova nel registro:** un pagamento `livemode = false` scrive incassi, ricevute e uscite
+solo con l'interruttore `stripe_test_ledger`, che esiste solo nel seed locale.
+
+**Edge function:** `stripe-checkout` (quota col token, donazioni anche anonime), `stripe-webhook`
+(senza JWT, firma di Stripe; ogni evento rilegge il pagamento dall'API e chiama
+`stripe_apply_payment_state`), `stripe-refund` (Finanze), `send-receipt` (staff: invia o reinvia la
+ricevuta con il PDF), `member-application` (domanda dal sito con IP e dispositivo presi dal server,
+email con il PDF della domanda). Condivise: `_shared/stripe.ts`, `receiptEmail.ts`,
+`applicationPdf.ts`, `receiptData.ts`, `http.ts`, e `ses.ts` con `sendRawEmail` (allegati via
+`Content.Raw`). Test delle email: `supabase/functions/tests/email_test.ts`.
 
 **Storage:** i bucket si creano in produzione con gli script di `supabase/storage/`
 (`npx supabase db query --linked -f supabase/storage/<bucket>.sql`), non da migrazione.
@@ -297,7 +322,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.1**
+Current: **v0.3.2**
 
 Consumers reference via git tag:
 ```json
@@ -326,6 +351,7 @@ dist/
 - [DATABASE_WORKFLOW.md](DATABASE_WORKFLOW.md) - Detailed migration guide
 - [ACCESS_MODEL.md](ACCESS_MODEL.md) - Chi può leggere, scrivere ed eseguire cosa; regole per funzioni/tabelle/view nuove
 - [BACKUP.md](BACKUP.md) - Backup notturno cifrato su S3 (UE), avvisi email, procedura di ripristino
+- [STRIPE_SETUP.md](STRIPE_SETUP.md) - Pagamenti online: account, webhook, secret, go-live, prove in locale
 
 ## Important Rules
 

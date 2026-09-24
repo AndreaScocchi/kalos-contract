@@ -289,6 +289,13 @@ async function getMyMemberCard(client) {
   }
   return data;
 }
+async function prepareMyFeePayment(client, year) {
+  const { data, error } = await client.rpc("prepare_my_fee_payment", year ? { p_year: year } : {});
+  if (error) {
+    handleRpcError(error, "prepare_my_fee_payment");
+  }
+  return data;
+}
 async function bookTrialLesson(client, lessonId) {
   const { data, error } = await client.rpc("book_trial_lesson", {
     p_lesson_id: lessonId
@@ -455,6 +462,7 @@ exports.getPublicPricing = getPublicPricing;
 exports.getPublicSchedule = getPublicSchedule;
 exports.joinWaitlist = joinWaitlist;
 exports.leaveWaitlist = leaveWaitlist;
+exports.prepareMyFeePayment = prepareMyFeePayment;
 exports.queueFeedbackRequest = queueFeedbackRequest;
 exports.requestBussola = requestBussola;
 exports.staffBookEvent = staffBookEvent;

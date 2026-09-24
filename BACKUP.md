@@ -21,7 +21,7 @@ posto di Supabase Pro.
 | **Dove** | bucket S3 privato in `eu-central-1`, prefisso `backups/`, un file `kalos-AAAAMMGGTHHMMSSZ.tar.gz.age` a notte |
 | **Per quanto** | 30 giorni (lifecycle rule del bucket) |
 | **Quanto pesa** | qualche decina di MB a notte (oggi: DB ~20 MB di dati, Storage ~52 MB) |
-| **Avvisi** | email via SES, dallo stesso dominio verificato delle notifiche: se il backup fallisce; se una notifica resta in coda più di 30 minuti; se ne fallisce anche una sola; se l'ultimo backup ha più di 30 ore ([`ops-health.yml`](.github/workflows/ops-health.yml)) |
+| **Avvisi** | email via SES, dallo stesso dominio verificato delle notifiche: se il backup fallisce; se una notifica resta in coda più di 30 minuti; se ne fallisce anche una sola; se l'ultimo backup ha più di 30 ore; dalla sessione 5 anche per i pagamenti online (§3) ([`ops-health.yml`](.github/workflows/ops-health.yml)) |
 
 **Perché S3 e non GitHub.** Il repo `kalos-contract` è **pubblico**: artifact e log delle Actions
 li vede chiunque. Per questo il backup va fuori da GitHub, e gli script stampano solo dimensioni e
@@ -155,6 +155,9 @@ Repo `kalos-contract` → **Settings → Secrets and variables → Actions**.
 | Coda ferma | una notifica pronta da più di 30 minuti e mai elaborata | a ogni controllo, finché dura |
 | Notifiche fallite | almeno una fallita nelle ultime 2 ore (in condizioni normali sono zero) | una volta per ogni gruppo di fallite |
 | Backup vecchio | l'ultimo file nel bucket ha più di 30 ore | a ogni controllo, finché dura |
+| Webhook Stripe indietro | un evento di Stripe non elaborato da più di un'ora (motivo in `stripe_events.error_message`) | a ogni controllo, finché dura |
+| Contestazione | un chargeback (`charge.dispute.*`) arrivato nelle ultime 2 ore: si gestisce dalla dashboard di Stripe | una volta |
+| Ricevuta online non inviata | ricevuta di un pagamento online senza email da più di un'ora (motivo in `receipts.send_error`): si reinvia dal gestionale | a ogni controllo, finché dura |
 
 I controlli girano ogni due ore dalle 7 alle 23 circa. Soglie in
 [`ops-health.mjs`](scripts/backup/ops-health.mjs).

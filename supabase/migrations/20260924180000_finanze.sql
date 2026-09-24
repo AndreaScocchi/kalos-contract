@@ -37,7 +37,8 @@
 -- delle Finanze che nessun'app chiama ancora (`confirm_expense`, `calculate_compensation_v2`, che
 -- aggiunge `activity_id` all'uscita) o che il gestionale chiama con i soli parametri già esistenti
 -- (`staff_pay_volunteer_reimbursement`). Sparisce `staff_mark_compensation_paid`, mai usata: la
--- sostituisce `staff_pay_compensation`.
+-- sostituisce `staff_pay_compensation`. Una policy di lettura in più su `operators` (lo staff vede
+-- anche le operatrici non più attive; il sito resta com'è).
 -- Vedi docs/PIANO-APS-E-NUOVA-APP.md §3 E5–E8 e §0-septies.
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -578,6 +579,13 @@ CREATE TRIGGER "recurring_expenses_on_reactivate"
     BEFORE UPDATE OF "is_active" ON "public"."recurring_expenses"
     FOR EACH ROW EXECUTE FUNCTION "internal"."recurring_expenses_on_reactivate"();
 
+-- Lo staff vede anche le operatrici non più attive (prima solo l'admin): servono i loro nomi nei
+-- compensi e nei pagamenti dei mesi in cui hanno lavorato, e nei totali per la Certificazione Unica.
+-- Il sito continua a vedere solo quelle attive (policy pubblica invariata).
+DROP POLICY IF EXISTS "operators_select_staff" ON "public"."operators";
+CREATE POLICY "operators_select_staff" ON "public"."operators"
+    FOR SELECT TO "authenticated" USING ("public"."is_staff"());
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 7. Entrate: voce del rendiconto, righe e ripartizione per attività
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -717,7 +725,10 @@ BEGIN
     WHERE t.occurred_on BETWEEN GREATEST(p_from, v_start) AND p_to
       -- "Da saldare" non è ancora denaro; un annullato non lo è mai stato
       AND t.status IN ('paid', 'refunded', 'partially_refunded')
-    ORDER BY t.occurred_on, t.created_at;
+      -- Il rimborso di denaro mai arrivato (incasso ancora da saldare o annullato) non è un'uscita di cassa
+      AND (o.id IS NULL OR o.status IN ('paid', 'refunded', 'partially_refunded'))
+    -- Ordine completo: il gestionale legge le righe a pagine
+    ORDER BY t.occurred_on, t.created_at, t.id;
 END;
 $$;
 
@@ -772,6 +783,7 @@ BEGIN
           LEFT JOIN public.transactions o ON o.id = t.refund_of_id
          WHERE t.occurred_on BETWEEN GREATEST(p_from, v_start) AND p_to
            AND t.status IN ('paid', 'refunded', 'partially_refunded')
+           AND (o.id IS NULL OR o.status IN ('paid', 'refunded', 'partially_refunded'))
            AND COALESCE(o.kind, t.kind) IN ('subscription', 'event', 'trial')
     ),
     weights AS (
@@ -845,7 +857,7 @@ BEGIN
       LEFT JOIN public.activity_groups g ON g.id = a.group_id
       LEFT JOIN public.events e ON e.id = al.event_id
       LEFT JOIN public.activity_groups ge ON al.bucket = 'event' AND ge.slug = 'laboratori'
-     ORDER BY tx.occurred_on, al.tx_id, al.bucket, a.name;
+     ORDER BY tx.occurred_on, al.tx_id, al.bucket, a.name, al.activity_id, al.event_id;
 END;
 $$;
 
@@ -876,12 +888,14 @@ BEGIN
     v_bank := v_settings.opening_bank_cents;
 
     IF p_at >= v_settings.ledger_start_date THEN
-        SELECT v_cash + COALESCE(sum(amount_cents) FILTER (WHERE internal.cash_account_for(method) = 'cash'), 0),
-               v_bank + COALESCE(sum(amount_cents) FILTER (WHERE internal.cash_account_for(method) = 'bank'), 0)
+        SELECT v_cash + COALESCE(sum(t.amount_cents) FILTER (WHERE internal.cash_account_for(t.method) = 'cash'), 0),
+               v_bank + COALESCE(sum(t.amount_cents) FILTER (WHERE internal.cash_account_for(t.method) = 'bank'), 0)
           INTO v_cash, v_bank
-          FROM public.transactions
-         WHERE status IN ('paid', 'refunded', 'partially_refunded')
-           AND occurred_on BETWEEN v_settings.ledger_start_date AND p_at;
+          FROM public.transactions t
+          LEFT JOIN public.transactions o ON o.id = t.refund_of_id
+         WHERE t.status IN ('paid', 'refunded', 'partially_refunded')
+           AND (o.id IS NULL OR o.status IN ('paid', 'refunded', 'partially_refunded'))
+           AND t.occurred_on BETWEEN v_settings.ledger_start_date AND p_at;
 
         SELECT v_cash - COALESCE(sum(amount_cents) FILTER (WHERE internal.cash_account_for(payment_method) = 'cash'), 0),
                v_bank - COALESCE(sum(amount_cents) FILTER (WHERE internal.cash_account_for(payment_method) = 'bank'), 0)
@@ -1045,6 +1059,7 @@ DECLARE
     v_until     date := LEAST(date_trunc('month', COALESCE(p_month, v_today))::date,
                               date_trunc('month', v_today)::date);
     v_rec       public.recurring_expenses%ROWTYPE;
+    v_start     date;
     v_month     date;
     v_date      date;
     v_last      date;
@@ -1053,6 +1068,9 @@ BEGIN
     IF NOT public.can_access_finance() THEN
         RAISE EXCEPTION 'Access denied: finance role required' USING ERRCODE = '42501';
     END IF;
+
+    -- Prima della costituzione le spese non erano dell'associazione: niente proposte per quei mesi
+    SELECT ledger_start_date INTO v_start FROM public.association_settings WHERE id = true;
 
     FOR v_rec IN
         SELECT * FROM public.recurring_expenses
@@ -1063,6 +1081,7 @@ BEGIN
     LOOP
         v_month := GREATEST(
             date_trunc('month', v_rec.starts_on)::date,
+            date_trunc('month', COALESCE(v_start, v_rec.starts_on))::date,
             COALESCE((v_rec.last_generated_month + INTERVAL '1 month')::date, '-infinity'::date)
         );
         v_last := v_rec.last_generated_month;
@@ -1071,7 +1090,7 @@ BEGIN
             v_date := v_month + (v_rec.day_of_month - 1);
             EXIT WHEN v_rec.ends_on IS NOT NULL AND v_date > v_rec.ends_on;
 
-            IF v_date >= v_rec.starts_on THEN
+            IF v_date >= v_rec.starts_on AND v_date >= COALESCE(v_start, v_date) THEN
                 INSERT INTO public.expenses (
                     amount_cents, expense_date, category, category_id, vendor, notes,
                     is_fixed, source, recurring_expense_id, payment_method, created_by
@@ -1096,7 +1115,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION "public"."generate_recurring_expenses"("date") IS
-    'Crea le uscite "da confermare" delle spese ricorrenti per tutti i mesi mancanti fino a quello indicato (mai oltre il mese in corso). Si può chiamare quante volte si vuole: ogni mese nasce una volta sola. Solo Finanze.';
+    'Crea le uscite "da confermare" delle spese ricorrenti per tutti i mesi mancanti fino a quello indicato (mai oltre il mese in corso, mai prima dell''inizio della contabilità). Si può chiamare quante volte si vuole: ogni mese nasce una volta sola. Solo Finanze.';
 
 -- La conferma permette di correggere anche data e metodo: per cassa conta il giorno in cui il
 -- denaro esce davvero (l'F24 delle ritenute, l'affitto pagato il 3 invece dell'1).
@@ -1399,7 +1418,9 @@ BEGIN
             operator_id, period_month, lesson_id, event_id, model_id, occurred_at,
             duration_minutes, participants, revenue_cents, amount_cents, breakdown, created_by
         )
-        SELECT c.operator_id, v_month, c.lesson_id, c.event_id, c.model_id, c.occurred_at,
+        -- Il mese di competenza è quello della lezione (in ora italiana), anche se il periodo ne copre più d'uno
+        SELECT c.operator_id, date_trunc('month', c.occurred_at AT TIME ZONE 'Europe/Rome')::date,
+               c.lesson_id, c.event_id, c.model_id, c.occurred_at,
                c.duration_minutes, c.participants, c.revenue_cents, c.amount_cents, c.breakdown, auth.uid()
           FROM calc c
          WHERE c.model_id IS NOT NULL
@@ -1476,6 +1497,7 @@ DECLARE
     v_month         date := date_trunc('month', p_month_start)::date;
     v_paid_on       date := COALESCE(p_paid_on, (now() AT TIME ZONE 'Europe/Rome')::date);
     v_operator      public.operators%ROWTYPE;
+    v_entry_ids     uuid[];
     v_entries_sum   bigint;
     v_entries_n     integer;
     v_gross         bigint;
@@ -1503,17 +1525,19 @@ BEGIN
         RETURN jsonb_build_object('ok', false, 'reason', 'INVALID_METHOD');
     END IF;
 
-    -- I compensi da pagare, bloccati: due pagamenti contemporanei non li prendono entrambi
-    PERFORM 1 FROM public.compensation_entries
-      WHERE operator_id = p_operator_id AND period_month = v_month
-        AND payment_id IS NULL AND status <> 'paid'
-      FOR UPDATE;
+    -- I compensi da pagare, bloccati: due pagamenti contemporanei non li prendono entrambi, e un
+    -- congelamento che arriva nel frattempo non finisce in questo pagamento senza essere nel lordo
+    SELECT array_agg(id) INTO v_entry_ids FROM (
+        SELECT id FROM public.compensation_entries
+         WHERE operator_id = p_operator_id AND period_month = v_month
+           AND payment_id IS NULL AND status <> 'paid'
+         FOR UPDATE
+    ) locked;
 
     SELECT COALESCE(sum(amount_cents), 0), count(*)
       INTO v_entries_sum, v_entries_n
       FROM public.compensation_entries
-     WHERE operator_id = p_operator_id AND period_month = v_month
-       AND payment_id IS NULL AND status <> 'paid';
+     WHERE id = ANY(COALESCE(v_entry_ids, '{}'::uuid[]));
 
     IF v_entries_n = 0 OR v_entries_sum <= 0 THEN
         RETURN jsonb_build_object('ok', false, 'reason', 'NOTHING_TO_PAY');
@@ -1590,8 +1614,7 @@ BEGIN
            expense_id  = v_net_exp,
            approved_at = COALESCE(approved_at, now()),
            approved_by = COALESCE(approved_by, auth.uid())
-     WHERE operator_id = p_operator_id AND period_month = v_month
-       AND payment_id IS NULL AND status <> 'paid';
+     WHERE id = ANY(v_entry_ids);
 
     RETURN jsonb_build_object(
         'ok', true, 'reason', 'PAID',

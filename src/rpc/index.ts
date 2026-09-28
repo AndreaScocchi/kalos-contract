@@ -1031,7 +1031,9 @@ export type PreparePurchaseReason =
   | 'NOTHING_TO_PAY'
   | 'TRANSACTION_NOT_FOUND'
   | 'NOT_PENDING'
-  | 'NOT_PAYABLE_ONLINE';
+  | 'NOT_PAYABLE_ONLINE'
+  /** Il «da saldare» è superato: pagato per un'altra strada, iscrizione disdetta, abbonamento cancellato */
+  | 'NO_LONGER_DUE';
 
 /** Fotografia del piano che viaggia col pagamento: se il piano cambia mentre si paga, vale questa. */
 export type PlanSnapshot = {

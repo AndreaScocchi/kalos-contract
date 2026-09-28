@@ -192,11 +192,13 @@ CREATE OR REPLACE FUNCTION "internal"."lessons_recompute_first_entry"()
 DECLARE
     v_sub_id uuid;
 BEGIN
+    -- In ordine fisso: due modifiche contemporanee bloccano gli abbonamenti nello stesso ordine
     FOR v_sub_id IN
         SELECT DISTINCT b.subscription_id
           FROM public.bookings b
           JOIN public.subscriptions s ON s.id = b.subscription_id
          WHERE b.lesson_id = NEW.id AND s.starts_on_first_entry
+         ORDER BY 1
     LOOP
         PERFORM "internal"."recompute_first_entry"(v_sub_id);
     END LOOP;
@@ -353,13 +355,15 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'reason', 'SUBSCRIPTION_REQUIRED');
   END IF;
 
-  -- Validate subscription
+  -- Validate subscription. Bloccata (dopo la lezione, come nel trigger del primo ingresso): due
+  -- prenotazioni in contemporanea sullo stesso abbonamento non superano insieme ingressi e finestra.
   SELECT * INTO v_sub
   FROM public.subscriptions
   WHERE id = p_subscription_id
     AND client_id = v_my_client_id
     AND status = 'active'
-    AND v_starts_at::date BETWEEN started_at::date AND expires_at::date;
+    AND v_starts_at::date BETWEEN started_at::date AND expires_at::date
+  FOR UPDATE;
 
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'reason', 'SUBSCRIPTION_NOT_FOUND_OR_INACTIVE');
@@ -582,7 +586,8 @@ BEGIN
     WHERE id = p_subscription_id
       AND client_id = p_client_id
       AND status = 'active'
-      AND v_starts_at::date BETWEEN started_at::date AND expires_at::date;
+      AND v_starts_at::date BETWEEN started_at::date AND expires_at::date
+    FOR UPDATE;
     IF NOT FOUND THEN
       RETURN jsonb_build_object('ok', false, 'reason', 'SUBSCRIPTION_NOT_FOUND_OR_INACTIVE');
     END IF;

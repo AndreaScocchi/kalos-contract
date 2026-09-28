@@ -368,7 +368,11 @@ dal primo ingresso) e `…120200` (pagamenti dall'app, eventi, avviso della prov
   `trial_booked_staff`): admin e operatrice della lezione, push web se c'è, altrimenti email.
 - Wrapper TS: `prepareMyPlanPurchase`, `prepareMyEventPayment`, `prepareMySettlement`,
   `getMyOpenPayments`, `getMyPaymentStatus` e i loro tipi.
-- Test: `supabase/tests/sessione9.test.sql` (56), `verify-access` (+11), scenari
+- Un "da saldare" superato (quota versata per un'altra strada, iscrizione disdetta o già pagata,
+  abbonamento cancellato) non si paga più: `NO_LONGER_DUE`, e un pagamento già partito diventa un
+  doppione (`internal.pending_still_payable`). I contributi si chiedono solo per gli eventi dal
+  19/08/2026 (`association_settings.ledger_start_date`).
+- Test: `supabase/tests/sessione9.test.sql` (65), `verify-access` (+11), scenari
   `scripts/stripe-local/run-scenarios-app.mjs` (31).
 
 ### get_my_client_id()

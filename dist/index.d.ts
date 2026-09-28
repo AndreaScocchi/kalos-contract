@@ -7055,7 +7055,9 @@ type SubmitTrialFeedbackResult = {
  */
 declare function submitTrialFeedback(client: SupabaseClient<Database>, params: SubmitTrialFeedbackParams): Promise<SubmitTrialFeedbackResult>;
 /** Codici comuni ai tre `prepare_my_*`. */
-type PreparePurchaseReason = 'NOT_AUTHENTICATED' | 'PAYMENTS_DISABLED' | 'CLIENT_NOT_FOUND' | 'NOT_A_MEMBER' | 'MEMBERSHIP_FEE_DUE' | 'PLAN_NOT_FOUND' | 'PLAN_NOT_SOLD_IN_APP' | 'BOOKING_NOT_FOUND' | 'EVENT_NOT_FOUND' | 'BOOKING_CANCELED' | 'EVENT_CONCLUDED' | 'ALREADY_PAID' | 'NOTHING_TO_PAY' | 'TRANSACTION_NOT_FOUND' | 'NOT_PENDING' | 'NOT_PAYABLE_ONLINE';
+type PreparePurchaseReason = 'NOT_AUTHENTICATED' | 'PAYMENTS_DISABLED' | 'CLIENT_NOT_FOUND' | 'NOT_A_MEMBER' | 'MEMBERSHIP_FEE_DUE' | 'PLAN_NOT_FOUND' | 'PLAN_NOT_SOLD_IN_APP' | 'BOOKING_NOT_FOUND' | 'EVENT_NOT_FOUND' | 'BOOKING_CANCELED' | 'EVENT_CONCLUDED' | 'ALREADY_PAID' | 'NOTHING_TO_PAY' | 'TRANSACTION_NOT_FOUND' | 'NOT_PENDING' | 'NOT_PAYABLE_ONLINE'
+/** Il «da saldare» è superato: pagato per un'altra strada, iscrizione disdetta, abbonamento cancellato */
+ | 'NO_LONGER_DUE';
 /** Fotografia del piano che viaggia col pagamento: se il piano cambia mentre si paga, vale questa. */
 type PlanSnapshot = {
     plan_id: string;

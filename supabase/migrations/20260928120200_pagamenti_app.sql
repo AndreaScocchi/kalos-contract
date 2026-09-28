@@ -88,6 +88,59 @@ CREATE OR REPLACE FUNCTION "internal"."client_payment_email"("p_client_id" "uuid
      WHERE c.id = p_client_id;
 $$;
 
+-- Un «da saldare» si può ancora pagare? No se nel frattempo ciò a cui si riferisce è stato pagato
+-- per un'altra strada (la quota con un altro incasso, l'iscrizione all'evento già saldata), annullato
+-- (iscrizione disdetta, abbonamento cancellato) o se la riga non è più da saldare. Senza questo
+-- controllo un «da saldare» superato si pagherebbe una seconda volta, con una seconda ricevuta.
+-- Per gli abbonamenti un altro incasso non basta a dire «pagato»: lo staff può registrare acconto e saldo.
+CREATE OR REPLACE FUNCTION "internal"."pending_still_payable"("p_transaction_id" "uuid")
+    RETURNS boolean
+    LANGUAGE "sql"
+    STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+    SELECT COALESCE((
+        SELECT t.status = 'pending' AND t.refund_of_id IS NULL AND t.amount_cents > 0
+           AND (t.member_fee_id IS NULL OR EXISTS (
+                SELECT 1 FROM public.member_fees f WHERE f.id = t.member_fee_id AND f.status IN ('due', 'refunded')))
+           AND (t.subscription_id IS NULL OR EXISTS (
+                SELECT 1 FROM public.subscriptions s
+                 WHERE s.id = t.subscription_id AND s.deleted_at IS NULL AND s.status <> 'canceled'))
+           AND (t.event_booking_id IS NULL OR (
+                EXISTS (SELECT 1 FROM public.event_bookings eb
+                         WHERE eb.id = t.event_booking_id AND eb.status <> 'canceled')
+                AND NOT EXISTS (SELECT 1 FROM public.transactions o
+                                 WHERE o.event_booking_id = t.event_booking_id AND o.id <> t.id
+                                   AND o.refund_of_id IS NULL
+                                   AND o.status IN ('paid', 'partially_refunded', 'refunded'))))
+          FROM public.transactions t
+         WHERE t.id = p_transaction_id), false);
+$$;
+
+-- L'iscrizione a un evento ha già un incasso (pagato, anche se poi rimborsato)
+CREATE OR REPLACE FUNCTION "internal"."event_booking_paid"("p_event_booking_id" "uuid")
+    RETURNS boolean
+    LANGUAGE "sql"
+    STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+    SELECT EXISTS (SELECT 1 FROM public.transactions
+                    WHERE event_booking_id = p_event_booking_id AND refund_of_id IS NULL
+                      AND status IN ('paid', 'partially_refunded', 'refunded'));
+$$;
+
+-- Gli eventi da cui si può chiedere un contributo dall'app: quelli dall'inizio del registro
+-- dell'associazione (19/08/2026). Prima c'era la gestione precedente, senza incassi registrati.
+CREATE OR REPLACE FUNCTION "internal"."event_in_ledger"("p_starts_at" timestamp with time zone)
+    RETURNS boolean
+    LANGUAGE "sql"
+    STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+    SELECT (p_starts_at AT TIME ZONE 'Europe/Rome')::date
+           >= COALESCE((SELECT ledger_start_date FROM public.association_settings WHERE id = true), DATE '2026-08-19');
+$$;
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 2. Si può pagare? (per `stripe-checkout` e per l'app)
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -205,14 +258,23 @@ BEGIN
         RETURN jsonb_build_object('ok', false, 'reason', 'EVENT_CONCLUDED');
     END IF;
 
+    -- Gli eventi della gestione precedente non hanno incassi nel registro: niente da chiedere
+    IF NOT "internal"."event_in_ledger"(v_event.starts_at) THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'NOTHING_TO_PAY');
+    END IF;
+
+    IF "internal"."event_booking_paid"(v_eb.id) THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'ALREADY_PAID');
+    END IF;
+
     SELECT * INTO v_tx
       FROM public.transactions
-     WHERE event_booking_id = v_eb.id AND refund_of_id IS NULL AND status <> 'void'
+     WHERE event_booking_id = v_eb.id AND refund_of_id IS NULL AND status = 'pending'
      ORDER BY created_at
      LIMIT 1;
 
-    IF FOUND AND v_tx.status <> 'pending' THEN
-        RETURN jsonb_build_object('ok', false, 'reason', 'ALREADY_PAID');
+    IF FOUND AND NOT "internal"."pending_still_payable"(v_tx.id) THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'NO_LONGER_DUE');
     END IF;
 
     IF FOUND THEN
@@ -282,6 +344,10 @@ BEGIN
 
     IF v_tx.kind NOT IN ('subscription', 'event', 'membership_fee') THEN
         RETURN jsonb_build_object('ok', false, 'reason', 'NOT_PAYABLE_ONLINE');
+    END IF;
+
+    IF NOT "internal"."pending_still_payable"(v_tx.id) THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'NO_LONGER_DUE');
     END IF;
 
     v_title := "internal"."transaction_title"(v_tx.id);
@@ -364,6 +430,7 @@ BEGIN
            AND t.refund_of_id IS NULL
            AND t.amount_cents > 0
            AND t.kind IN ('subscription', 'event', 'membership_fee')
+           AND "internal"."pending_still_payable"(t.id)
         UNION ALL
         -- Iscrizioni a eventi con contributo senza nessun incasso (fatte dall'app)
         SELECT jsonb_build_object(
@@ -382,6 +449,7 @@ BEGIN
            AND COALESCE(e.price_cents, 0) > 0
            AND (eb.status = 'attended'
                 OR (eb.status = 'booked' AND NOT "internal"."event_concluded"(e.starts_at, e.ends_at)))
+           AND "internal"."event_in_ledger"(e.starts_at)
            AND NOT EXISTS (SELECT 1 FROM public.transactions t
                             WHERE t.event_booking_id = eb.id AND t.refund_of_id IS NULL AND t.status <> 'void')
       ) items;
@@ -558,12 +626,13 @@ BEGIN
     IF v_mode = 'settlement' THEN
         -- Un "da saldare": si salda la stessa riga, se è ancora da saldare e l'importo è quello
         SELECT * INTO v_tx FROM public.transactions WHERE id = v_sp.target_id FOR UPDATE;
-        IF FOUND AND v_tx.status = 'pending' AND v_tx.refund_of_id IS NULL
-           AND v_tx.client_id IS NOT DISTINCT FROM v_sp.client_id
-           AND v_tx.amount_cents = v_sp.amount_cents THEN
+        IF FOUND AND v_tx.client_id IS NOT DISTINCT FROM v_sp.client_id
+           AND v_tx.amount_cents = v_sp.amount_cents
+           AND "internal"."pending_still_payable"(v_tx.id) THEN
             RETURN "internal"."stripe_settle_pending"(v_sp.id, v_tx.id, p_paid_at);
         END IF;
-        -- Già saldato in studio, annullato o cambiato nel frattempo: denaro da restituire
+        -- Già saldato in studio, pagato per un'altra strada, annullato o cambiato nel frattempo:
+        -- denaro da restituire
         v_duplicate := true;
         v_refs := jsonb_build_object('settlement_of', v_sp.target_id);
         v_description := COALESCE(NULLIF(v_sp.metadata->>'title', ''), 'Pagamento online');
@@ -573,20 +642,22 @@ BEGIN
         SELECT name INTO v_event_name FROM public.events WHERE id = v_eb.event_id;
         v_description := 'Contributo — ' || COALESCE(v_event_name, 'evento');
 
-        IF v_eb.id IS NULL OR v_eb.client_id IS DISTINCT FROM v_sp.client_id OR v_eb.status = 'canceled' THEN
+        IF v_eb.id IS NULL OR v_eb.client_id IS DISTINCT FROM v_sp.client_id OR v_eb.status = 'canceled'
+           OR "internal"."event_booking_paid"(v_eb.id) THEN
+            -- Iscrizione disdetta, o già pagata (in studio o con un altro checkout)
             v_duplicate := true;
         ELSE
             SELECT * INTO v_tx
               FROM public.transactions
-             WHERE event_booking_id = v_eb.id AND refund_of_id IS NULL AND status <> 'void'
+             WHERE event_booking_id = v_eb.id AND refund_of_id IS NULL AND status = 'pending'
              ORDER BY created_at
              LIMIT 1
                FOR UPDATE;
             IF FOUND THEN
-                IF v_tx.status = 'pending' AND v_tx.amount_cents = v_sp.amount_cents THEN
+                IF v_tx.amount_cents = v_sp.amount_cents AND "internal"."pending_still_payable"(v_tx.id) THEN
                     RETURN "internal"."stripe_settle_pending"(v_sp.id, v_tx.id, p_paid_at);
                 END IF;
-                -- Già pagata (in studio o con un altro checkout), o "da saldare" di un altro importo
+                -- «Da saldare» di un altro importo: lo decide lo staff, il denaro va restituito
                 v_duplicate := true;
             ELSE
                 v_link_eb := v_eb.id;

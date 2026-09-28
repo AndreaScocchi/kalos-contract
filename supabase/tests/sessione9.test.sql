@@ -5,7 +5,7 @@
 -- racconta, dopo aver creato la riga del pagamento come la crea `stripe-checkout`.
 
 BEGIN;
-SELECT plan(56);
+SELECT plan(65);
 
 -- ── Persone ──────────────────────────────────────────────────────────────────
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
@@ -454,6 +454,106 @@ SELECT is(
   public.prepare_my_event_payment((SELECT id FROM public.event_bookings
                                     WHERE event_id = '69000000-0000-0000-0000-000000000003' AND client_id = (SELECT bruno FROM s9)))->>'kind',
   'settlement', 'se lo staff l''ha registrata come «da saldare», si salda quella');
+RESET ROLE;
+
+-- ── «Da saldare» superati: mai un secondo incasso ───────────────────────────────
+
+-- Quota segnata da saldare, poi versata in studio con un altro incasso
+INSERT INTO public.association_years (year, fee_cents) VALUES (2031, 2000) ON CONFLICT (year) DO NOTHING;
+INSERT INTO public.member_fees (id, client_id, year, amount_cents, status)
+SELECT '87000000-0000-0000-0000-000000000001', anna, 2031, 2000, 'due' FROM s9;
+INSERT INTO public.transactions (id, client_id, kind, amount_cents, method, source, status, member_fee_id, description)
+SELECT '88000000-0000-0000-0000-000000000002', anna, 'membership_fee', 2000, 'cash', 'studio', 'pending',
+       '87000000-0000-0000-0000-000000000001', 'Quota 2031'
+  FROM s9;
+UPDATE public.member_fees SET status = 'paid', paid_at = now() WHERE id = '87000000-0000-0000-0000-000000000001';
+
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"19000000-0000-0000-0000-000000000001","role":"authenticated"}';
+SELECT is(public.prepare_my_settlement('88000000-0000-0000-0000-000000000002')->>'reason', 'NO_LONGER_DUE',
+  'una quota già versata per un''altra strada non si paga dal suo vecchio «da saldare»');
+SELECT is(
+  (SELECT count(*)::int FROM jsonb_array_elements(public.get_my_open_payments()->'items') i
+    WHERE i->>'transaction_id' = '88000000-0000-0000-0000-000000000002'),
+  0, 'e non compare tra le cose da pagare');
+RESET ROLE;
+
+-- Il checkout era già aperto: il denaro arriva lo stesso, ma è un doppione da restituire
+INSERT INTO public.stripe_payments (id, client_id, purpose, target_id, amount_cents, source, metadata, livemode)
+SELECT '99000000-0000-0000-0000-000000000008', anna, 'membership_fee', '88000000-0000-0000-0000-000000000002', 2000, 'app',
+       jsonb_build_object('kind', 'settlement'), false
+  FROM s9;
+SELECT public.stripe_apply_payment_state(pg_temp.paid('99000000-0000-0000-0000-000000000008', 'pi_s9_quota_superata', 2000));
+SELECT is(
+  (SELECT concat_ws(' | ', sp.is_duplicate, t.status, (SELECT count(*) FROM public.receipts r WHERE r.transaction_id = sp.transaction_id))
+     FROM public.stripe_payments sp, public.transactions t
+    WHERE sp.id = '99000000-0000-0000-0000-000000000008' AND t.id = '88000000-0000-0000-0000-000000000002'),
+  't | pending | 0', 'il pagamento è un doppione senza ricevuta, il vecchio «da saldare» resta allo staff');
+
+-- Evento registrato da saldare e poi anche pagato in studio con un'altra riga
+INSERT INTO public.transactions (client_id, kind, amount_cents, method, source, status, occurred_on, event_booking_id, description)
+SELECT bruno, 'event', 1000, 'cash', 'studio', 'paid', today,
+       (SELECT id FROM public.event_bookings WHERE event_id = '69000000-0000-0000-0000-000000000003' AND client_id = s9.bruno),
+       'Pagato in studio'
+  FROM s9;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"19000000-0000-0000-0000-000000000002","role":"authenticated"}';
+SELECT is(
+  public.prepare_my_event_payment((SELECT id FROM public.event_bookings
+                                    WHERE event_id = '69000000-0000-0000-0000-000000000003' AND client_id = (SELECT bruno FROM s9)))->>'reason',
+  'ALREADY_PAID', 'un''iscrizione pagata non si paga di nuovo, anche se resta un vecchio «da saldare»');
+SELECT is(
+  (SELECT count(*)::int FROM jsonb_array_elements(public.get_my_open_payments()->'items') i
+    WHERE i->>'type' = 'settlement'),
+  0, 'e quel «da saldare» non compare tra le cose da pagare');
+RESET ROLE;
+
+-- Abbonamento cancellato dallo staff con un «da saldare» ancora aperto
+INSERT INTO public.subscriptions (id, client_id, plan_id, started_at, expires_at, status)
+SELECT 'a9000000-0000-0000-0000-000000000001', bruno, '49000000-0000-0000-0000-000000000001', today, today + 30, 'active'
+  FROM s9;
+INSERT INTO public.transactions (id, client_id, kind, amount_cents, method, source, status, subscription_id, description)
+SELECT '88000000-0000-0000-0000-000000000003', bruno, 'subscription', 4000, 'cash', 'studio', 'pending',
+       'a9000000-0000-0000-0000-000000000001', 'Abbonamento poi cancellato'
+  FROM s9;
+UPDATE public.subscriptions SET deleted_at = now() WHERE id = 'a9000000-0000-0000-0000-000000000001';
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"19000000-0000-0000-0000-000000000002","role":"authenticated"}';
+SELECT is(public.prepare_my_settlement('88000000-0000-0000-0000-000000000003')->>'reason', 'NO_LONGER_DUE',
+  'il «da saldare» di un abbonamento cancellato non si paga dall''app');
+RESET ROLE;
+
+-- Iscrizione disdetta con un «da saldare» aperto
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"19000000-0000-0000-0000-000000000001","role":"authenticated"}';
+SELECT public.book_event('69000000-0000-0000-0000-000000000003');
+RESET ROLE;
+INSERT INTO public.transactions (id, client_id, kind, amount_cents, method, source, status, event_booking_id, description)
+SELECT '88000000-0000-0000-0000-000000000004', anna, 'event', 1000, 'cash', 'studio', 'pending',
+       (SELECT id FROM public.event_bookings WHERE event_id = '69000000-0000-0000-0000-000000000003' AND client_id = s9.anna),
+       'Iscrizione poi disdetta'
+  FROM s9;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"19000000-0000-0000-0000-000000000001","role":"authenticated"}';
+SELECT public.cancel_event_booking((SELECT id FROM public.event_bookings
+                                     WHERE event_id = '69000000-0000-0000-0000-000000000003' AND client_id = (SELECT anna FROM s9)));
+SELECT is(public.prepare_my_settlement('88000000-0000-0000-0000-000000000004')->>'reason', 'NO_LONGER_DUE',
+  'né quello di un''iscrizione disdetta');
+RESET ROLE;
+
+-- Evento della gestione precedente (prima del 19/08/2026): nessun contributo da chiedere dall'app
+INSERT INTO public.events (id, name, starts_at, ends_at, price_cents) VALUES
+  ('69000000-0000-0000-0000-000000000005', 'S9 Gestione precedente', '2026-08-10 18:00+02', '2026-08-10 20:00+02', 1000);
+INSERT INTO public.event_bookings (id, event_id, client_id, status)
+SELECT '89000000-0000-0000-0000-000000000002', '69000000-0000-0000-0000-000000000005', anna, 'attended' FROM s9;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"19000000-0000-0000-0000-000000000001","role":"authenticated"}';
+SELECT is(public.prepare_my_event_payment('89000000-0000-0000-0000-000000000002')->>'reason', 'NOTHING_TO_PAY',
+  'un evento di prima del registro non diventa un debito');
+SELECT is(
+  (SELECT count(*)::int FROM jsonb_array_elements(public.get_my_open_payments()->'items') i
+    WHERE i->>'event_booking_id' = '89000000-0000-0000-0000-000000000002'),
+  0, 'e non compare tra le cose da pagare');
 RESET ROLE;
 
 -- ═════════════════════════════════════════════════════════════════════════════

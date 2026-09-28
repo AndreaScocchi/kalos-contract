@@ -44,14 +44,14 @@ sito ──► stripe-checkout ──► Stripe Checkout (pagina di Stripe) ─�
 | Scopo | Corpo | Cosa decide il database | Cosa nasce col pagamento |
 |---|---|---|---|
 | `subscription` | `plan_id` | `prepare_my_plan_purchase`: piano attivo e **in vendita nell'app** (`plans.sold_in_app`), regola "solo soci", prezzo con lo sconto del piano | l'abbonamento (fotografia del piano presa al checkout), che **parte dal primo ingresso** o dopo 60 giorni (D5), più incasso e ricevuta |
-| `event` | `event_booking_id` | `prepare_my_event_payment`: iscrizione propria, non disdetta, contributo > 0, non già pagata; dopo l'evento solo se partecipata | l'incasso collegato all'iscrizione, con ricevuta. Se lo staff l'aveva registrata come "da saldare", si salda quella riga |
-| `settlement` | `transaction_id` | `prepare_my_settlement`: proprio "da saldare" di abbonamento, evento o quota | la **stessa riga** diventa pagata con carta (come `staff_settle_transaction`), con la ricevuta |
+| `event` | `event_booking_id` | `prepare_my_event_payment`: iscrizione propria, non disdetta, contributo > 0, non già pagata (un incasso pagato vince su un "da saldare" rimasto); dopo l'evento solo se partecipata; solo eventi dal 19/08/2026 (`ledger_start_date`) | l'incasso collegato all'iscrizione, con ricevuta. Se lo staff l'aveva registrata come "da saldare", si salda quella riga |
+| `settlement` | `transaction_id` | `prepare_my_settlement`: proprio "da saldare" di abbonamento, evento o quota, **ancora dovuto** (`internal.pending_still_payable`: quota non già versata, iscrizione non disdetta né pagata altrove, abbonamento non cancellato; altrimenti `NO_LONGER_DUE`) | la **stessa riga** diventa pagata con carta (come `staff_settle_transaction`), con la ricevuta |
 
 - La riga di `stripe_payments` porta in `metadata.kind` cosa fare (`new_subscription`,
   `event_booking`, `settlement`); `stripe_apply_payment_state` passa l'incasso a
   `internal.stripe_record_income`.
-- Quello che al momento del pagamento non si può più fare (iscrizione disdetta, "da saldare" già
-  saldato in studio o annullato, importo cambiato) diventa un **doppione**: registrato perché il
+- Quello che al momento del pagamento non si può più fare (iscrizione disdetta o già pagata, "da
+  saldare" già saldato in studio, annullato o superato, importo cambiato) diventa un **doppione**: registrato perché il
   denaro è arrivato, senza ricevuta né collegamenti, in Incassi → Online da rimborsare.
 - Fonte degli incassi: `app`. Dall'app anche la quota torna all'app.
 - **Ritorno:** alla pagina `/payment/return?payment=<id>` dell'app. Sul web, la stessa origine se è

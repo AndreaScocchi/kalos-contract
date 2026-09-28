@@ -3654,6 +3654,7 @@ export type Database = {
           is_active: boolean | null
           name: string
           price_cents: number
+          sold_in_app: boolean
           validity_days: number
         }
         Insert: {
@@ -3668,6 +3669,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           price_cents: number
+          sold_in_app?: boolean
           validity_days: number
         }
         Update: {
@@ -3682,6 +3684,7 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           price_cents?: number
+          sold_in_app?: boolean
           validity_days?: number
         }
         Relationships: []
@@ -4586,6 +4589,7 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          activation_deadline: string | null
           client_id: string | null
           created_at: string | null
           custom_entries: number | null
@@ -4596,13 +4600,16 @@ export type Database = {
           discount_percent: number | null
           discount_reason: string | null
           expires_at: string
+          first_entry_on: string | null
           id: string
           metadata: Json | null
           plan_id: string
           started_at: string
+          starts_on_first_entry: boolean
           status: Database["public"]["Enums"]["subscription_status"]
         }
         Insert: {
+          activation_deadline?: string | null
           client_id?: string | null
           created_at?: string | null
           custom_entries?: number | null
@@ -4613,13 +4620,16 @@ export type Database = {
           discount_percent?: number | null
           discount_reason?: string | null
           expires_at: string
+          first_entry_on?: string | null
           id?: string
           metadata?: Json | null
           plan_id: string
           started_at?: string
+          starts_on_first_entry?: boolean
           status?: Database["public"]["Enums"]["subscription_status"]
         }
         Update: {
+          activation_deadline?: string | null
           client_id?: string | null
           created_at?: string | null
           custom_entries?: number | null
@@ -4630,10 +4640,12 @@ export type Database = {
           discount_percent?: number | null
           discount_reason?: string | null
           expires_at?: string
+          first_entry_on?: string | null
           id?: string
           metadata?: Json | null
           plan_id?: string
           started_at?: string
+          starts_on_first_entry?: boolean
           status?: Database["public"]["Enums"]["subscription_status"]
         }
         Relationships: [
@@ -5779,6 +5791,8 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
+      get_my_open_payments: { Args: never; Returns: Json }
+      get_my_payment_status: { Args: { p_payment_id: string }; Returns: Json }
       get_practice_metrics: { Args: never; Returns: Json }
       get_revenue_breakdown: {
         Args: { p_month_end?: string; p_month_start?: string }
@@ -5799,7 +5813,16 @@ export type Database = {
         Args: { p_announcement_id?: string; p_notification_log_id?: string }
         Returns: boolean
       }
+      prepare_my_event_payment: {
+        Args: { p_event_booking_id: string }
+        Returns: Json
+      }
       prepare_my_fee_payment: { Args: { p_year?: number }; Returns: Json }
+      prepare_my_plan_purchase: { Args: { p_plan_id: string }; Returns: Json }
+      prepare_my_settlement: {
+        Args: { p_transaction_id: string }
+        Returns: Json
+      }
       preview_compensation: {
         Args: {
           p_duration_minutes: number
@@ -6202,6 +6225,7 @@ export type Database = {
         | "membership_fee_due"
         | "trial_followup"
         | "trial_booked"
+        | "trial_booked_staff"
       notification_channel: "push" | "email"
       notification_status:
         | "pending"
@@ -6526,6 +6550,7 @@ export const Constants = {
         "membership_fee_due",
         "trial_followup",
         "trial_booked",
+        "trial_booked_staff",
       ],
       notification_channel: ["push", "email"],
       notification_status: [

@@ -9,9 +9,14 @@ export type BookLessonResult = {
   /**
    * Dalla v0.3.6: 'SUBSCRIPTION_REQUIRED' se unə cliente prova a prenotare senza abbonamento
    * (senza abbonamento prenota solo lo staff, con `staff_book_lesson`).
+   * Dalla v0.3.7: 'OUTSIDE_SUBSCRIPTION_WINDOW' se l'abbonamento parte dal primo ingresso e questa
+   * lezione, più vicina, lascerebbe fuori una prenotazione già fatta (vedi `valid_until`).
    */
   reason?: string;
   booking_id?: string | number;
+  /** Con 'OUTSIDE_SUBSCRIPTION_WINDOW': la scadenza che avrebbe l'abbonamento e l'ultima prenotazione. */
+  valid_until?: string;
+  last_entry_on?: string;
   /**
    * Dalla v0.3.3: con reason = 'FULL', true se la lezione ha ancora posti ma sono tenuti per chi è
    * in lista d'attesa e ha ricevuto l'offerta (fino a `offer_expires_at`).
@@ -999,4 +1004,211 @@ export async function submitTrialFeedback(
   }
 
   return data as SubmitTrialFeedbackResult;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Acquisti dall'app (v0.3.7, sessione 9)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Il pagamento vero lo apre l'edge function `stripe-checkout` (scopi `subscription`, `event`,
+// `settlement`, con `client: 'app'`), che chiama queste stesse funzioni: qui servono alle interfacce
+// per sapere in anticipo cosa mostrare. Gli importi li decide sempre il database.
+
+/** Codici comuni ai tre `prepare_my_*`. */
+export type PreparePurchaseReason =
+  | 'NOT_AUTHENTICATED'
+  | 'PAYMENTS_DISABLED'
+  | 'CLIENT_NOT_FOUND'
+  | 'NOT_A_MEMBER'
+  | 'MEMBERSHIP_FEE_DUE'
+  | 'PLAN_NOT_FOUND'
+  | 'PLAN_NOT_SOLD_IN_APP'
+  | 'BOOKING_NOT_FOUND'
+  | 'EVENT_NOT_FOUND'
+  | 'BOOKING_CANCELED'
+  | 'EVENT_CONCLUDED'
+  | 'ALREADY_PAID'
+  | 'NOTHING_TO_PAY'
+  | 'TRANSACTION_NOT_FOUND'
+  | 'NOT_PENDING'
+  | 'NOT_PAYABLE_ONLINE'
+  /** Il «da saldare» è superato: pagato per un'altra strada, iscrizione disdetta, abbonamento cancellato */
+  | 'NO_LONGER_DUE';
+
+/** Fotografia del piano che viaggia col pagamento: se il piano cambia mentre si paga, vale questa. */
+export type PlanSnapshot = {
+  plan_id: string;
+  name: string;
+  /** NULL = illimitato */
+  entries: number | null;
+  validity_days: number;
+  price_cents: number;
+  discount_percent: number | null;
+  activity_ids: string[];
+};
+
+export type PrepareMyPlanPurchaseResult = {
+  ok: boolean;
+  reason?: PreparePurchaseReason;
+  member_status?: string;
+  client_id?: string;
+  /** Prezzo con lo sconto del piano, come nel gestionale. */
+  amount_cents?: number;
+  email?: string | null;
+  plan?: PlanSnapshot;
+};
+
+export type PrepareMyEventPaymentResult = {
+  ok: boolean;
+  reason?: PreparePurchaseReason;
+  /** `settlement` se lo staff l'ha registrata come "da saldare": si salda quella riga. */
+  kind?: 'event_booking' | 'settlement';
+  client_id?: string;
+  event_booking_id?: string;
+  event_id?: string;
+  transaction_id?: string;
+  amount_cents?: number;
+  title?: string;
+  starts_at?: string;
+  email?: string | null;
+};
+
+export type PrepareMySettlementResult = {
+  ok: boolean;
+  reason?: PreparePurchaseReason;
+  status?: string;
+  kind?: 'settlement';
+  client_id?: string;
+  transaction_id?: string;
+  transaction_kind?: 'subscription' | 'event' | 'membership_fee';
+  amount_cents?: number;
+  title?: string;
+  email?: string | null;
+};
+
+/** Una cosa da pagare: un "da saldare" registrato in studio o il contributo di un evento. */
+export type OpenPaymentItem = {
+  type: 'settlement' | 'event_booking';
+  kind: 'subscription' | 'event' | 'membership_fee';
+  amount_cents: number;
+  title: string;
+  /** Giorno (YYYY-MM-DD): del "da saldare" o dell'evento. */
+  due_on: string;
+  transaction_id?: string;
+  subscription_id?: string | null;
+  event_booking_id?: string | null;
+  event_id?: string;
+  starts_at?: string;
+};
+
+export type GetMyOpenPaymentsResult = {
+  ok: boolean;
+  reason?: 'NOT_AUTHENTICATED';
+  payments_enabled?: boolean;
+  items?: OpenPaymentItem[];
+};
+
+export type GetMyPaymentStatusResult = {
+  ok: boolean;
+  reason?: 'NOT_AUTHENTICATED' | 'PAYMENT_NOT_FOUND';
+  status?: 'created' | 'processing' | 'succeeded' | 'failed' | 'canceled' | 'refunded' | 'partially_refunded';
+  purpose?: 'membership_fee' | 'subscription' | 'event' | 'donation' | 'other';
+  kind?: 'new_subscription' | 'event_booking' | 'settlement' | 'membership_fee' | string;
+  amount_cents?: number;
+  title?: string | null;
+  /** Il pagamento è entrato nel registro (incasso, ricevuta, abbonamento o iscrizione). */
+  recorded?: boolean;
+  /** Arrivato quando non serviva più (iscrizione disdetta, già pagato): lo studio lo restituisce. */
+  is_duplicate?: boolean;
+  subscription_id?: string | null;
+  event_booking_id?: string | null;
+  year?: string | null;
+  receipt_number?: string | null;
+  receipt_sent_at?: string | null;
+  failure_message?: string | null;
+};
+
+/**
+ * Wrapper tipizzato per la RPC prepare_my_plan_purchase (dalla v0.3.7).
+ * Si può comprare questo piano dall'app? Pagamenti accesi, piano "in vendita nell'app", regola
+ * "solo soci".
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function prepareMyPlanPurchase(
+  client: SupabaseClient<Database>,
+  planId: string
+): Promise<PrepareMyPlanPurchaseResult> {
+  const { data, error } = await client.rpc('prepare_my_plan_purchase', { p_plan_id: planId });
+  if (error) {
+    handleRpcError(error, 'prepare_my_plan_purchase');
+  }
+  return data as PrepareMyPlanPurchaseResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC prepare_my_event_payment (dalla v0.3.7).
+ * Si può pagare dall'app il contributo di questa propria iscrizione a un evento?
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function prepareMyEventPayment(
+  client: SupabaseClient<Database>,
+  eventBookingId: string
+): Promise<PrepareMyEventPaymentResult> {
+  const { data, error } = await client.rpc('prepare_my_event_payment', { p_event_booking_id: eventBookingId });
+  if (error) {
+    handleRpcError(error, 'prepare_my_event_payment');
+  }
+  return data as PrepareMyEventPaymentResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC prepare_my_settlement (dalla v0.3.7).
+ * Si può saldare dall'app questo proprio "da saldare"?
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function prepareMySettlement(
+  client: SupabaseClient<Database>,
+  transactionId: string
+): Promise<PrepareMySettlementResult> {
+  const { data, error } = await client.rpc('prepare_my_settlement', { p_transaction_id: transactionId });
+  if (error) {
+    handleRpcError(error, 'prepare_my_settlement');
+  }
+  return data as PrepareMySettlementResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC get_my_open_payments (dalla v0.3.7).
+ * Cosa c'è da pagare: i "da saldare" e i contributi degli eventi senza incasso.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function getMyOpenPayments(
+  client: SupabaseClient<Database>
+): Promise<GetMyOpenPaymentsResult> {
+  const { data, error } = await client.rpc('get_my_open_payments');
+  if (error) {
+    handleRpcError(error, 'get_my_open_payments');
+  }
+  return data as GetMyOpenPaymentsResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC get_my_payment_status (dalla v0.3.7).
+ * Com'è andato un proprio pagamento online: per la pagina di ritorno da Stripe.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function getMyPaymentStatus(
+  client: SupabaseClient<Database>,
+  paymentId: string
+): Promise<GetMyPaymentStatusResult> {
+  const { data, error } = await client.rpc('get_my_payment_status', { p_payment_id: paymentId });
+  if (error) {
+    handleRpcError(error, 'get_my_payment_status');
+  }
+  return data as GetMyPaymentStatusResult;
 }

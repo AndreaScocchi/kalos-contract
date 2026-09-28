@@ -249,6 +249,7 @@ enum class NotificationCategory {
     @SerialName("membership_fee_due") MEMBERSHIP_FEE_DUE,
     @SerialName("trial_followup") TRIAL_FOLLOWUP,
     @SerialName("trial_booked") TRIAL_BOOKED,
+    @SerialName("trial_booked_staff") TRIAL_BOOKED_STAFF,
 }
 
 @Serializable

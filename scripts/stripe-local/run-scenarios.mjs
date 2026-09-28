@@ -19,123 +19,11 @@
  * Le email non partono (in locale SES non è configurato): si controlla che l'invio sia stato tentato.
  */
 
-import { createHmac, randomBytes, randomUUID } from 'node:crypto'
-import { execSync } from 'node:child_process'
-import { existsSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { randomBytes, randomUUID } from 'node:crypto'
 
-const HERE = dirname(fileURLToPath(import.meta.url))
-const ENV_FILE = join(HERE, '.env.functions.local')
-const FAKE = process.env.FAKE_STRIPE_URL ?? 'http://localhost:12111'
-const WHSEC = 'whsec_local_prove_sessione5'
-
-// ── Configurazione del Supabase locale ─────────────────────────────────────────────────────
-
-const status = JSON.parse(execSync('npx supabase status -o json 2>/dev/null', { cwd: join(HERE, '../..') }).toString())
-const API = status.API_URL
-const ANON = status.ANON_KEY
-const SERVICE = status.SERVICE_ROLE_KEY
-const FN = `${API}/functions/v1`
-
-if (!existsSync(ENV_FILE)) {
-  writeFileSync(ENV_FILE, [
-    '# Scritto da scripts/stripe-local/run-scenarios.mjs. SOLO per le prove in locale.',
-    'STRIPE_SECRET_KEY=sk_test_locale_finto',
-    `STRIPE_WEBHOOK_SECRET=${WHSEC}`,
-    'STRIPE_API_BASE=http://host.docker.internal:12111',
-    'CHECKOUT_ALLOWED_ORIGINS=http://localhost:3333',
-    '',
-  ].join('\n'))
-  console.log(`Scritto ${ENV_FILE}: rilancia \`npx supabase functions serve --env-file ${ENV_FILE}\` e poi questo script.`)
-  process.exit(2)
-}
-
-// ── Utilità ──────────────────────────────────────────────────────────────────────────────────
-
-let passed = 0
-let failed = 0
-function check(label, ok, detail = '') {
-  if (ok) { passed++; console.log(`  ✅ ${label}`) } else { failed++; console.log(`  ❌ ${label}${detail ? ` — ${detail}` : ''}`) }
-}
-const section = (title) => console.log(`\n${title}`)
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-
-async function rest(path, { method = 'GET', body, token = SERVICE, prefer } = {}) {
-  const res = await fetch(`${API}/rest/v1/${path}`, {
-    method,
-    headers: {
-      apikey: token === SERVICE ? SERVICE : ANON, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json',
-      ...(prefer ? { Prefer: prefer } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  const text = await res.text()
-  return { status: res.status, json: text ? JSON.parse(text) : null }
-}
-const rpc = (name, args = {}, token = SERVICE) => rest(`rpc/${name}`, { method: 'POST', body: args, token })
-
-async function fn(name, body, { token = ANON, headers = {} } = {}) {
-  const res = await fetch(`${FN}/${name}`, {
-    method: 'POST',
-    headers: { apikey: ANON, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Origin: 'http://localhost:3333', ...headers },
-    body: JSON.stringify(body),
-  })
-  const text = await res.text()
-  let json = null
-  try { json = JSON.parse(text) } catch { json = { raw: text } }
-  return { status: res.status, json }
-}
-
-async function control(path, body) {
-  const res = await fetch(`${FAKE}/_control/${path}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-  })
-  if (!res.ok) throw new Error(`finto Stripe ${path}: ${await res.text()}`)
-  return res.json()
-}
-const object = (kind, id) => control('object', { kind, id })
-
-/** Un evento firmato come lo firma Stripe (schema v1: HMAC-SHA256 di "timestamp.corpo"). */
-async function webhook(type, dataObject, { secret = WHSEC, livemode = false, eventId, signature } = {}) {
-  const payload = JSON.stringify({
-    id: eventId ?? `evt_test_${randomBytes(8).toString('hex')}`,
-    object: 'event', api_version: '2026-08-26.dahlia', created: Math.floor(Date.now() / 1000),
-    livemode, type, data: { object: dataObject },
-  })
-  const t = Math.floor(Date.now() / 1000)
-  const v1 = createHmac('sha256', secret).update(`${t}.${payload}`).digest('hex')
-  const res = await fetch(`${FN}/stripe-webhook`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(signature === null ? {} : { 'Stripe-Signature': signature ?? `t=${t},v1=${v1}` }) },
-    body: payload,
-  })
-  const text = await res.text()
-  let json = null
-  try { json = JSON.parse(text) } catch { json = { raw: text } }
-  return { status: res.status, json, eventPayload: payload }
-}
-
-async function user(emailPrefix, role) {
-  const email = `${emailPrefix}+${Date.now()}@test.kalos`
-  const password = 'prova-sessione5-Pw1!'
-  const created = await fetch(`${API}/auth/v1/admin/users`, {
-    method: 'POST', headers: { apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, email_confirm: true }),
-  }).then((r) => r.json())
-  if (role) await rest(`profiles?id=eq.${created.id}`, { method: 'PATCH', body: { role } })
-  const session = await fetch(`${API}/auth/v1/token?grant_type=password`, {
-    method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }),
-  }).then((r) => r.json())
-  return { id: created.id, email, token: session.access_token }
-}
-
-async function setFlag(key, enabled) {
-  await rest('feature_flags?on_conflict=key', { method: 'POST', body: { key, enabled }, prefer: 'resolution=merge-duplicates' })
-}
-
-const one = async (path) => (await rest(path)).json?.[0] ?? null
-const count = async (path) => (await rest(path)).json?.length ?? 0
+import {
+  check, control, count, FAKE, fn, object, one, results, rest, rpc, section, setFlag, sleep, user, webhook,
+} from './lib.mjs'
 
 // ── Scenari ──────────────────────────────────────────────────────────────────────────────────
 
@@ -320,6 +208,7 @@ async function main() {
     await rest(`association_years?year=eq.${year}`, { method: 'PATCH', body: { fee_cents: yearRow?.fee_cents ?? null } })
   }
 
+  const { passed, failed } = results()
   console.log(`\n${passed} ok, ${failed} falliti`)
   process.exit(failed ? 1 : 0)
 }

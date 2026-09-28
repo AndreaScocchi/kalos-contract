@@ -66,6 +66,11 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   rimborsano sulla carta, dall'edge function `stripe-refund`;
 - **lista d'attesa e prove (sessione 6):** `staff_add_to_waitlist` e `staff_remove_from_waitlist`
   (staff), `submit_trial_feedback` (cliente, solo per una propria prova fatta);
+- **acquisti dall'app (sessione 9):** `prepare_my_plan_purchase`, `prepare_my_event_payment`,
+  `prepare_my_settlement` (si può pagare? l'importo lo decide il database; con i pagamenti spenti
+  `PAYMENTS_DISABLED`), `get_my_open_payments` e `get_my_payment_status` (letture per l'app, perché
+  i clienti non leggono `transactions`, `receipts` e `stripe_payments`). Tutte lavorano solo sulle
+  righe di chi chiama (`get_my_client_id()`): le righe altrui rispondono come inesistenti;
 - **Finanze:** `calculate_operator_compensation`, `calculate_compensation_v2`,
   `get_monthly_revenue_by_*`, `get_financial_kpis`, `get_revenue_breakdown`,
   `staff_freeze_compensation`, `generate_recurring_expenses`, `confirm_expense`,
@@ -163,7 +168,8 @@ di questo tipo fa fallire il test: se serve davvero, la si aggiunge all'elenco e
     riletto il pagamento dall'API di Stripe: un evento inventato non basta a creare un incasso;
   - `stripe-checkout`: la quota con il token di chi è loggato (`prepare_my_fee_payment` decide
     importo e permesso), le donazioni anche con la sola chiave anon, con un limite orario per
-    impronta dell'IP;
+    impronta dell'IP; dalla sessione 9 abbonamenti, contributi degli eventi e "da saldare"
+    dall'app, sempre col token della persona (`prepare_my_*`) e con un limite orario per persona;
   - `stripe-refund`: col token di chi chiede, passa da `staff_prepare_stripe_refund` (solo Finanze);
   - `member-application`: la domanda la registra `submit_member_application` col token della
     persona; la function aggiunge IP e dispositivo presi dalla richiesta e manda il PDF;

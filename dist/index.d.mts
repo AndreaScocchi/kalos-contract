@@ -3640,6 +3640,7 @@ type Database = {
                     is_active: boolean | null;
                     name: string;
                     price_cents: number;
+                    sold_in_app: boolean;
                     validity_days: number;
                 };
                 Insert: {
@@ -3654,6 +3655,7 @@ type Database = {
                     is_active?: boolean | null;
                     name: string;
                     price_cents: number;
+                    sold_in_app?: boolean;
                     validity_days: number;
                 };
                 Update: {
@@ -3668,6 +3670,7 @@ type Database = {
                     is_active?: boolean | null;
                     name?: string;
                     price_cents?: number;
+                    sold_in_app?: boolean;
                     validity_days?: number;
                 };
                 Relationships: [];
@@ -4572,6 +4575,7 @@ type Database = {
             };
             subscriptions: {
                 Row: {
+                    activation_deadline: string | null;
                     client_id: string | null;
                     created_at: string | null;
                     custom_entries: number | null;
@@ -4582,13 +4586,16 @@ type Database = {
                     discount_percent: number | null;
                     discount_reason: string | null;
                     expires_at: string;
+                    first_entry_on: string | null;
                     id: string;
                     metadata: Json | null;
                     plan_id: string;
                     started_at: string;
+                    starts_on_first_entry: boolean;
                     status: Database["public"]["Enums"]["subscription_status"];
                 };
                 Insert: {
+                    activation_deadline?: string | null;
                     client_id?: string | null;
                     created_at?: string | null;
                     custom_entries?: number | null;
@@ -4599,13 +4606,16 @@ type Database = {
                     discount_percent?: number | null;
                     discount_reason?: string | null;
                     expires_at: string;
+                    first_entry_on?: string | null;
                     id?: string;
                     metadata?: Json | null;
                     plan_id: string;
                     started_at?: string;
+                    starts_on_first_entry?: boolean;
                     status?: Database["public"]["Enums"]["subscription_status"];
                 };
                 Update: {
+                    activation_deadline?: string | null;
                     client_id?: string | null;
                     created_at?: string | null;
                     custom_entries?: number | null;
@@ -4616,10 +4626,12 @@ type Database = {
                     discount_percent?: number | null;
                     discount_reason?: string | null;
                     expires_at?: string;
+                    first_entry_on?: string | null;
                     id?: string;
                     metadata?: Json | null;
                     plan_id?: string;
                     started_at?: string;
+                    starts_on_first_entry?: boolean;
                     status?: Database["public"]["Enums"]["subscription_status"];
                 };
                 Relationships: [
@@ -5872,6 +5884,16 @@ type Database = {
                 };
                 Returns: Json;
             };
+            get_my_open_payments: {
+                Args: never;
+                Returns: Json;
+            };
+            get_my_payment_status: {
+                Args: {
+                    p_payment_id: string;
+                };
+                Returns: Json;
+            };
             get_practice_metrics: {
                 Args: never;
                 Returns: Json;
@@ -5929,9 +5951,27 @@ type Database = {
                 };
                 Returns: boolean;
             };
+            prepare_my_event_payment: {
+                Args: {
+                    p_event_booking_id: string;
+                };
+                Returns: Json;
+            };
             prepare_my_fee_payment: {
                 Args: {
                     p_year?: number;
+                };
+                Returns: Json;
+            };
+            prepare_my_plan_purchase: {
+                Args: {
+                    p_plan_id: string;
+                };
+                Returns: Json;
+            };
+            prepare_my_settlement: {
+                Args: {
+                    p_transaction_id: string;
                 };
                 Returns: Json;
             };
@@ -6335,7 +6375,7 @@ type Database = {
             newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
             newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
             newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
-            notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder" | "feedback_request" | "waitlist_promotion" | "member_application_decided" | "membership_fee_due" | "trial_followup" | "trial_booked";
+            notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder" | "feedback_request" | "waitlist_promotion" | "member_application_decided" | "membership_fee_due" | "trial_followup" | "trial_booked" | "trial_booked_staff";
             notification_channel: "push" | "email";
             notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
             pass_benefit_type: "subscription_discount" | "event_discount" | "bussola" | "community_access" | "priority_booking" | "other";
@@ -6468,9 +6508,14 @@ type BookLessonResult = {
     /**
      * Dalla v0.3.6: 'SUBSCRIPTION_REQUIRED' se unə cliente prova a prenotare senza abbonamento
      * (senza abbonamento prenota solo lo staff, con `staff_book_lesson`).
+     * Dalla v0.3.7: 'OUTSIDE_SUBSCRIPTION_WINDOW' se l'abbonamento parte dal primo ingresso e questa
+     * lezione, più vicina, lascerebbe fuori una prenotazione già fatta (vedi `valid_until`).
      */
     reason?: string;
     booking_id?: string | number;
+    /** Con 'OUTSIDE_SUBSCRIPTION_WINDOW': la scadenza che avrebbe l'abbonamento e l'ultima prenotazione. */
+    valid_until?: string;
+    last_entry_on?: string;
     /**
      * Dalla v0.3.3: con reason = 'FULL', true se la lezione ha ancora posti ma sono tenuti per chi è
      * in lista d'attesa e ha ricevuto l'offerta (fino a `offer_expires_at`).
@@ -7009,6 +7054,132 @@ type SubmitTrialFeedbackResult = {
  * @throws Error se la chiamata RPC fallisce
  */
 declare function submitTrialFeedback(client: SupabaseClient<Database>, params: SubmitTrialFeedbackParams): Promise<SubmitTrialFeedbackResult>;
+/** Codici comuni ai tre `prepare_my_*`. */
+type PreparePurchaseReason = 'NOT_AUTHENTICATED' | 'PAYMENTS_DISABLED' | 'CLIENT_NOT_FOUND' | 'NOT_A_MEMBER' | 'MEMBERSHIP_FEE_DUE' | 'PLAN_NOT_FOUND' | 'PLAN_NOT_SOLD_IN_APP' | 'BOOKING_NOT_FOUND' | 'EVENT_NOT_FOUND' | 'BOOKING_CANCELED' | 'EVENT_CONCLUDED' | 'ALREADY_PAID' | 'NOTHING_TO_PAY' | 'TRANSACTION_NOT_FOUND' | 'NOT_PENDING' | 'NOT_PAYABLE_ONLINE'
+/** Il «da saldare» è superato: pagato per un'altra strada, iscrizione disdetta, abbonamento cancellato */
+ | 'NO_LONGER_DUE';
+/** Fotografia del piano che viaggia col pagamento: se il piano cambia mentre si paga, vale questa. */
+type PlanSnapshot = {
+    plan_id: string;
+    name: string;
+    /** NULL = illimitato */
+    entries: number | null;
+    validity_days: number;
+    price_cents: number;
+    discount_percent: number | null;
+    activity_ids: string[];
+};
+type PrepareMyPlanPurchaseResult = {
+    ok: boolean;
+    reason?: PreparePurchaseReason;
+    member_status?: string;
+    client_id?: string;
+    /** Prezzo con lo sconto del piano, come nel gestionale. */
+    amount_cents?: number;
+    email?: string | null;
+    plan?: PlanSnapshot;
+};
+type PrepareMyEventPaymentResult = {
+    ok: boolean;
+    reason?: PreparePurchaseReason;
+    /** `settlement` se lo staff l'ha registrata come "da saldare": si salda quella riga. */
+    kind?: 'event_booking' | 'settlement';
+    client_id?: string;
+    event_booking_id?: string;
+    event_id?: string;
+    transaction_id?: string;
+    amount_cents?: number;
+    title?: string;
+    starts_at?: string;
+    email?: string | null;
+};
+type PrepareMySettlementResult = {
+    ok: boolean;
+    reason?: PreparePurchaseReason;
+    status?: string;
+    kind?: 'settlement';
+    client_id?: string;
+    transaction_id?: string;
+    transaction_kind?: 'subscription' | 'event' | 'membership_fee';
+    amount_cents?: number;
+    title?: string;
+    email?: string | null;
+};
+/** Una cosa da pagare: un "da saldare" registrato in studio o il contributo di un evento. */
+type OpenPaymentItem = {
+    type: 'settlement' | 'event_booking';
+    kind: 'subscription' | 'event' | 'membership_fee';
+    amount_cents: number;
+    title: string;
+    /** Giorno (YYYY-MM-DD): del "da saldare" o dell'evento. */
+    due_on: string;
+    transaction_id?: string;
+    subscription_id?: string | null;
+    event_booking_id?: string | null;
+    event_id?: string;
+    starts_at?: string;
+};
+type GetMyOpenPaymentsResult = {
+    ok: boolean;
+    reason?: 'NOT_AUTHENTICATED';
+    payments_enabled?: boolean;
+    items?: OpenPaymentItem[];
+};
+type GetMyPaymentStatusResult = {
+    ok: boolean;
+    reason?: 'NOT_AUTHENTICATED' | 'PAYMENT_NOT_FOUND';
+    status?: 'created' | 'processing' | 'succeeded' | 'failed' | 'canceled' | 'refunded' | 'partially_refunded';
+    purpose?: 'membership_fee' | 'subscription' | 'event' | 'donation' | 'other';
+    kind?: 'new_subscription' | 'event_booking' | 'settlement' | 'membership_fee' | string;
+    amount_cents?: number;
+    title?: string | null;
+    /** Il pagamento è entrato nel registro (incasso, ricevuta, abbonamento o iscrizione). */
+    recorded?: boolean;
+    /** Arrivato quando non serviva più (iscrizione disdetta, già pagato): lo studio lo restituisce. */
+    is_duplicate?: boolean;
+    subscription_id?: string | null;
+    event_booking_id?: string | null;
+    year?: string | null;
+    receipt_number?: string | null;
+    receipt_sent_at?: string | null;
+    failure_message?: string | null;
+};
+/**
+ * Wrapper tipizzato per la RPC prepare_my_plan_purchase (dalla v0.3.7).
+ * Si può comprare questo piano dall'app? Pagamenti accesi, piano "in vendita nell'app", regola
+ * "solo soci".
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function prepareMyPlanPurchase(client: SupabaseClient<Database>, planId: string): Promise<PrepareMyPlanPurchaseResult>;
+/**
+ * Wrapper tipizzato per la RPC prepare_my_event_payment (dalla v0.3.7).
+ * Si può pagare dall'app il contributo di questa propria iscrizione a un evento?
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function prepareMyEventPayment(client: SupabaseClient<Database>, eventBookingId: string): Promise<PrepareMyEventPaymentResult>;
+/**
+ * Wrapper tipizzato per la RPC prepare_my_settlement (dalla v0.3.7).
+ * Si può saldare dall'app questo proprio "da saldare"?
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function prepareMySettlement(client: SupabaseClient<Database>, transactionId: string): Promise<PrepareMySettlementResult>;
+/**
+ * Wrapper tipizzato per la RPC get_my_open_payments (dalla v0.3.7).
+ * Cosa c'è da pagare: i "da saldare" e i contributi degli eventi senza incasso.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function getMyOpenPayments(client: SupabaseClient<Database>): Promise<GetMyOpenPaymentsResult>;
+/**
+ * Wrapper tipizzato per la RPC get_my_payment_status (dalla v0.3.7).
+ * Com'è andato un proprio pagamento online: per la pagina di ritorno da Stripe.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function getMyPaymentStatus(client: SupabaseClient<Database>, paymentId: string): Promise<GetMyPaymentStatusResult>;
 
 /**
  * Etichette e testi condivisi fra sito, gestionale e app, così che la stessa cosa si chiami allo
@@ -7172,4 +7343,4 @@ type GetEventsWithAvailabilityParams = {
  */
 declare function getEventsWithAvailability(client: SupabaseClient<Database>, params?: GetEventsWithAvailabilityParams): Promise<EventWithAvailability[]>;
 
-export { type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetPublicEventsParams, type GetPublicScheduleParams, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type PassActionResult, type PassBenefitType, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type Views, type WaitlistResult, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyFeePayment, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback };
+export { type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetPublicEventsParams, type GetPublicScheduleParams, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type Views, type WaitlistResult, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyOpenPayments, getMyPaymentStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback };

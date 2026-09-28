@@ -425,6 +425,9 @@ async function localChecks() {
   const ownClients = await count(cliente, 'clients');
   check('cliente: vede solo la propria scheda', ownClients.n === 1, `righe visibili: ${ownClients.n}`);
 
+  const noSub = await rpc(cliente, 'book_lesson', { p_lesson_id: lesson.id, p_subscription_id: null });
+  check('cliente: senza abbonamento non prenota',
+    noSub.status === 200 && noSub.json?.reason === 'SUBSCRIPTION_REQUIRED', describe(noSub));
   const booked = await expectRpcOk(cliente, 'book_lesson', { p_lesson_id: lesson.id, p_subscription_id: subscriptionId });
   const myBookings = await select(cliente, `bookings?select=id,status&lesson_id=eq.${lesson.id}`);
   check('cliente: vede la sua prenotazione', myBookings.json?.[0]?.status === 'booked', describe(myBookings));

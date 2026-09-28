@@ -6465,6 +6465,10 @@ declare function createSupabaseExpoClient(config: SupabaseExpoClientConfig): Sup
  */
 type BookLessonResult = {
     ok: boolean;
+    /**
+     * Dalla v0.3.6: 'SUBSCRIPTION_REQUIRED' se unə cliente prova a prenotare senza abbonamento
+     * (senza abbonamento prenota solo lo staff, con `staff_book_lesson`).
+     */
     reason?: string;
     booking_id?: string | number;
     /**
@@ -6536,7 +6540,8 @@ type StaffCancelEventBookingParams = {
 };
 /**
  * Wrapper tipizzato per la RPC book_lesson.
- * Prenota una lezione usando l'ID della lezione e opzionalmente l'ID della subscription.
+ * Prenota una lezione con l'abbonamento indicato. Dalla v0.3.6 l'abbonamento è obbligatorio per i
+ * clienti: senza, la risposta è `{ ok: false, reason: 'SUBSCRIPTION_REQUIRED' }`.
  *
  * @param client - Il client Supabase autenticato
  * @param params - Parametri per la prenotazione

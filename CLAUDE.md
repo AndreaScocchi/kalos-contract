@@ -200,8 +200,8 @@ npm run verify:migrations   # Check migration integrity
 
 ## RPC Functions (PostgreSQL)
 
-### book_lesson(p_lesson_id, p_subscription_id?)
-- Validates: deadline, capacity, subscription
+### book_lesson(p_lesson_id, p_subscription_id)
+- Validates: deadline, capacity, subscription (obbligatorio dalla v0.3.6: `SUBSCRIPTION_REQUIRED`)
 - Creates booking
 - Deducts subscription credits
 - Returns: `{ok, reason?, booking_id?}`
@@ -331,6 +331,14 @@ Test: `supabase/tests/finanze.test.sql` (66).
 - `createSupabaseExpoClient` accetta `lock` (additivo): la nuova app Expo (`kalos-app`) passa
   `processLock` su iOS e Android.
 
+### v0.3.6 (dopo la sessione 8)
+
+- **`book_lesson` vuole sempre un abbonamento** (migrazione `20260928090000`): con
+  `p_subscription_id` NULL risponde `SUBSCRIPTION_REQUIRED` e non prenota. Prima il controllo stava
+  solo nell'interfaccia della webapp. Senza abbonamento prenota solo lo staff (`staff_book_lesson`,
+  con l'incasso da saldare); le prove passano da `book_trial_lesson`. La regola "solo soci" viene
+  prima, quindi `NOT_A_MEMBER` e `MEMBERSHIP_FEE_DUE` restano le risposte di chi non è in regola.
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -397,7 +405,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.5**
+Current: **v0.3.6**
 
 Consumers reference via git tag:
 ```json

@@ -1,9 +1,10 @@
--- Regole di prenotazione: capienza, scadenza, ingressi residui e regola "solo soci".
+-- Regole di prenotazione: abbonamento obbligatorio, capienza, scadenza, ingressi residui e regola
+-- "solo soci".
 -- Sono le regole che, se si rompono, fanno entrare qualcunə a una lezione piena o tengono fuori
 -- unə sociə in regola. Si lancia con `npm run test:db`.
 
 BEGIN;
-SELECT plan(13);
+SELECT plan(14);
 
 -- ── Dati di prova ────────────────────────────────────────────────────────────
 -- Il trigger su auth.users crea profilo e scheda cliente.
@@ -28,22 +29,41 @@ VALUES ('40000000-0000-0000-0000-000000000001', 'Test 1 ingresso', 1000, 1, 30);
 INSERT INTO public.plan_activities (plan_id, activity_id)
 VALUES ('40000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001');
 
+-- Un carnet da 10 ingressi per ciascunə: dalla sessione 8 senza abbonamento non si prenota.
+INSERT INTO public.plans (id, name, price_cents, entries, validity_days)
+VALUES ('40000000-0000-0000-0000-000000000002', 'Test 10 ingressi', 8000, 10, 90);
+INSERT INTO public.plan_activities (plan_id, activity_id)
+VALUES ('40000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001');
+INSERT INTO public.subscriptions (id, client_id, plan_id, started_at, expires_at)
+SELECT '50000000-0000-0000-0000-000000000002', c.id, '40000000-0000-0000-0000-000000000002',
+       CURRENT_DATE, CURRENT_DATE + 90
+  FROM public.clients c WHERE c.email = 'cliente1@test.kalos';
+INSERT INTO public.subscriptions (id, client_id, plan_id, started_at, expires_at)
+SELECT '50000000-0000-0000-0000-000000000003', c.id, '40000000-0000-0000-0000-000000000002',
+       CURRENT_DATE, CURRENT_DATE + 90
+  FROM public.clients c WHERE c.email = 'cliente2@test.kalos';
+
 -- ── Capienza e scadenza (interruttore "solo soci" spento) ────────────────────
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 SELECT is(
-  (public.book_lesson('30000000-0000-0000-0000-000000000001', NULL))->>'reason', 'BOOKED',
-  'con interruttore spento si prenota come prima'
+  (public.book_lesson('30000000-0000-0000-0000-000000000001', NULL))->>'reason', 'SUBSCRIPTION_REQUIRED',
+  'senza abbonamento unə cliente non prenota'
 );
 
 SELECT is(
-  (public.book_lesson('30000000-0000-0000-0000-000000000001', NULL))->>'reason', 'ALREADY_BOOKED',
+  (public.book_lesson('30000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002'))->>'reason', 'BOOKED',
+  'con interruttore spento e un abbonamento valido si prenota come prima'
+);
+
+SELECT is(
+  (public.book_lesson('30000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002'))->>'reason', 'ALREADY_BOOKED',
   'non ci si prenota due volte alla stessa lezione'
 );
 
 SELECT is(
-  (public.book_lesson('30000000-0000-0000-0000-000000000002', NULL))->>'reason', 'BOOKING_DEADLINE_PASSED',
+  (public.book_lesson('30000000-0000-0000-0000-000000000002', '50000000-0000-0000-0000-000000000002'))->>'reason', 'BOOKING_DEADLINE_PASSED',
   'oltre la scadenza non si prenota più'
 );
 RESET ROLE;
@@ -51,7 +71,7 @@ RESET ROLE;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub":"10000000-0000-0000-0000-000000000002","role":"authenticated"}';
 SELECT is(
-  (public.book_lesson('30000000-0000-0000-0000-000000000001', NULL))->>'reason', 'FULL',
+  (public.book_lesson('30000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000003'))->>'reason', 'FULL',
   'a capienza esaurita la prenotazione viene rifiutata'
 );
 RESET ROLE;
@@ -118,7 +138,7 @@ UPDATE public.member_fees SET status = 'paid', paid_at = now()
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated"}';
 SELECT is(
-  (public.book_lesson('30000000-0000-0000-0000-000000000005', NULL))->>'reason', 'BOOKED',
+  (public.book_lesson('30000000-0000-0000-0000-000000000005', '50000000-0000-0000-0000-000000000002'))->>'reason', 'BOOKED',
   'quota pagata: si prenota subito, anche prima della delibera del Consiglio Direttivo'
 );
 RESET ROLE;

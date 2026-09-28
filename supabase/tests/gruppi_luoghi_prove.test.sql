@@ -234,9 +234,16 @@ SELECT is(
   'true', 'chi non è in fila trova la lezione piena: il posto è tenuto per l''offerta');
 RESET ROLE;
 
+-- Dalla sessione 8 unə cliente prenota solo con un abbonamento: Bruno ne ha uno valido per tutto.
+INSERT INTO public.plans (id, name, price_cents, entries, validity_days)
+VALUES ('66000000-0000-0000-0000-000000000001', 'S6 Carnet', 8000, 10, 90);
+INSERT INTO public.subscriptions (id, client_id, plan_id, started_at, expires_at)
+VALUES ('76000000-0000-0000-0000-000000000001', (SELECT bruno FROM s6), '66000000-0000-0000-0000-000000000001',
+        CURRENT_DATE, CURRENT_DATE + 90);
+
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub":"16000000-0000-0000-0000-000000000002","role":"authenticated"}';
-SELECT is((public.book_lesson('56000000-0000-0000-0000-000000000003', NULL))->>'reason', 'BOOKED',
+SELECT is((public.book_lesson('56000000-0000-0000-0000-000000000003', '76000000-0000-0000-0000-000000000001'))->>'reason', 'BOOKED',
   'Bruno, che ha l''offerta, prenota dall''app');
 RESET ROLE;
 SELECT is(

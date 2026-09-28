@@ -372,6 +372,31 @@ async function getMyPaymentStatus(client, paymentId) {
   }
   return data;
 }
+async function getMyReceipts(client) {
+  const { data, error } = await client.rpc("get_my_receipts");
+  if (error) {
+    handleRpcError(error, "get_my_receipts");
+  }
+  return data;
+}
+async function getJourneySummary(client) {
+  const { data, error } = await client.rpc("get_journey_summary");
+  if (error) {
+    handleRpcError(error, "get_journey_summary");
+  }
+  return data;
+}
+async function getJourneyTimeline(client, params = {}) {
+  var _a, _b;
+  const { data, error } = await client.rpc("get_journey_timeline", {
+    p_limit: (_a = params.limit) != null ? _a : 30,
+    p_offset: (_b = params.offset) != null ? _b : 0
+  });
+  if (error) {
+    handleRpcError(error, "get_journey_timeline");
+  }
+  return data;
+}
 
 // src/labels.ts
 var EVENT_TYPE_LABELS = {
@@ -549,11 +574,14 @@ exports.createSupabaseBrowserClient = createSupabaseBrowserClient;
 exports.createSupabaseExpoClient = createSupabaseExpoClient;
 exports.fromPublic = fromPublic;
 exports.getEventsWithAvailability = getEventsWithAvailability;
+exports.getJourneySummary = getJourneySummary;
+exports.getJourneyTimeline = getJourneyTimeline;
 exports.getMyMemberCard = getMyMemberCard;
 exports.getMyMembership = getMyMembership;
 exports.getMyMembershipStatus = getMyMembershipStatus;
 exports.getMyOpenPayments = getMyOpenPayments;
 exports.getMyPaymentStatus = getMyPaymentStatus;
+exports.getMyReceipts = getMyReceipts;
 exports.getPublicActivities = getPublicActivities;
 exports.getPublicEvents = getPublicEvents;
 exports.getPublicOperators = getPublicOperators;

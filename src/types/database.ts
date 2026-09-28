@@ -5793,6 +5793,8 @@ export type Database = {
       }
       get_my_open_payments: { Args: never; Returns: Json }
       get_my_payment_status: { Args: { p_payment_id: string }; Returns: Json }
+      get_my_receipt: { Args: { p_receipt_id: string }; Returns: Json }
+      get_my_receipts: { Args: never; Returns: Json }
       get_practice_metrics: { Args: never; Returns: Json }
       get_revenue_breakdown: {
         Args: { p_month_end?: string; p_month_start?: string }

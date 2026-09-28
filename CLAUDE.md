@@ -375,6 +375,24 @@ dal primo ingresso) e `…120200` (pagamenti dall'app, eventi, avviso della prov
 - Test: `supabase/tests/sessione9.test.sql` (65), `verify-access` (+11), scenari
   `scripts/stripe-local/run-scenarios-app.mjs` (31).
 
+### v0.3.8 (sessione 10: profilo e contenuti dell'app)
+
+Migrazione `20260928160000`.
+
+- **La Bussola è dei soci (D6):** `request_bussola` non chiede più il Community Pass (spento dalla
+  sessione 3) ma di essere sociə in regola, cioè poter partecipare (`internal.member_booking_status`
+  in `ok` o `fee_due_grace`), anche con "solo soci" spenta. Risposte: `NOT_A_MEMBER`,
+  `PENDING_ADMISSION`, `MEMBERSHIP_FEE_DUE`, `NOTE_TOO_LONG` (oltre 1000 caratteri), `ALREADY_OPEN`.
+  `cancel_bussola_request`: il cliente ritira solo una richiesta ancora da fissare
+  (`ALREADY_SCHEDULED`), quella di un'altra persona risponde `NOT_FOUND`.
+- **Le proprie ricevute:** `get_my_receipts()` (elenco, con metodo, tipo e stato dell'incasso) e
+  `get_my_receipt(p_receipt_id)` (i campi del PDF). `receipt-pdf` le usa per chi non è staff, sempre col
+  token di chi chiede (`_shared/receiptData.ts` → `loadMyReceiptPdfData`).
+- **Interruttore `home_practice`**, spento: la Pratica a casa nell'app la vede solo lo staff finché
+  non ci sono pratiche vere.
+- Wrapper TS: `getMyReceipts`, `getJourneySummary`, `getJourneyTimeline` e i loro tipi.
+- Test: `supabase/tests/sessione10.test.sql` (24), `verify-access` (+7).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -441,7 +459,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.7**
+Current: **v0.3.8**
 
 Consumers reference via git tag:
 ```json

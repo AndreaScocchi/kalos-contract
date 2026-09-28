@@ -370,6 +370,31 @@ async function getMyPaymentStatus(client, paymentId) {
   }
   return data;
 }
+async function getMyReceipts(client) {
+  const { data, error } = await client.rpc("get_my_receipts");
+  if (error) {
+    handleRpcError(error, "get_my_receipts");
+  }
+  return data;
+}
+async function getJourneySummary(client) {
+  const { data, error } = await client.rpc("get_journey_summary");
+  if (error) {
+    handleRpcError(error, "get_journey_summary");
+  }
+  return data;
+}
+async function getJourneyTimeline(client, params = {}) {
+  var _a, _b;
+  const { data, error } = await client.rpc("get_journey_timeline", {
+    p_limit: (_a = params.limit) != null ? _a : 30,
+    p_offset: (_b = params.offset) != null ? _b : 0
+  });
+  if (error) {
+    handleRpcError(error, "get_journey_timeline");
+  }
+  return data;
+}
 
 // src/labels.ts
 var EVENT_TYPE_LABELS = {
@@ -529,6 +554,6 @@ async function getEventsWithAvailability(client, params) {
   return result;
 }
 
-export { EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyOpenPayments, getMyPaymentStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback };
+export { EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

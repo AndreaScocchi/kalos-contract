@@ -60,3 +60,18 @@ export async function loadReceiptPdfData(client: SupabaseClient, receiptId: stri
   if (!data) return { ok: false, reason: 'RECEIPT_NOT_FOUND' }
   return { ok: true, data: toReceiptPdfData(data as unknown as ReceiptRow) }
 }
+
+/**
+ * Una ricevuta propria, per chi non è staff (sessione 10): i clienti non leggono `receipts` e
+ * `transactions`, e `get_my_receipt` restituisce gli stessi campi solo se l'incasso è della propria
+ * scheda. Sempre col token di chi chiede: decide il database.
+ */
+export async function loadMyReceiptPdfData(client: SupabaseClient, receiptId: string): Promise<LoadReceiptResult> {
+  const { data, error } = await client.rpc('get_my_receipt', { p_receipt_id: receiptId })
+  // Con la sola chiave anon la funzione non è eseguibile: stessa risposta di una ricevuta che non c'è
+  if (error && (error.code === '42501' || error.code === 'PGRST202')) return { ok: false, reason: 'RECEIPT_NOT_FOUND' }
+  if (error) return { ok: false, reason: 'READ_FAILED', message: error.message }
+  const result = data as { ok?: boolean; receipt?: ReceiptRow } | null
+  if (!result?.ok || !result.receipt) return { ok: false, reason: 'RECEIPT_NOT_FOUND' }
+  return { ok: true, data: toReceiptPdfData(result.receipt) }
+}

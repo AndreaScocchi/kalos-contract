@@ -5894,6 +5894,16 @@ type Database = {
                 };
                 Returns: Json;
             };
+            get_my_receipt: {
+                Args: {
+                    p_receipt_id: string;
+                };
+                Returns: Json;
+            };
+            get_my_receipts: {
+                Args: never;
+                Returns: Json;
+            };
             get_practice_metrics: {
                 Args: never;
                 Returns: Json;
@@ -6786,8 +6796,15 @@ type RequestBussolaParams = {
  */
 type RequestBussolaResult = {
     ok: boolean;
+    /**
+     * Dalla v0.3.8 (D6, la Bussola è dei soci): 'NOT_A_MEMBER', 'PENDING_ADMISSION' (domanda ancora da
+     * deliberare), 'MEMBERSHIP_FEE_DUE' (quota non versata oltre la data di decadenza), 'NOTE_TOO_LONG'
+     * (oltre 1000 caratteri), 'ALREADY_OPEN'. Prima: 'NO_ACTIVE_PASS' (Community Pass).
+     */
     reason?: string;
     request_id?: string;
+    /** Con i rifiuti di iscrizione: lo stato di `internal.member_booking_status`. */
+    member_status?: string;
 };
 /**
  * Wrapper tipizzato per la RPC get_my_membership.
@@ -6822,8 +6839,9 @@ declare function assignMembership(client: SupabaseClient<Database>, params: Assi
 declare function cancelMembership(client: SupabaseClient<Database>, membershipId: string): Promise<PassActionResult>;
 /**
  * Wrapper tipizzato per la RPC request_bussola.
- * Il cliente tesserato (Pass attivo) richiede una consulenza Bussola 15'.
- * Una sola richiesta aperta per volta; lo staff la trasforma in una lezione individuale.
+ * Dalla v0.3.8 unə sociə in regola (ammessə, con la quota versata o ancora nei tempi) richiede una
+ * consulenza Bussola di 15', anche con "solo soci" spenta. Una sola richiesta aperta per volta; lo
+ * staff la trasforma in una lezione individuale.
  *
  * @param client - Il client Supabase autenticato (cliente)
  * @param params - preferredAt?, note?
@@ -6833,7 +6851,9 @@ declare function cancelMembership(client: SupabaseClient<Database>, membershipId
 declare function requestBussola(client: SupabaseClient<Database>, params?: RequestBussolaParams): Promise<RequestBussolaResult>;
 /**
  * Wrapper tipizzato per la RPC cancel_bussola_request.
- * Annulla una richiesta Bussola aperta (cliente proprietario o staff).
+ * Annulla una richiesta Bussola aperta: lo staff qualsiasi, il cliente solo la propria ancora da
+ * fissare (dalla v0.3.8 una fissata risponde 'ALREADY_SCHEDULED'; quella di un'altra persona
+ * 'NOT_FOUND').
  *
  * @param client - Il client Supabase autenticato
  * @param requestId - id della richiesta da annullare
@@ -7180,6 +7200,97 @@ declare function getMyOpenPayments(client: SupabaseClient<Database>): Promise<Ge
  * @throws Error se la chiamata RPC fallisce
  */
 declare function getMyPaymentStatus(client: SupabaseClient<Database>, paymentId: string): Promise<GetMyPaymentStatusResult>;
+/** Una propria ricevuta, per l'elenco dell'app (dalla v0.3.8). */
+type MyReceipt = {
+    id: string;
+    /** `AAAA/NNNN`. */
+    full_number: string;
+    year: number;
+    number: number;
+    issued_at: string;
+    /** Giorno dell'incasso (`date`). */
+    occurred_on: string;
+    causale: string;
+    amount_cents: number;
+    kind: Database['public']['Enums']['transaction_kind'];
+    method: Database['public']['Enums']['payment_method'];
+    source: Database['public']['Enums']['transaction_source'];
+    transaction_status: Database['public']['Enums']['transaction_status'];
+    /** Ricevuta annullata dallo staff: resta nell'elenco, segnata. */
+    voided_at: string | null;
+    sent_at: string | null;
+};
+type GetMyReceiptsResult = {
+    ok: boolean;
+    reason?: string;
+    /** Dalla più recente; vuoto per chi non ha una scheda. */
+    items?: MyReceipt[];
+};
+/**
+ * Wrapper tipizzato per la RPC get_my_receipts (dalla v0.3.8).
+ * Le ricevute degli incassi della propria scheda. Il PDF si scarica con l'edge function
+ * `receipt-pdf` (`{ receipt_id }`), che per chi non è staff legge con `get_my_receipt`.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function getMyReceipts(client: SupabaseClient<Database>): Promise<GetMyReceiptsResult>;
+/** Punti Kalòs: 1 punto = 1 minuto (pratiche, lezioni partecipate, eventi ×2, prima nota del giorno 10). */
+type JourneySummaryResult = {
+    ok: boolean;
+    reason?: string;
+    total_points?: number;
+    mix?: {
+        home: number;
+        studio: number;
+        events: number;
+    };
+    /** Il primo giorno con dei punti (non l'ammissione fra i soci). */
+    member_since?: string | null;
+    /** Settimana in corso, da 'Lun' a 'Dom' (ora italiana). */
+    weekly?: {
+        label: string;
+        value: number;
+    }[];
+    /** Ultime 4 settimane, dalla più vecchia; etichetta 'G/M' del lunedì. */
+    monthly?: {
+        label: string;
+        value: number;
+    }[];
+};
+type JourneyTimelineKind = 'practice' | 'lesson' | 'event' | 'journal';
+type JourneyTimelineItem = {
+    kind: JourneyTimelineKind;
+    occurred_at: string;
+    title: string;
+    /** Per le note del diario: l'inizio del testo (120 caratteri). */
+    subtitle: string | null;
+    /** NULL per le note dopo la prima del giorno. */
+    points: number | null;
+    discipline: string | null;
+};
+type JourneyTimelineResult = {
+    ok: boolean;
+    reason?: string;
+    items?: JourneyTimelineItem[];
+    has_more?: boolean;
+};
+/**
+ * Wrapper tipizzato per la RPC get_journey_summary: Punti Kalòs, mix casa/studio/eventi, settimana e
+ * ultime quattro settimane. Calcolati dal database, niente registro.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function getJourneySummary(client: SupabaseClient<Database>): Promise<JourneySummaryResult>;
+/**
+ * Wrapper tipizzato per la RPC get_journey_timeline: il cammino, dal più recente, a pagine
+ * (`limit` da 1 a 100, `offset` da 0).
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function getJourneyTimeline(client: SupabaseClient<Database>, params?: {
+    limit?: number;
+    offset?: number;
+}): Promise<JourneyTimelineResult>;
 
 /**
  * Etichette e testi condivisi fra sito, gestionale e app, così che la stessa cosa si chiami allo
@@ -7343,4 +7454,4 @@ type GetEventsWithAvailabilityParams = {
  */
 declare function getEventsWithAvailability(client: SupabaseClient<Database>, params?: GetEventsWithAvailabilityParams): Promise<EventWithAvailability[]>;
 
-export { type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetPublicEventsParams, type GetPublicScheduleParams, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type Views, type WaitlistResult, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyOpenPayments, getMyPaymentStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback };
+export { type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetMyReceiptsResult, type GetPublicEventsParams, type GetPublicScheduleParams, type JourneySummaryResult, type JourneyTimelineItem, type JourneyTimelineKind, type JourneyTimelineResult, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type MyReceipt, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type Views, type WaitlistResult, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback };

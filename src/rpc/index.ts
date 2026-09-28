@@ -488,8 +488,15 @@ export type RequestBussolaParams = {
  */
 export type RequestBussolaResult = {
   ok: boolean;
+  /**
+   * Dalla v0.3.8 (D6, la Bussola è dei soci): 'NOT_A_MEMBER', 'PENDING_ADMISSION' (domanda ancora da
+   * deliberare), 'MEMBERSHIP_FEE_DUE' (quota non versata oltre la data di decadenza), 'NOTE_TOO_LONG'
+   * (oltre 1000 caratteri), 'ALREADY_OPEN'. Prima: 'NO_ACTIVE_PASS' (Community Pass).
+   */
   reason?: string;
   request_id?: string;
+  /** Con i rifiuti di iscrizione: lo stato di `internal.member_booking_status`. */
+  member_status?: string;
 };
 
 /**
@@ -570,8 +577,9 @@ export async function cancelMembership(
 
 /**
  * Wrapper tipizzato per la RPC request_bussola.
- * Il cliente tesserato (Pass attivo) richiede una consulenza Bussola 15'.
- * Una sola richiesta aperta per volta; lo staff la trasforma in una lezione individuale.
+ * Dalla v0.3.8 unə sociə in regola (ammessə, con la quota versata o ancora nei tempi) richiede una
+ * consulenza Bussola di 15', anche con "solo soci" spenta. Una sola richiesta aperta per volta; lo
+ * staff la trasforma in una lezione individuale.
  *
  * @param client - Il client Supabase autenticato (cliente)
  * @param params - preferredAt?, note?
@@ -598,7 +606,9 @@ export async function requestBussola(
 
 /**
  * Wrapper tipizzato per la RPC cancel_bussola_request.
- * Annulla una richiesta Bussola aperta (cliente proprietario o staff).
+ * Annulla una richiesta Bussola aperta: lo staff qualsiasi, il cliente solo la propria ancora da
+ * fissare (dalla v0.3.8 una fissata risponde 'ALREADY_SCHEDULED'; quella di un'altra persona
+ * 'NOT_FOUND').
  *
  * @param client - Il client Supabase autenticato
  * @param requestId - id della richiesta da annullare
@@ -1211,4 +1221,120 @@ export async function getMyPaymentStatus(
     handleRpcError(error, 'get_my_payment_status');
   }
   return data as GetMyPaymentStatusResult;
+}
+
+
+// ───────────────────────────────────────────────────────────────────────────
+// Profilo dell'app: ricevute e percorso (contract v0.3.8, sessione 10)
+// ───────────────────────────────────────────────────────────────────────────
+
+/** Una propria ricevuta, per l'elenco dell'app (dalla v0.3.8). */
+export type MyReceipt = {
+  id: string;
+  /** `AAAA/NNNN`. */
+  full_number: string;
+  year: number;
+  number: number;
+  issued_at: string;
+  /** Giorno dell'incasso (`date`). */
+  occurred_on: string;
+  causale: string;
+  amount_cents: number;
+  kind: Database['public']['Enums']['transaction_kind'];
+  method: Database['public']['Enums']['payment_method'];
+  source: Database['public']['Enums']['transaction_source'];
+  transaction_status: Database['public']['Enums']['transaction_status'];
+  /** Ricevuta annullata dallo staff: resta nell'elenco, segnata. */
+  voided_at: string | null;
+  sent_at: string | null;
+};
+
+export type GetMyReceiptsResult = {
+  ok: boolean;
+  reason?: string;
+  /** Dalla più recente; vuoto per chi non ha una scheda. */
+  items?: MyReceipt[];
+};
+
+/**
+ * Wrapper tipizzato per la RPC get_my_receipts (dalla v0.3.8).
+ * Le ricevute degli incassi della propria scheda. Il PDF si scarica con l'edge function
+ * `receipt-pdf` (`{ receipt_id }`), che per chi non è staff legge con `get_my_receipt`.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function getMyReceipts(client: SupabaseClient<Database>): Promise<GetMyReceiptsResult> {
+  const { data, error } = await client.rpc('get_my_receipts');
+  if (error) {
+    handleRpcError(error, 'get_my_receipts');
+  }
+  return data as GetMyReceiptsResult;
+}
+
+/** Punti Kalòs: 1 punto = 1 minuto (pratiche, lezioni partecipate, eventi ×2, prima nota del giorno 10). */
+export type JourneySummaryResult = {
+  ok: boolean;
+  reason?: string;
+  total_points?: number;
+  mix?: { home: number; studio: number; events: number };
+  /** Il primo giorno con dei punti (non l'ammissione fra i soci). */
+  member_since?: string | null;
+  /** Settimana in corso, da 'Lun' a 'Dom' (ora italiana). */
+  weekly?: { label: string; value: number }[];
+  /** Ultime 4 settimane, dalla più vecchia; etichetta 'G/M' del lunedì. */
+  monthly?: { label: string; value: number }[];
+};
+
+export type JourneyTimelineKind = 'practice' | 'lesson' | 'event' | 'journal';
+
+export type JourneyTimelineItem = {
+  kind: JourneyTimelineKind;
+  occurred_at: string;
+  title: string;
+  /** Per le note del diario: l'inizio del testo (120 caratteri). */
+  subtitle: string | null;
+  /** NULL per le note dopo la prima del giorno. */
+  points: number | null;
+  discipline: string | null;
+};
+
+export type JourneyTimelineResult = {
+  ok: boolean;
+  reason?: string;
+  items?: JourneyTimelineItem[];
+  has_more?: boolean;
+};
+
+/**
+ * Wrapper tipizzato per la RPC get_journey_summary: Punti Kalòs, mix casa/studio/eventi, settimana e
+ * ultime quattro settimane. Calcolati dal database, niente registro.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function getJourneySummary(client: SupabaseClient<Database>): Promise<JourneySummaryResult> {
+  const { data, error } = await client.rpc('get_journey_summary');
+  if (error) {
+    handleRpcError(error, 'get_journey_summary');
+  }
+  return data as unknown as JourneySummaryResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC get_journey_timeline: il cammino, dal più recente, a pagine
+ * (`limit` da 1 a 100, `offset` da 0).
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function getJourneyTimeline(
+  client: SupabaseClient<Database>,
+  params: { limit?: number; offset?: number } = {}
+): Promise<JourneyTimelineResult> {
+  const { data, error } = await client.rpc('get_journey_timeline', {
+    p_limit: params.limit ?? 30,
+    p_offset: params.offset ?? 0,
+  });
+  if (error) {
+    handleRpcError(error, 'get_journey_timeline');
+  }
+  return data as unknown as JourneyTimelineResult;
 }

@@ -209,6 +209,9 @@ async function anonChecks() {
   await expectRpcDenied(anon, 'get_my_open_payments', {});
   await expectRpcDenied(anon, 'get_my_payment_status', { p_payment_id: ZERO_UUID });
   await expectRpcNotExposed(anon, 'stripe_record_income', { p_stripe_payment_id: ZERO_UUID, p_paid_at: new Date().toISOString(), p_currency: 'EUR' });
+  // Sessione 10: le proprie ricevute
+  await expectRpcDenied(anon, 'get_my_receipts', {});
+  await expectRpcDenied(anon, 'get_my_receipt', { p_receipt_id: ZERO_UUID });
 
   console.log('\n▸ anon — dati pubblici che il sito deve continuare a leggere');
   for (const t of ['public_site_activities', 'public_site_events', 'public_site_operators', 'public_site_schedule',
@@ -520,6 +523,23 @@ async function localChecks() {
   check('cliente: non legge pagamenti che non sono suoi',
     otherStatus.status === 200 && otherStatus.json?.reason === 'PAYMENT_NOT_FOUND', describe(otherStatus));
   await expectRpcNotExposed(cliente, 'stripe_record_income', { p_stripe_payment_id: ZERO_UUID, p_paid_at: iso(new Date()), p_currency: 'EUR' });
+
+  // Sessione 10 — le proprie ricevute: quella di un'altra scheda non compare e non si scarica, e la
+  // tabella resta chiusa (le note dello staff stanno sull'incasso). La Bussola è dei soci.
+  const [otherPaid] = sql(`insert into public.transactions (client_id, kind, amount_cents, method, source, status, description, note)
+    values ('${newClient.json?.[0]?.id}', 'donation', 1500, 'cash', 'studio', 'paid', 'Verifica ricevuta ${stamp}', 'nota interna') returning id`);
+  const [otherReceipt] = sql(`select internal.issue_receipt_core('${otherPaid?.id}', 'Verifica ${stamp}', null)->>'receipt_id' as id`);
+  const otherReceiptId = otherReceipt?.id ?? ZERO_UUID;
+  const myReceipts = await expectRpcOk(cliente, 'get_my_receipts', {}, 'get_my_receipts (le proprie ricevute)');
+  check('cliente: fra le proprie ricevute non compaiono quelle altrui',
+    Array.isArray(myReceipts?.items) && myReceipts.items.every((r) => r.id !== otherReceiptId), JSON.stringify(myReceipts).slice(0, 200));
+  const otherReceiptData = await rpc(cliente, 'get_my_receipt', { p_receipt_id: otherReceiptId });
+  check('cliente: non legge la ricevuta di un\'altra persona',
+    otherReceiptData.status === 200 && otherReceiptData.json?.reason === 'RECEIPT_NOT_FOUND', describe(otherReceiptData));
+  await expectRowsHidden(cliente, 'receipts');
+  const bussola = await rpc(cliente, 'request_bussola', {});
+  check('cliente non sociə: la Bussola si chiede da sociə',
+    bussola.status === 200 && bussola.json?.reason === 'NOT_A_MEMBER', describe(bussola));
 
   // Sessione 8 — la lista d'attesa si scrive solo con le funzioni: né righe nuove né cancellazioni
   const wlDirect = await insert(cliente, 'waitlist', {

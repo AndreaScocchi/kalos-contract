@@ -114,7 +114,7 @@ anon o authenticated: il test pgTAP e `verify-access` controllano che restino ch
 | Tabella | Chi scrive direttamente | Note |
 |---|---|---|
 | `profiles` | l'utente sul proprio profilo, lo staff su tutti | Il trigger `guard_profile_privileged_columns` blocca il cambio di `role` (solo admin) e di `email` (solo staff). L'email del profilo collega la scheda cliente. |
-| `bookings`, `event_bookings` | solo staff | I clienti passano da `book_lesson`, `cancel_booking`, `book_event` e `cancel_event_booking`, che applicano capienza, scadenze e la regola "solo soci" (interruttore `members_only`). |
+| `bookings`, `event_bookings` | solo staff | I clienti passano da `book_lesson`, `cancel_booking`, `book_event` e `cancel_event_booking`, che applicano capienza, scadenze e la regola "solo soci" (interruttore `members_only`). Dalla v0.3.6 `book_lesson` vuole sempre un abbonamento (`SUBSCRIPTION_REQUIRED`): senza, prenota solo lo staff con `staff_book_lesson`. |
 | `clients`, `subscriptions`, `lessons`, … | solo staff | via policy `is_staff()` |
 | dati personali del cliente (notifiche, preferenze, diario, pratica) | il cliente, solo le proprie righe | policy su `get_my_client_id()` |
 | `waitlist` | solo staff | I clienti passano da `join_waitlist` e `leave_waitlist`: stato, posizione e offerte li decidono le funzioni. Due policy del 2024 (`waitlist_insert_own`, `waitlist_delete_own_or_staff`) erano rimaste attive accanto a queste: tolte nella sessione 8 (migrazione `20260924200000`). |

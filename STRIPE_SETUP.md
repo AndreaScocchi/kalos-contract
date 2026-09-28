@@ -1,8 +1,8 @@
 # Pagamenti online con Stripe
 
 Quota associativa dal sito ("Diventa sociə") e donazioni con carta, dalla sessione 5 del
-[piano](../docs/PIANO-APS-E-NUOVA-APP.md). Gli acquisti in app (abbonamenti, eventi) arrivano con la
-sessione 9 sullo stesso webhook.
+[piano](../docs/PIANO-APS-E-NUOVA-APP.md). Dalla sessione 9 (contract v0.3.7), sullo stesso webhook,
+anche gli acquisti dall'app: abbonamenti, contributi degli eventi e "da saldare" (§1bis).
 
 > **Stato (24/09/2026):** codice, database e function pronti; **l'account Stripe dell'APS non esiste
 > ancora**. Finché non c'è, l'interruttore `payments` resta spento: il sito accetta le domande di
@@ -36,6 +36,29 @@ sito ──► stripe-checkout ──► Stripe Checkout (pagina di Stripe) ─�
   registrato. Stripe non restituisce la commissione: l'uscita resta.
 - **Contestazioni (chargeback):** nessuna scrittura automatica; ops-health manda l'avviso e le si
   gestisce dalla dashboard di Stripe.
+
+### 1bis. Acquisti dall'app (sessione 9)
+
+`stripe-checkout` con `client: 'app'` (e `platform`) e uno di questi scopi:
+
+| Scopo | Corpo | Cosa decide il database | Cosa nasce col pagamento |
+|---|---|---|---|
+| `subscription` | `plan_id` | `prepare_my_plan_purchase`: piano attivo e **in vendita nell'app** (`plans.sold_in_app`), regola "solo soci", prezzo con lo sconto del piano | l'abbonamento (fotografia del piano presa al checkout), che **parte dal primo ingresso** o dopo 60 giorni (D5), più incasso e ricevuta |
+| `event` | `event_booking_id` | `prepare_my_event_payment`: iscrizione propria, non disdetta, contributo > 0, non già pagata; dopo l'evento solo se partecipata | l'incasso collegato all'iscrizione, con ricevuta. Se lo staff l'aveva registrata come "da saldare", si salda quella riga |
+| `settlement` | `transaction_id` | `prepare_my_settlement`: proprio "da saldare" di abbonamento, evento o quota | la **stessa riga** diventa pagata con carta (come `staff_settle_transaction`), con la ricevuta |
+
+- La riga di `stripe_payments` porta in `metadata.kind` cosa fare (`new_subscription`,
+  `event_booking`, `settlement`); `stripe_apply_payment_state` passa l'incasso a
+  `internal.stripe_record_income`.
+- Quello che al momento del pagamento non si può più fare (iscrizione disdetta, "da saldare" già
+  saldato in studio o annullato, importo cambiato) diventa un **doppione**: registrato perché il
+  denaro è arrivato, senza ricevuta né collegamenti, in Incassi → Online da rimborsare.
+- Fonte degli incassi: `app`. Dall'app anche la quota torna all'app.
+- **Ritorno:** alla pagina `/payment/return?payment=<id>` dell'app. Sul web, la stessa origine se è
+  fra `APP_RETURN_ORIGINS`; da iPhone e Android (nessuna origine) la prima di `APP_RETURN_ORIGINS`
+  con `&native=1`: la pagina rimanda a `kalos://payment/return`, perché Stripe accetta solo
+  indirizzi http/https. L'app rilegge l'esito con `get_my_payment_status`.
+- Un rimborso totale di un abbonamento comprato in app **non** lo annulla: lo decide lo staff.
 
 ### Mai dati di prova nel registro vero
 
@@ -124,11 +147,15 @@ stripe webhook_endpoints create --live \
 npx supabase secrets set \
   STRIPE_SECRET_KEY=sk_live_… \
   STRIPE_WEBHOOK_SECRET=whsec_… \
-  CHECKOUT_ALLOWED_ORIGINS=https://kalosstudio.it,https://www.kalosstudio.it
+  CHECKOUT_ALLOWED_ORIGINS=https://kalosstudio.it,https://www.kalosstudio.it \
+  APP_RETURN_ORIGINS=https://kalos-app-beta.netlify.app
 ```
 
 - `STRIPE_WEBHOOK_SECRET` accetta più segreti separati da virgola: serve durante una rotazione.
 - `CHECKOUT_ALLOWED_ORIGINS`: dove si torna dopo il pagamento. Il primo è quello di ripiego.
+- `APP_RETURN_ORIGINS` (sessione 9): gli indirizzi dell'app, separati da quelli del sito. Il primo
+  serve anche al ritorno da iPhone e Android. Oggi il sito di prova; al cambio di link (sessione 12)
+  `https://app.kalosstudio.it` (prima) e il sito di prova (dopo).
 - `STRIPE_API_BASE` **non va mai impostato in produzione** (serve solo al finto Stripe locale, e
   fuori dal locale viene ignorato comunque).
 
@@ -183,9 +210,13 @@ npx supabase start && npx supabase db reset
 node scripts/stripe-local/fake-stripe.mjs &
 node scripts/stripe-local/run-scenarios.mjs          # la prima volta scrive l'env delle function ed esce
 npx supabase functions serve --env-file scripts/stripe-local/.env.functions.local &
-node scripts/stripe-local/run-scenarios.mjs          # 43 controlli
+node scripts/stripe-local/run-scenarios.mjs          # 44 controlli (sessione 5: sito)
+node scripts/stripe-local/run-scenarios-app.mjs      # 31 controlli (sessione 9: acquisti dall'app)
 ```
 
-Più i test del database (`npm run test:db`, file `online_payments.test.sql`) e quelli delle email
+Le utilità comuni stanno in `lib.mjs`, che aggiunge `APP_RETURN_ORIGINS` all'env delle function se
+manca (poi va rilanciato `functions serve`).
+
+Più i test del database (`npm run test:db`, file `online_payments.test.sql` e `sessione9.test.sql`) e quelli delle email
 (`cd supabase/functions && deno test --allow-env --allow-write --allow-read --node-modules-dir=none tests/email_test.ts`,
 con `EML_OUT=<cartella>` per avere i `.eml` e i PDF da aprire).

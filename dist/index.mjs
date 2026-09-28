@@ -335,6 +335,41 @@ async function submitTrialFeedback(client, params) {
   }
   return data;
 }
+async function prepareMyPlanPurchase(client, planId) {
+  const { data, error } = await client.rpc("prepare_my_plan_purchase", { p_plan_id: planId });
+  if (error) {
+    handleRpcError(error, "prepare_my_plan_purchase");
+  }
+  return data;
+}
+async function prepareMyEventPayment(client, eventBookingId) {
+  const { data, error } = await client.rpc("prepare_my_event_payment", { p_event_booking_id: eventBookingId });
+  if (error) {
+    handleRpcError(error, "prepare_my_event_payment");
+  }
+  return data;
+}
+async function prepareMySettlement(client, transactionId) {
+  const { data, error } = await client.rpc("prepare_my_settlement", { p_transaction_id: transactionId });
+  if (error) {
+    handleRpcError(error, "prepare_my_settlement");
+  }
+  return data;
+}
+async function getMyOpenPayments(client) {
+  const { data, error } = await client.rpc("get_my_open_payments");
+  if (error) {
+    handleRpcError(error, "get_my_open_payments");
+  }
+  return data;
+}
+async function getMyPaymentStatus(client, paymentId) {
+  const { data, error } = await client.rpc("get_my_payment_status", { p_payment_id: paymentId });
+  if (error) {
+    handleRpcError(error, "get_my_payment_status");
+  }
+  return data;
+}
 
 // src/labels.ts
 var EVENT_TYPE_LABELS = {
@@ -494,6 +529,6 @@ async function getEventsWithAvailability(client, params) {
   return result;
 }
 
-export { EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyFeePayment, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback };
+export { EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyOpenPayments, getMyPaymentStatus, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

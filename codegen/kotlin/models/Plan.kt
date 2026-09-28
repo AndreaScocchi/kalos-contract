@@ -19,4 +19,5 @@ data class Plan(
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("deleted_at") val deletedAt: String? = null,
     @SerialName("discount_percent") val discountPercent: Double? = null,
+    @SerialName("sold_in_app") val soldInApp: Boolean,
 )

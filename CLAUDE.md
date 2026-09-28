@@ -185,7 +185,7 @@ npm run verify:migrations   # Check migration integrity
 
 - `booking_status`: booked, canceled, attended, no_show
 - `subscription_status`: active, completed, expired, canceled
-- `notification_category`: lesson_reminder, subscription_expiry, entries_low, re_engagement, first_lesson, milestone, birthday, new_event, announcement, practice_reminder, practice_resume, journal_reminder, feedback_request, waitlist_promotion, member_application_decided, membership_fee_due, trial_followup, trial_booked
+- `notification_category`: lesson_reminder, subscription_expiry, entries_low, re_engagement, first_lesson, milestone, birthday, new_event, announcement, practice_reminder, practice_resume, journal_reminder, feedback_request, waitlist_promotion, member_application_decided, membership_fee_due, trial_followup, trial_booked, trial_booked_staff
 - `feedback_kind`: practice, lesson, onboarding, event, trial
 - `notification_channel`: push, email
 - `notification_status`: pending, sent, failed, skipped
@@ -339,6 +339,38 @@ Test: `supabase/tests/finanze.test.sql` (66).
   con l'incasso da saldare); le prove passano da `book_trial_lesson`. La regola "solo soci" viene
   prima, quindi `NOT_A_MEMBER` e `MEMBERSHIP_FEE_DUE` restano le risposte di chi non è in regola.
 
+### v0.3.7 (sessione 9: acquisti dall'app)
+
+Migrazioni `20260928120000` (valore enum `trial_booked_staff`), `…120100` (abbonamenti che partono
+dal primo ingresso) e `…120200` (pagamenti dall'app, eventi, avviso della prova).
+
+- **`plans.sold_in_app`**: il piano si compra dall'app (interruttore del gestionale, spento di partenza).
+- **D5, abbonamento che parte dal primo ingresso** (`subscriptions.starts_on_first_entry`,
+  `activation_deadline`, `first_entry_on`): nato da un acquisto in app, `started_at` resta il giorno
+  del pagamento e non si sposta mai; `expires_at` è provvisoria (acquisto + 60 + validità) finché non
+  c'è un ingresso, poi primo ingresso (o scadenza di attivazione, se viene prima) + validità.
+  Ingresso = prenotazione con l'abbonamento, non di prova, prenotata / partecipata / assente, su
+  lezione non cancellata; ricalcolo con i trigger su `bookings` e `lessons`
+  (`internal.recompute_first_entry`). Lo staff che cambia le date a mano spegne il primo ingresso.
+  `book_lesson` e `staff_book_lesson` rispondono `OUTSIDE_SUBSCRIPTION_WINDOW` (con `valid_until`)
+  se una lezione più vicina lascerebbe fuori una prenotazione già fatta.
+- **`book_lesson` non risponde più `PLAN_NOT_FOUND` per un piano archiviato**: gli abbonamenti già
+  venduti restano validi (i clienti leggono il piano con `plans_select_own_subscription`).
+- **Acquisti dall'app:** `prepare_my_plan_purchase`, `prepare_my_event_payment`,
+  `prepare_my_settlement`, `get_my_open_payments`, `get_my_payment_status` (cliente, solo le proprie
+  righe). `stripe-checkout` con gli scopi `subscription`, `event`, `settlement` e `client: 'app'`;
+  `stripe_apply_payment_state` passa l'incasso a `internal.stripe_record_income` (quota e donazioni
+  come prima). Dettagli in [STRIPE_SETUP.md](STRIPE_SETUP.md) §1bis.
+- **Eventi:** `book_event` controlla la capienza anche riattivando un'iscrizione disdetta e risponde
+  `EVENT_CONCLUDED` a evento finito; `cancel_event_booking` risponde `PAID_CONTACT_STUDIO` a chi
+  disdice (non staff) un'iscrizione già pagata.
+- **Avviso allo staff per le prove dall'app** (`internal.queue_trial_booked_staff`, categoria
+  `trial_booked_staff`): admin e operatrice della lezione, push web se c'è, altrimenti email.
+- Wrapper TS: `prepareMyPlanPurchase`, `prepareMyEventPayment`, `prepareMySettlement`,
+  `getMyOpenPayments`, `getMyPaymentStatus` e i loro tipi.
+- Test: `supabase/tests/sessione9.test.sql` (56), `verify-access` (+11), scenari
+  `scripts/stripe-local/run-scenarios-app.mjs` (31).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -405,7 +437,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.6**
+Current: **v0.3.7**
 
 Consumers reference via git tag:
 ```json

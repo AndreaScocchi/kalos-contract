@@ -49,6 +49,11 @@ export {
   joinWaitlist,
   leaveWaitlist,
   submitTrialFeedback,
+  prepareMyPlanPurchase,
+  prepareMyEventPayment,
+  prepareMySettlement,
+  getMyOpenPayments,
+  getMyPaymentStatus,
 } from './rpc';
 export type {
   BookLessonResult,
@@ -87,6 +92,14 @@ export type {
   TrialFeedbackAnswers,
   SubmitTrialFeedbackParams,
   SubmitTrialFeedbackResult,
+  PreparePurchaseReason,
+  PlanSnapshot,
+  PrepareMyPlanPurchaseResult,
+  PrepareMyEventPaymentResult,
+  PrepareMySettlementResult,
+  OpenPaymentItem,
+  GetMyOpenPaymentsResult,
+  GetMyPaymentStatusResult,
 } from './rpc';
 
 // Etichette e domande condivise fra sito, gestionale e app

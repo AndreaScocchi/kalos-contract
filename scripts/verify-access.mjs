@@ -202,6 +202,13 @@ async function anonChecks() {
   await expectRpcDenied(anon, 'finance_account_balances', { p_at: '1900-01-01' });
   await expectRpcDenied(anon, 'staff_pay_compensation', { p_operator_id: ZERO_UUID, p_month_start: '1900-01-01' });
   await expectRpcNotExposed(anon, 'income_voce', { p_kind: 'donation', p_is_commercial: false, p_is_member: false });
+  // Sessione 9: acquisti dall'app (id inesistenti: anche se fossero aperte, non troverebbero nulla)
+  await expectRpcDenied(anon, 'prepare_my_plan_purchase', { p_plan_id: ZERO_UUID });
+  await expectRpcDenied(anon, 'prepare_my_event_payment', { p_event_booking_id: ZERO_UUID });
+  await expectRpcDenied(anon, 'prepare_my_settlement', { p_transaction_id: ZERO_UUID });
+  await expectRpcDenied(anon, 'get_my_open_payments', {});
+  await expectRpcDenied(anon, 'get_my_payment_status', { p_payment_id: ZERO_UUID });
+  await expectRpcNotExposed(anon, 'stripe_record_income', { p_stripe_payment_id: ZERO_UUID, p_paid_at: new Date().toISOString(), p_currency: 'EUR' });
 
   console.log('\n▸ anon — dati pubblici che il sito deve continuare a leggere');
   for (const t of ['public_site_activities', 'public_site_events', 'public_site_operators', 'public_site_schedule',
@@ -497,6 +504,23 @@ async function localChecks() {
   check('cliente: il questionario si manda solo per una propria prova',
     trialFb.status === 200 && trialFb.json?.reason === 'TRIAL_NOT_FOUND', describe(trialFb));
   await expectReadDenied(cliente, 'site_rebuild_state');
+  // Sessione 9 — acquisti dall'app: si vede e si paga solo il proprio. Un «da saldare» di un'altra
+  // scheda (quella creata dall'operatrice) non deve comparire né potersi pagare.
+  const [otherTx] = sql(`insert into public.transactions (client_id, kind, amount_cents, method, source, status, description)
+    values ('${newClient.json?.[0]?.id}', 'subscription', 3000, 'cash', 'studio', 'pending', 'Verifica ${stamp}') returning id`);
+  const otherTxId = otherTx?.id;
+  const openPayments = await expectRpcOk(cliente, 'get_my_open_payments', {}, 'get_my_open_payments (le proprie cose da pagare)');
+  check('cliente: tra le cose da pagare non compaiono quelle altrui',
+    Array.isArray(openPayments?.items) && openPayments.items.every((i) => !i.transaction_id || i.transaction_id !== otherTxId),
+    JSON.stringify(openPayments));
+  const otherSettle = await rpc(cliente, 'prepare_my_settlement', { p_transaction_id: otherTxId ?? ZERO_UUID });
+  check('cliente: non paga il «da saldare» di un\'altra persona',
+    otherSettle.status === 200 && ['TRANSACTION_NOT_FOUND', 'PAYMENTS_DISABLED'].includes(otherSettle.json?.reason), describe(otherSettle));
+  const otherStatus = await rpc(cliente, 'get_my_payment_status', { p_payment_id: ZERO_UUID });
+  check('cliente: non legge pagamenti che non sono suoi',
+    otherStatus.status === 200 && otherStatus.json?.reason === 'PAYMENT_NOT_FOUND', describe(otherStatus));
+  await expectRpcNotExposed(cliente, 'stripe_record_income', { p_stripe_payment_id: ZERO_UUID, p_paid_at: iso(new Date()), p_currency: 'EUR' });
+
   // Sessione 8 — la lista d'attesa si scrive solo con le funzioni: né righe nuove né cancellazioni
   const wlDirect = await insert(cliente, 'waitlist', {
     lesson_id: lesson.id, client_id: clientId, user_id: cliente.userId, status: 'offered', position: 1,

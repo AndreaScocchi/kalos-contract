@@ -337,6 +337,41 @@ async function submitTrialFeedback(client, params) {
   }
   return data;
 }
+async function prepareMyPlanPurchase(client, planId) {
+  const { data, error } = await client.rpc("prepare_my_plan_purchase", { p_plan_id: planId });
+  if (error) {
+    handleRpcError(error, "prepare_my_plan_purchase");
+  }
+  return data;
+}
+async function prepareMyEventPayment(client, eventBookingId) {
+  const { data, error } = await client.rpc("prepare_my_event_payment", { p_event_booking_id: eventBookingId });
+  if (error) {
+    handleRpcError(error, "prepare_my_event_payment");
+  }
+  return data;
+}
+async function prepareMySettlement(client, transactionId) {
+  const { data, error } = await client.rpc("prepare_my_settlement", { p_transaction_id: transactionId });
+  if (error) {
+    handleRpcError(error, "prepare_my_settlement");
+  }
+  return data;
+}
+async function getMyOpenPayments(client) {
+  const { data, error } = await client.rpc("get_my_open_payments");
+  if (error) {
+    handleRpcError(error, "get_my_open_payments");
+  }
+  return data;
+}
+async function getMyPaymentStatus(client, paymentId) {
+  const { data, error } = await client.rpc("get_my_payment_status", { p_payment_id: paymentId });
+  if (error) {
+    handleRpcError(error, "get_my_payment_status");
+  }
+  return data;
+}
 
 // src/labels.ts
 var EVENT_TYPE_LABELS = {
@@ -517,6 +552,8 @@ exports.getEventsWithAvailability = getEventsWithAvailability;
 exports.getMyMemberCard = getMyMemberCard;
 exports.getMyMembership = getMyMembership;
 exports.getMyMembershipStatus = getMyMembershipStatus;
+exports.getMyOpenPayments = getMyOpenPayments;
+exports.getMyPaymentStatus = getMyPaymentStatus;
 exports.getPublicActivities = getPublicActivities;
 exports.getPublicEvents = getPublicEvents;
 exports.getPublicOperators = getPublicOperators;
@@ -524,7 +561,10 @@ exports.getPublicPricing = getPublicPricing;
 exports.getPublicSchedule = getPublicSchedule;
 exports.joinWaitlist = joinWaitlist;
 exports.leaveWaitlist = leaveWaitlist;
+exports.prepareMyEventPayment = prepareMyEventPayment;
 exports.prepareMyFeePayment = prepareMyFeePayment;
+exports.prepareMyPlanPurchase = prepareMyPlanPurchase;
+exports.prepareMySettlement = prepareMySettlement;
 exports.queueFeedbackRequest = queueFeedbackRequest;
 exports.requestBussola = requestBussola;
 exports.staffBookEvent = staffBookEvent;

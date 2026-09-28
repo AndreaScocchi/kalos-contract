@@ -23,4 +23,7 @@ data class Subscription(
     @SerialName("deleted_at") val deletedAt: String? = null,
     @SerialName("discount_percent") val discountPercent: Double? = null,
     @SerialName("discount_reason") val discountReason: String? = null,
+    @SerialName("starts_on_first_entry") val startsOnFirstEntry: Boolean,
+    @SerialName("activation_deadline") val activationDeadline: String? = null,
+    @SerialName("first_entry_on") val firstEntryOn: String? = null,
 )

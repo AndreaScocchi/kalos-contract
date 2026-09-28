@@ -193,7 +193,8 @@
       "member_application_decided",
       "membership_fee_due",
       "trial_followup",
-      "trial_booked"
+      "trial_booked",
+      "trial_booked_staff"
     ],
     "notification_channel": [
       "push",
@@ -6766,6 +6767,15 @@
           "isArray": false,
           "nullable": true,
           "hasDefault": false
+        },
+        {
+          "name": "sold_in_app",
+          "dataType": "boolean",
+          "udtName": "bool",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
         }
       ]
     },
@@ -8684,6 +8694,33 @@
           "name": "discount_reason",
           "dataType": "text",
           "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "starts_on_first_entry",
+          "dataType": "boolean",
+          "udtName": "bool",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "activation_deadline",
+          "dataType": "date",
+          "udtName": "date",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "first_entry_on",
+          "dataType": "date",
+          "udtName": "date",
           "isEnum": false,
           "isArray": false,
           "nullable": true,

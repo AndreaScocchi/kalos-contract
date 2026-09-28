@@ -122,7 +122,14 @@ SELECT set_eq(
     'staff_pay_volunteer_reimbursement(p_reimbursement_id uuid, p_paid_on date, p_method payment_method)',
     'staff_save_compensation_model(p_payload jsonb)',
     'staff_undo_compensation_payment(p_payment_id uuid)',
-    'staff_unfreeze_compensation(p_month_start date, p_operator_id uuid)'
+    'staff_unfreeze_compensation(p_month_start date, p_operator_id uuid)',
+    -- Sessione 9 (2026-09-28): acquisti dall'app. Ognuna lavora solo sulle righe di chi chiama
+    -- (get_my_client_id); le tre `prepare_*` rispondono PAYMENTS_DISABLED con i pagamenti spenti.
+    'get_my_open_payments()',
+    'get_my_payment_status(p_payment_id uuid)',
+    'prepare_my_event_payment(p_event_booking_id uuid)',
+    'prepare_my_plan_purchase(p_plan_id uuid)',
+    'prepare_my_settlement(p_transaction_id uuid)'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );

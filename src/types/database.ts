@@ -5586,6 +5586,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_my_legal_documents: { Args: never; Returns: Json }
       assign_membership: {
         Args: {
           p_client_id: string
@@ -5671,6 +5672,7 @@ export type Database = {
         Returns: Json
       }
       deactivate_device_token: { Args: { p_token: string }; Returns: Json }
+      delete_account_data: { Args: { p_user_id: string }; Returns: Json }
       delete_campaign: { Args: { campaign_id: string }; Returns: undefined }
       finance_account_balances: { Args: { p_at: string }; Returns: Json }
       finance_income_allocations: {
@@ -6098,6 +6100,10 @@ export type Database = {
           p_rating: number
           p_trial_id: string
         }
+        Returns: Json
+      }
+      update_my_profile: {
+        Args: { p_birthday: string; p_full_name: string; p_phone: string }
         Returns: Json
       }
       void_receipt: {

@@ -393,6 +393,34 @@ Migrazione `20260928160000`.
 - Wrapper TS: `getMyReceipts`, `getJourneySummary`, `getJourneyTimeline` e i loro tipi.
 - Test: `supabase/tests/sessione10.test.sql` (24), `verify-access` (+7).
 
+### v0.3.9 (sessione 11: notifiche, impostazioni e account nell'app)
+
+Migrazione `20260929120000`.
+
+- **Dove porta una notifica:** `internal.notification_path(categoria, data)` dà il percorso dell'app
+  (`/lesson/<id>`, `/subscriptions`, `/announcement/<id>`, `/journal`, `/feedback/trial/<id>`…); il
+  trigger `notification_queue_set_url` lo scrive in `data.url` di ogni riga nuova (un `url` già
+  presente vince solo se è un percorso dell'app). Lo usano il service worker dell'app, le push Expo e
+  il pulsante delle email; `get_my_notifications` ha in più `path` (anche per i log di prima).
+- **Messaggio dopo la prova (F6):** trigger `bookings_trial_followup` → `internal.queue_trial_followup`
+  quando una prova diventa «partecipata»: `trial_followup` con il questionario, un'ora dopo la fine
+  della lezione e mai fra le 21 e le 9 (ora italiana), una volta sola per prova, niente a chi ha già
+  risposto. Dietro l'interruttore **`trial_followup`**, spento fino al lancio della nuova app.
+- **Eliminazione dell'account:** `delete_account_data(p_user_id)`, solo `service_role`, in una
+  transazione (vedi ACCESS_MODEL.md). `internal.handle_new_user` riattiva la scheda di chi si
+  registra di nuovo con la stessa email (prima la registrazione falliva sull'indice unico).
+- **I propri dati:** `update_my_profile(p_full_name, p_phone, p_birthday)` (profilo e scheda
+  insieme; `INVALID_NAME`, `INVALID_PHONE`, `INVALID_BIRTHDAY`), `accept_my_legal_documents()`.
+- **Interruttore `app_version_gate`**, spento: `payload` con `ios` e `android` (`min`, `latest`,
+  `store_url`) e `message`.
+- **Edge function:** `delete-account` riscritta sopra `delete_account_data` (risposte `UNAUTHORIZED`,
+  `STAFF_ACCOUNT` 403, `DATA_DELETE_FAILED`, `AUTH_DELETE_FAILED`); `process-notification-queue`
+  manda le push Expo (`DeviceNotRegistered` disattiva il token, ticket in `expo_receipt_id`,
+  `EXPO_ACCESS_TOKEN` facoltativo) e mette `data.url` nel pulsante delle email.
+- **Storage:** `supabase/storage/bug-reports.sql`, il bucket delle segnalazioni com'è in produzione.
+- Wrapper TS: `getMyNotifications`, `updateMyProfile`, `acceptMyLegalDocuments` e i loro tipi.
+- Test: `supabase/tests/sessione11.test.sql` (50), `verify-access` (+9).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -402,13 +430,16 @@ Migrazione `20260928160000`.
 
 | Function | Purpose |
 |----------|---------|
-| `queue_lesson_reminder(p_lesson_id)` | Queue reminder 1h before lesson |
-| `queue_subscription_expiry(p_subscription_id, p_days_until)` | Queue expiry warning |
-| `queue_announcement(p_announcement_id, p_title, p_body)` | Queue push to all clients with active tokens |
-| `get_notification_channel(p_client_id, p_category)` | Get preferred channel |
-| `mark_notification_read(p_notification_log_id, p_announcement_id)` | Mark as read |
-| `mark_all_notifications_read()` | Mark all as read |
-| `get_unread_notifications_count()` | Count unread |
+| `get_my_notifications(p_limit, p_offset)` | Centro notifiche: log degli ultimi 30 giorni e annunci in corso, con `path` (v0.3.9) |
+| `get_unread_notifications_count()` | Quante da leggere |
+| `mark_notification_read(p_notification_log_id, p_announcement_id)` | Segna letta (uno dei due) |
+| `mark_all_notifications_read()` | Segna tutte lette |
+| `deactivate_device_token(p_token)` | Il dispositivo smette di ricevere (all'uscita dall'app) |
+| `internal.get_notification_channel(p_client_id, p_category)` | Push se accesa e c'è un dispositivo attivo, altrimenti email se accesa |
+| `internal.queue_*` | Le code (promemoria, scadenze, annunci, prove…): non raggiungibili dall'API |
+
+La registrazione dei dispositivi passa dall'edge function `register-push-token` (push web: il testo
+JSON dell'iscrizione; app: `ExponentPushToken[…]`).
 
 ## Row-Level Security e permessi
 
@@ -459,7 +490,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.8**
+Current: **v0.3.9**
 
 Consumers reference via git tag:
 ```json

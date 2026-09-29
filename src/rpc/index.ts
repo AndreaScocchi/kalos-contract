@@ -1338,3 +1338,95 @@ export async function getJourneyTimeline(
   }
   return data as unknown as JourneyTimelineResult;
 }
+
+// ── Sessione 11 (v0.3.9): notifiche, i propri dati, privacy e termini ─────────────────────────
+
+/** Una voce del centro notifiche: una notifica personale (`push`, anche se arrivata per email) o un annuncio. */
+export type MyNotification = {
+  id: string;
+  type: 'push' | 'announcement';
+  category: string;
+  title: string;
+  body: string;
+  /** Solo per gli annunci. */
+  image_url: string | null;
+  sent_at: string;
+  is_read: boolean;
+  /** Percorso dell'app da aprire (`/lesson/<id>`, `/subscriptions`, `/announcement/<id>`…); NULL se non c'è. */
+  path: string | null;
+  /** Vecchia rotta `kalos://` della KMP (archiviata); per gli annunci è il loro link. */
+  route: string | null;
+};
+
+export type GetMyNotificationsResult = {
+  ok: boolean;
+  reason?: string;
+  items?: MyNotification[];
+  has_more?: boolean;
+};
+
+/**
+ * Wrapper tipizzato per la RPC get_my_notifications: le notifiche personali degli ultimi 30 giorni e
+ * gli annunci in corso, dalla più recente, a pagine. `path` dalla v0.3.9.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function getMyNotifications(
+  client: SupabaseClient<Database>,
+  params: { limit?: number; offset?: number } = {}
+): Promise<GetMyNotificationsResult> {
+  const { data, error } = await client.rpc('get_my_notifications', {
+    p_limit: params.limit ?? 30,
+    p_offset: params.offset ?? 0,
+  });
+  if (error) {
+    handleRpcError(error, 'get_my_notifications');
+  }
+  return data as unknown as GetMyNotificationsResult;
+}
+
+export type UpdateMyProfileResult = {
+  ok: boolean;
+  reason?: 'NOT_AUTHENTICATED' | 'INVALID_NAME' | 'INVALID_PHONE' | 'INVALID_BIRTHDAY';
+};
+
+/**
+ * Wrapper tipizzato per la RPC update_my_profile (dalla v0.3.9): nome, telefono e compleanno sul
+ * profilo e sulla scheda cliente insieme. `phone` e `birthday` NULL li tolgono.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function updateMyProfile(
+  client: SupabaseClient<Database>,
+  params: { fullName: string; phone: string | null; birthday: string | null }
+): Promise<UpdateMyProfileResult> {
+  const { data, error } = await client.rpc('update_my_profile', {
+    p_full_name: params.fullName,
+    p_phone: params.phone as string,
+    p_birthday: params.birthday as string,
+  });
+  if (error) {
+    handleRpcError(error, 'update_my_profile');
+  }
+  return data as unknown as UpdateMyProfileResult;
+}
+
+export type AcceptMyLegalDocumentsResult = {
+  ok: boolean;
+  reason?: 'NOT_AUTHENTICATED' | 'PROFILE_NOT_FOUND';
+  accepted_at?: string;
+};
+
+/**
+ * Wrapper tipizzato per la RPC accept_my_legal_documents (dalla v0.3.9): privacy e termini in vigore
+ * accettati adesso, con l'ora del server.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+export async function acceptMyLegalDocuments(client: SupabaseClient<Database>): Promise<AcceptMyLegalDocumentsResult> {
+  const { data, error } = await client.rpc('accept_my_legal_documents');
+  if (error) {
+    handleRpcError(error, 'accept_my_legal_documents');
+  }
+  return data as unknown as AcceptMyLegalDocumentsResult;
+}

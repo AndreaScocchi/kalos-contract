@@ -76,6 +76,14 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   `RECEIPT_NOT_FOUND`). `receipts` e `transactions` restano chiuse ai clienti: sull'incasso ci sono le
   note dello staff. `request_bussola` è dei soci in regola (`internal.member_booking_status` in `ok`
   o `fee_due_grace`), non più del Community Pass;
+- **notifiche e account (sessione 11):** `update_my_profile` (nome, telefono e compleanno sul
+  proprio profilo e sulla propria scheda: la scheda cliente resta chiusa alle scritture dirette) e
+  `accept_my_legal_documents` (privacy e termini accettati con l'ora del server). `delete_account_data`
+  è **solo di service_role**: la chiama l'edge function `delete-account` con l'utente letto dal token,
+  e rifiuta gli account dello staff (`STAFF_ACCOUNT`). Il centro notifiche usa le funzioni già aperte
+  (`get_my_notifications`, ora con `path`, `get_unread_notifications_count`, `mark_*`,
+  `deactivate_device_token`); le preferenze si scrivono direttamente nelle proprie righe di
+  `notification_preferences`, come prima;
 - **Finanze:** `calculate_operator_compensation`, `calculate_compensation_v2`,
   `get_monthly_revenue_by_*`, `get_financial_kpis`, `get_revenue_breakdown`,
   `staff_freeze_compensation`, `generate_recurring_expenses`, `confirm_expense`,
@@ -184,9 +192,17 @@ di questo tipo fa fallire il test: se serve davvero, la si aggiunge all'elenco e
 - **`site-rebuild`** (sessione 6): accetta solo la chiave di servizio (la chiama il job
   `internal.cron_site_rebuild` via `call_edge_function`) e chiama il build hook di Netlify del sito,
   il cui indirizzo sta nel secret `NETLIFY_BUILD_HOOK_URL`, mai nel database né nel repo.
+- **`delete-account`** (dalla sessione 11): legge l'utente dal token, poi con la chiave di servizio
+  chiama `delete_account_data` (una transazione: prenotazioni future disdette, contenuti personali
+  cancellati, scheda disattivata; libro soci, quote, ricevute e incassi restano) e cancella l'utente
+  di Supabase Auth. Lo staff no.
+- **`process-notification-queue`** (dalla sessione 11 anche le push Expo): accetta solo la chiave di
+  servizio; `EXPO_ACCESS_TOKEN` facoltativo, `EXPO_PUSH_URL` solo per le prove in locale.
 - **Bucket privati** (creati in produzione con gli script in `supabase/storage/`, non da
   migrazione: vedi sotto): `documenti-spese` per i documenti dei rimborsi ai volontari e delle
-  uscite, leggibile e scrivibile solo con `can_access_finance()`. Il bucket `newsletter` (immagini,
+  uscite, leggibile e scrivibile solo con `can_access_finance()`; `bug-reports` per gli screenshot
+  delle segnalazioni, ognunə nella propria cartella `<id utente>/`, gli admin tutto (esisteva già,
+  lo script del 29/09 lo descrive com'è). Il bucket `newsletter` (immagini,
   lettura pubblica, scrittura staff) è stato creato a mano prima di questo modello.
 
 ## Come si verifica

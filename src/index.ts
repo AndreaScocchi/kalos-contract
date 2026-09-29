@@ -57,6 +57,9 @@ export {
   getMyReceipts,
   getJourneySummary,
   getJourneyTimeline,
+  getMyNotifications,
+  updateMyProfile,
+  acceptMyLegalDocuments,
 } from './rpc';
 export type {
   BookLessonResult,
@@ -109,6 +112,10 @@ export type {
   JourneyTimelineKind,
   JourneyTimelineItem,
   JourneyTimelineResult,
+  MyNotification,
+  GetMyNotificationsResult,
+  UpdateMyProfileResult,
+  AcceptMyLegalDocumentsResult,
 } from './rpc';
 
 // Etichette e domande condivise fra sito, gestionale e app

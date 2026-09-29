@@ -212,6 +212,11 @@ async function anonChecks() {
   // Sessione 10: le proprie ricevute
   await expectRpcDenied(anon, 'get_my_receipts', {});
   await expectRpcDenied(anon, 'get_my_receipt', { p_receipt_id: ZERO_UUID });
+  // Sessione 11: i propri dati e le accettazioni; l'eliminazione dell'account solo dall'edge function
+  await expectRpcDenied(anon, 'update_my_profile', { p_full_name: 'Nessuno', p_phone: null, p_birthday: null });
+  await expectRpcDenied(anon, 'accept_my_legal_documents', {});
+  await expectRpcDenied(anon, 'delete_account_data', { p_user_id: ZERO_UUID });
+  await expectRpcNotExposed(anon, 'notification_path', { p_category: 'birthday', p_data: {} });
 
   console.log('\n▸ anon — dati pubblici che il sito deve continuare a leggere');
   for (const t of ['public_site_activities', 'public_site_events', 'public_site_operators', 'public_site_schedule',
@@ -540,6 +545,20 @@ async function localChecks() {
   const bussola = await rpc(cliente, 'request_bussola', {});
   check('cliente non sociə: la Bussola si chiede da sociə',
     bussola.status === 200 && bussola.json?.reason === 'NOT_A_MEMBER', describe(bussola));
+
+  // Sessione 11 — i propri dati arrivano anche alla scheda dello staff; privacy e termini con l'ora
+  // del server; l'eliminazione dell'account non si chiama dall'API (solo l'edge function, col service role)
+  const newName = `Verifica Nome ${stamp}`;
+  await expectRpcOk(cliente, 'update_my_profile', { p_full_name: newName, p_phone: '+39 333 000 1111', p_birthday: '1990-01-02' },
+    'update_my_profile (nome, telefono, compleanno)');
+  const [mine] = sql(`select full_name, phone, birthday::text as birthday from public.clients where id = '${clientId}'`);
+  check('cliente: la scheda cliente riceve nome, telefono e compleanno',
+    mine?.full_name === newName && mine?.phone === '+39 333 000 1111' && mine?.birthday === '1990-01-02', JSON.stringify(mine));
+  const clientDirect = await patch(cliente, `clients?id=eq.${clientId}`, { full_name: 'A mano' });
+  const [stillMine] = sql(`select full_name from public.clients where id = '${clientId}'`);
+  check('cliente: non cambia la scheda a mano (solo con la funzione)', stillMine?.full_name === newName, describe(clientDirect));
+  await expectRpcOk(cliente, 'accept_my_legal_documents', {}, 'accept_my_legal_documents');
+  await expectRpcDenied(cliente, 'delete_account_data', { p_user_id: cliente.userId }, 'delete_account_data dall\'API');
 
   // Sessione 8 — la lista d'attesa si scrive solo con le funzioni: né righe nuove né cancellazioni
   const wlDirect = await insert(cliente, 'waitlist', {

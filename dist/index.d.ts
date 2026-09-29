@@ -5570,6 +5570,10 @@ type Database = {
             };
         };
         Functions: {
+            accept_my_legal_documents: {
+                Args: never;
+                Returns: Json;
+            };
             assign_membership: {
                 Args: {
                     p_client_id: string;
@@ -5693,6 +5697,12 @@ type Database = {
             deactivate_device_token: {
                 Args: {
                     p_token: string;
+                };
+                Returns: Json;
+            };
+            delete_account_data: {
+                Args: {
+                    p_user_id: string;
                 };
                 Returns: Json;
             };
@@ -6347,6 +6357,14 @@ type Database = {
                     p_comment?: string;
                     p_rating: number;
                     p_trial_id: string;
+                };
+                Returns: Json;
+            };
+            update_my_profile: {
+                Args: {
+                    p_birthday: string;
+                    p_full_name: string;
+                    p_phone: string;
                 };
                 Returns: Json;
             };
@@ -7291,6 +7309,65 @@ declare function getJourneyTimeline(client: SupabaseClient<Database>, params?: {
     limit?: number;
     offset?: number;
 }): Promise<JourneyTimelineResult>;
+/** Una voce del centro notifiche: una notifica personale (`push`, anche se arrivata per email) o un annuncio. */
+type MyNotification = {
+    id: string;
+    type: 'push' | 'announcement';
+    category: string;
+    title: string;
+    body: string;
+    /** Solo per gli annunci. */
+    image_url: string | null;
+    sent_at: string;
+    is_read: boolean;
+    /** Percorso dell'app da aprire (`/lesson/<id>`, `/subscriptions`, `/announcement/<id>`…); NULL se non c'è. */
+    path: string | null;
+    /** Vecchia rotta `kalos://` della KMP (archiviata); per gli annunci è il loro link. */
+    route: string | null;
+};
+type GetMyNotificationsResult = {
+    ok: boolean;
+    reason?: string;
+    items?: MyNotification[];
+    has_more?: boolean;
+};
+/**
+ * Wrapper tipizzato per la RPC get_my_notifications: le notifiche personali degli ultimi 30 giorni e
+ * gli annunci in corso, dalla più recente, a pagine. `path` dalla v0.3.9.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function getMyNotifications(client: SupabaseClient<Database>, params?: {
+    limit?: number;
+    offset?: number;
+}): Promise<GetMyNotificationsResult>;
+type UpdateMyProfileResult = {
+    ok: boolean;
+    reason?: 'NOT_AUTHENTICATED' | 'INVALID_NAME' | 'INVALID_PHONE' | 'INVALID_BIRTHDAY';
+};
+/**
+ * Wrapper tipizzato per la RPC update_my_profile (dalla v0.3.9): nome, telefono e compleanno sul
+ * profilo e sulla scheda cliente insieme. `phone` e `birthday` NULL li tolgono.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function updateMyProfile(client: SupabaseClient<Database>, params: {
+    fullName: string;
+    phone: string | null;
+    birthday: string | null;
+}): Promise<UpdateMyProfileResult>;
+type AcceptMyLegalDocumentsResult = {
+    ok: boolean;
+    reason?: 'NOT_AUTHENTICATED' | 'PROFILE_NOT_FOUND';
+    accepted_at?: string;
+};
+/**
+ * Wrapper tipizzato per la RPC accept_my_legal_documents (dalla v0.3.9): privacy e termini in vigore
+ * accettati adesso, con l'ora del server.
+ *
+ * @throws Error se la chiamata RPC fallisce
+ */
+declare function acceptMyLegalDocuments(client: SupabaseClient<Database>): Promise<AcceptMyLegalDocumentsResult>;
 
 /**
  * Etichette e testi condivisi fra sito, gestionale e app, così che la stessa cosa si chiami allo
@@ -7454,4 +7531,4 @@ type GetEventsWithAvailabilityParams = {
  */
 declare function getEventsWithAvailability(client: SupabaseClient<Database>, params?: GetEventsWithAvailabilityParams): Promise<EventWithAvailability[]>;
 
-export { type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetMyReceiptsResult, type GetPublicEventsParams, type GetPublicScheduleParams, type JourneySummaryResult, type JourneyTimelineItem, type JourneyTimelineKind, type JourneyTimelineResult, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type MyReceipt, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type Views, type WaitlistResult, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback };
+export { type AcceptMyLegalDocumentsResult, type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyNotificationsResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetMyReceiptsResult, type GetPublicEventsParams, type GetPublicScheduleParams, type JourneySummaryResult, type JourneyTimelineItem, type JourneyTimelineKind, type JourneyTimelineResult, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type MyNotification, type MyReceipt, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type UpdateMyProfileResult, type Views, type WaitlistResult, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };

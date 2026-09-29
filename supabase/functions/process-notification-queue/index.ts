@@ -1,6 +1,10 @@
 // Edge Function: process-notification-queue
-// Processa la coda notifiche: invia push via Web Push API e email via Resend.
+// Processa la coda notifiche: push web (Web Push API, VAPID), push delle app per iPhone e Android
+// (servizio push di Expo, dalla sessione 11) ed email (Amazon SES).
 // Chiamata ogni 5 minuti dal cron job.
+//
+// `data.url` (scritto dal database, `internal.notification_path`) è la pagina dell'app da aprire: il
+// service worker e l'app lo aprono al tocco, e il pulsante dell'email ci porta.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
@@ -127,6 +131,78 @@ async function sendWebPush(
   }
 }
 
+interface ExpoTicket {
+  status: 'ok' | 'error'
+  id?: string
+  message?: string
+  details?: { error?: string }
+}
+
+interface ExpoPushResult {
+  sent: boolean
+  /** Primo ticket accettato: si salva nel log (`expo_receipt_id`). */
+  ticketId: string | null
+  /** Token che Expo dice non più registrati (app disinstallata, permesso tolto): da disattivare. */
+  deadTokens: string[]
+}
+
+// In locale si può puntare a un servizio finto (`EXPO_PUSH_URL` nel file d'ambiente delle function)
+const EXPO_PUSH_URL = Deno.env.get('EXPO_PUSH_URL') || 'https://exp.host/--/api/v2/push/send'
+
+function isExpoToken(token: string): boolean {
+  return token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken[')
+}
+
+// Push alle app di iPhone e Android con il servizio di Expo (C6): una richiesta per notifica, un
+// messaggio per dispositivo. `EXPO_ACCESS_TOKEN` è facoltativo (serve se si attiva la sicurezza
+// avanzata delle push nel progetto Expo).
+async function sendExpoPush(
+  tokens: string[],
+  payload: { title: string; body: string; data?: Record<string, unknown> }
+): Promise<ExpoPushResult> {
+  const result: ExpoPushResult = { sent: false, ticketId: null, deadTokens: [] }
+  if (tokens.length === 0) return result
+
+  const headers: Record<string, string> = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  }
+  const accessToken = Deno.env.get('EXPO_ACCESS_TOKEN')
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
+
+  const messages = tokens.map((to) => ({
+    to,
+    title: payload.title,
+    body: payload.body,
+    data: payload.data || {},
+    sound: 'default',
+    // Il canale che l'app crea su Android (`src/lib/push`)
+    channelId: 'default',
+  }))
+
+  try {
+    const response = await fetch(EXPO_PUSH_URL, { method: 'POST', headers, body: JSON.stringify(messages) })
+    const json = await response.json().catch(() => null) as { data?: ExpoTicket[]; errors?: unknown } | null
+    if (!response.ok || !Array.isArray(json?.data)) {
+      console.error('Expo push error:', response.status, JSON.stringify(json?.errors ?? json).slice(0, 300))
+      return result
+    }
+    json.data.forEach((ticket, i) => {
+      if (ticket.status === 'ok') {
+        result.sent = true
+        result.ticketId = result.ticketId ?? ticket.id ?? null
+      } else if (ticket.details?.error === 'DeviceNotRegistered') {
+        result.deadTokens.push(tokens[i])
+      } else {
+        console.error('Expo push ticket error:', ticket.details?.error ?? ticket.message)
+      }
+    })
+  } catch (error) {
+    console.error('Expo push request failed:', error)
+  }
+  return result
+}
+
 // Check if token is a web push subscription (JSON) or Expo token
 function isWebPushSubscription(token: string): boolean {
   try {
@@ -227,6 +303,29 @@ Deno.serve(async (req: Request): Promise<Response> => {
         for (const notification of pushNotifications) {
           const clientTokens = tokens.filter(t => t.client_id === notification.client_id)
           let sent = false
+          let expoTicketId: string | null = null
+
+          // App di iPhone e Android: tutti i dispositivi della persona in una richiesta
+          const expoTokens = clientTokens.map(t => t.expo_push_token).filter(isExpoToken)
+          if (expoTokens.length > 0) {
+            const expo = await sendExpoPush(expoTokens, {
+              title: notification.title,
+              body: notification.body,
+              data: notification.data,
+            })
+            if (expo.sent) {
+              sent = true
+              pushCount++
+              expoTicketId = expo.ticketId
+            }
+            for (const dead of expo.deadTokens) {
+              await supabaseAdmin
+                .from('device_tokens')
+                .update({ is_active: false })
+                .eq('expo_push_token', dead)
+              console.log('Deactivated unregistered Expo push token')
+            }
+          }
 
           for (const token of clientTokens) {
             // Check if it's a web push subscription
@@ -250,8 +349,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
                 console.log(`Deactivated expired web push subscription`)
               }
             }
-            // Note: Expo tokens are no longer supported for web
-            // If you want to support native apps in the future, add Expo push logic here
+            // I token di Expo sono già stati mandati tutti insieme, sopra
           }
 
           // Update queue status
@@ -274,6 +372,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
             title: notification.title,
             body: notification.body,
             data: notification.data,
+            expo_receipt_id: expoTicketId,
             status,
           })
 
@@ -333,7 +432,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
         continue
       }
 
-      const html = emailTemplate(notification.title, notification.body, appUrl)
+      // Il pulsante porta alla pagina giusta dell'app (solo percorsi dell'app, mai altri siti)
+      const path = typeof notification.data?.url === 'string' ? notification.data.url : ''
+      const ctaUrl = /^\/([^/\\]|$)/.test(path) ? appUrl + path : appUrl
+      const html = emailTemplate(notification.title, notification.body, ctaUrl)
 
       const { data, error } = await sendEmail({
         from: fromEmail,

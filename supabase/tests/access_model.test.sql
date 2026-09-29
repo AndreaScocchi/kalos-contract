@@ -132,7 +132,11 @@ SELECT set_eq(
     'prepare_my_settlement(p_transaction_id uuid)',
     -- Sessione 10 (2026-09-28): le proprie ricevute (elenco e dati del PDF), solo della propria scheda.
     'get_my_receipt(p_receipt_id uuid)',
-    'get_my_receipts()'
+    'get_my_receipts()',
+    -- Sessione 11 (2026-09-29): i propri dati (profilo e scheda insieme), privacy e termini accettati.
+    -- `delete_account_data` resta a service_role: la chiama l'edge function `delete-account`.
+    'accept_my_legal_documents()',
+    'update_my_profile(p_full_name text, p_phone text, p_birthday date)'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );

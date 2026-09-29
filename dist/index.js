@@ -397,6 +397,35 @@ async function getJourneyTimeline(client, params = {}) {
   }
   return data;
 }
+async function getMyNotifications(client, params = {}) {
+  var _a, _b;
+  const { data, error } = await client.rpc("get_my_notifications", {
+    p_limit: (_a = params.limit) != null ? _a : 30,
+    p_offset: (_b = params.offset) != null ? _b : 0
+  });
+  if (error) {
+    handleRpcError(error, "get_my_notifications");
+  }
+  return data;
+}
+async function updateMyProfile(client, params) {
+  const { data, error } = await client.rpc("update_my_profile", {
+    p_full_name: params.fullName,
+    p_phone: params.phone,
+    p_birthday: params.birthday
+  });
+  if (error) {
+    handleRpcError(error, "update_my_profile");
+  }
+  return data;
+}
+async function acceptMyLegalDocuments(client) {
+  const { data, error } = await client.rpc("accept_my_legal_documents");
+  if (error) {
+    handleRpcError(error, "accept_my_legal_documents");
+  }
+  return data;
+}
 
 // src/labels.ts
 var EVENT_TYPE_LABELS = {
@@ -561,6 +590,7 @@ exports.EVENT_TYPE_LABELS_PLURAL = EVENT_TYPE_LABELS_PLURAL;
 exports.TRIAL_FEEDBACK_COMMENT_QUESTION = TRIAL_FEEDBACK_COMMENT_QUESTION;
 exports.TRIAL_FEEDBACK_QUESTIONS = TRIAL_FEEDBACK_QUESTIONS;
 exports.TRIAL_FEEDBACK_RATING_QUESTION = TRIAL_FEEDBACK_RATING_QUESTION;
+exports.acceptMyLegalDocuments = acceptMyLegalDocuments;
 exports.assertSupabaseConfig = assertSupabaseConfig;
 exports.assignMembership = assignMembership;
 exports.bookEvent = bookEvent;
@@ -579,6 +609,7 @@ exports.getJourneyTimeline = getJourneyTimeline;
 exports.getMyMemberCard = getMyMemberCard;
 exports.getMyMembership = getMyMembership;
 exports.getMyMembershipStatus = getMyMembershipStatus;
+exports.getMyNotifications = getMyNotifications;
 exports.getMyOpenPayments = getMyOpenPayments;
 exports.getMyPaymentStatus = getMyPaymentStatus;
 exports.getMyReceipts = getMyReceipts;
@@ -600,5 +631,6 @@ exports.staffCancelEventBooking = staffCancelEventBooking;
 exports.submitFeedback = submitFeedback;
 exports.submitMemberApplication = submitMemberApplication;
 exports.submitTrialFeedback = submitTrialFeedback;
+exports.updateMyProfile = updateMyProfile;
 //# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map

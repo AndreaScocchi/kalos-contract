@@ -54,6 +54,9 @@ export {
   prepareMySettlement,
   getMyOpenPayments,
   getMyPaymentStatus,
+  getMyReceipts,
+  getJourneySummary,
+  getJourneyTimeline,
 } from './rpc';
 export type {
   BookLessonResult,
@@ -100,6 +103,12 @@ export type {
   OpenPaymentItem,
   GetMyOpenPaymentsResult,
   GetMyPaymentStatusResult,
+  MyReceipt,
+  GetMyReceiptsResult,
+  JourneySummaryResult,
+  JourneyTimelineKind,
+  JourneyTimelineItem,
+  JourneyTimelineResult,
 } from './rpc';
 
 // Etichette e domande condivise fra sito, gestionale e app

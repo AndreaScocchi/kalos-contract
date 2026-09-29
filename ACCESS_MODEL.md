@@ -71,6 +71,11 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   `PAYMENTS_DISABLED`), `get_my_open_payments` e `get_my_payment_status` (letture per l'app, perché
   i clienti non leggono `transactions`, `receipts` e `stripe_payments`). Tutte lavorano solo sulle
   righe di chi chiama (`get_my_client_id()`): le righe altrui rispondono come inesistenti;
+- **profilo dell'app (sessione 10):** `get_my_receipts` (elenco delle ricevute degli incassi della
+  propria scheda) e `get_my_receipt` (i dati del PDF di una propria ricevuta; una altrui risponde
+  `RECEIPT_NOT_FOUND`). `receipts` e `transactions` restano chiuse ai clienti: sull'incasso ci sono le
+  note dello staff. `request_bussola` è dei soci in regola (`internal.member_booking_status` in `ok`
+  o `fee_due_grace`), non più del Community Pass;
 - **Finanze:** `calculate_operator_compensation`, `calculate_compensation_v2`,
   `get_monthly_revenue_by_*`, `get_financial_kpis`, `get_revenue_breakdown`,
   `staff_freeze_compensation`, `generate_recurring_expenses`, `confirm_expense`,
@@ -159,9 +164,11 @@ di questo tipo fa fallire il test: se serve davvero, la si aggiunge all'elenco e
 
 ### Edge function e Storage
 
-- **`receipt-pdf`** (sessione 4) ridisegna il PDF di una ricevuta leggendo `receipts` **con il token
-  di chi chiede**, non con la chiave di servizio: decidono le RLS (oggi solo lo staff). Quando l'app
-  mostrerà le ricevute al socio basterà una policy sul proprio `client_id`.
+- **`receipt-pdf`** (sessione 4) ridisegna il PDF di una ricevuta **con il token di chi chiede**, mai
+  con la chiave di servizio: lo staff la legge da `receipts` (decidono le RLS); dalla sessione 10 chi
+  non è staff riceve le proprie attraverso `get_my_receipt`, che risponde solo per gli incassi della
+  propria scheda. Una policy sul proprio `client_id` non bastava: `receipts` non ha `client_id` e
+  `transactions`, da cui si ricaverebbe, deve restare chiusa.
 - **Pagamenti online (sessione 5, [STRIPE_SETUP.md](STRIPE_SETUP.md)):**
   - `stripe-webhook` gira **senza JWT** (`config.toml`): la sicurezza è la firma di Stripe,
     verificata sul corpo grezzo. Scrive solo attraverso `stripe_apply_payment_state`, dopo aver

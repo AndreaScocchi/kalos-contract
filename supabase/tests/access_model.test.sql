@@ -129,7 +129,10 @@ SELECT set_eq(
     'get_my_payment_status(p_payment_id uuid)',
     'prepare_my_event_payment(p_event_booking_id uuid)',
     'prepare_my_plan_purchase(p_plan_id uuid)',
-    'prepare_my_settlement(p_transaction_id uuid)'
+    'prepare_my_settlement(p_transaction_id uuid)',
+    -- Sessione 10 (2026-09-28): le proprie ricevute (elenco e dati del PDF), solo della propria scheda.
+    'get_my_receipt(p_receipt_id uuid)',
+    'get_my_receipts()'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );

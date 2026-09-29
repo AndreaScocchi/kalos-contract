@@ -1,16 +1,16 @@
 // PDF di una ricevuta, generato al momento dalla riga di `receipts`.
 //
 // POST { receipt_id } con il token di chi è loggato. La ricevuta si legge CON QUEL TOKEN, non con la
-// chiave di servizio: decidono le RLS di `receipts` e `transactions` chi può scaricarla (oggi lo
-// staff; quando l'app mostrerà le ricevute al socio basterà aggiungere la policy sul proprio
-// client_id, senza toccare questa funzione).
+// chiave di servizio: lo staff la legge da `receipts` (decidono le RLS); dalla sessione 10 chi non è
+// staff scarica le proprie con `get_my_receipt`, che risponde solo per gli incassi della propria
+// scheda (i clienti non leggono `transactions`, dove ci sono le note dello staff).
 //
 // Risponde con il PDF (application/pdf, in download) oppure JSON { ok: false, reason }.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import { receiptFileName, renderReceiptPdf } from '../_shared/receiptPdf.ts'
-import { loadReceiptPdfData } from '../_shared/receiptData.ts'
+import { loadMyReceiptPdfData, loadReceiptPdfData } from '../_shared/receiptData.ts'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -47,7 +47,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     },
   )
 
-  const loaded = await loadReceiptPdfData(supabase, receiptId)
+  let loaded = await loadReceiptPdfData(supabase, receiptId)
+  if (!loaded.ok && loaded.reason === 'RECEIPT_NOT_FOUND') {
+    loaded = await loadMyReceiptPdfData(supabase, receiptId)
+  }
   // Inesistente, o non visibile a chi chiede (anche la sola chiave pubblica): stessa risposta, così
   // non si scopre quali id esistono e non compare un falso guasto nei log
   if (!loaded.ok && loaded.reason === 'RECEIPT_NOT_FOUND') {

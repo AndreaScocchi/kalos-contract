@@ -121,18 +121,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
       try {
         console.log(`Executing campaign: ${campaign.name} (${campaign.id})`)
 
-        // Update status to executing
-        await supabaseAdmin
+        // La campagna si prende in modo atomico: due esecuzioni insieme (job e «Avvia», doppio clic)
+        // non mandano due volte push e newsletter a tuttə.
+        const { data: claimed } = await supabaseAdmin
           .from('campaigns')
           .update({ status: 'executing' })
           .eq('id', campaign.id)
+          .neq('status', 'executing')
+          .select('id')
+        if (!claimed || claimed.length === 0) {
+          console.log(`Campaign ${campaign.id} already executing, skipped`)
+          continue
+        }
 
-        // Get campaign contents
+        // Solo i contenuti non ancora partiti: «Riprova» non rimanda quelli già inviati
         const { data: contents, error: contentsError } = await supabaseAdmin
           .from('campaign_contents')
           .select('*')
           .eq('campaign_id', campaign.id)
-          .neq('status', 'skipped')
+          .not('status', 'in', '(skipped,sent)')
 
         if (contentsError || !contents) {
           throw new Error('Failed to fetch campaign contents')
@@ -144,14 +151,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
         // Process each content type
         for (const content of contents as Content[]) {
           try {
-            // Check if this content type's step was skipped
+            // Passi del wizard come li numera il gestionale (WizardTimeline, StepRecap): brief 2,
+            // push 3, email 4, social 5. Prima qui erano spostati di uno, e saltare la push saltava il
+            // brief e mandava la push a tuttə.
             const stepMap: Record<string, number> = {
-              'brief': 3,
-              'push_notification': 4,
-              'newsletter': 5,
-              'instagram_post': 6,
-              'instagram_story': 6,
-              'facebook_post': 6,
+              'brief': 2,
+              'push_notification': 3,
+              'newsletter': 4,
+              'instagram_post': 5,
+              'instagram_story': 5,
+              'facebook_post': 5,
             }
 
             const stepId = stepMap[content.content_type]

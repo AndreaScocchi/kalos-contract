@@ -250,6 +250,7 @@ enum class NotificationCategory {
     @SerialName("trial_followup") TRIAL_FOLLOWUP,
     @SerialName("trial_booked") TRIAL_BOOKED,
     @SerialName("trial_booked_staff") TRIAL_BOOKED_STAFF,
+    @SerialName("lesson_canceled") LESSON_CANCELED,
 }
 
 @Serializable

@@ -76,17 +76,27 @@ function createSupabaseExpoClient(config) {
 }
 
 // src/rpc/index.ts
+var RpcError = class extends Error {
+  constructor(rpcName, message, error) {
+    super(message);
+    this.name = "RpcError";
+    this.rpcName = rpcName;
+    this.code = typeof (error == null ? void 0 : error.code) === "string" ? error.code : null;
+    this.details = typeof (error == null ? void 0 : error.details) === "string" ? error.details : null;
+    this.hint = typeof (error == null ? void 0 : error.hint) === "string" ? error.hint : null;
+  }
+};
 function handleRpcError(error, rpcName) {
   if (error == null ? void 0 : error.message) {
-    throw new Error(`RPC ${rpcName} failed: ${error.message}`);
+    throw new RpcError(rpcName, `RPC ${rpcName} failed: ${error.message}`, error);
   }
   if (error == null ? void 0 : error.details) {
-    throw new Error(`RPC ${rpcName} failed: ${error.details}`);
+    throw new RpcError(rpcName, `RPC ${rpcName} failed: ${error.details}`, error);
   }
   if (error == null ? void 0 : error.hint) {
-    throw new Error(`RPC ${rpcName} failed: ${error.hint}`);
+    throw new RpcError(rpcName, `RPC ${rpcName} failed: ${error.hint}`, error);
   }
-  throw new Error(`RPC ${rpcName} failed with unknown error: ${JSON.stringify(error)}`);
+  throw new RpcError(rpcName, `RPC ${rpcName} failed with unknown error: ${JSON.stringify(error)}`, error);
 }
 async function bookLesson(client, params) {
   const { lessonId, subscriptionId } = params;
@@ -424,6 +434,35 @@ async function acceptMyLegalDocuments(client) {
   }
   return data;
 }
+async function setMyNewsletterSubscription(client, subscribed) {
+  const { data, error } = await client.rpc("set_my_newsletter_subscription", { p_subscribed: subscribed });
+  if (error) {
+    handleRpcError(error, "set_my_newsletter_subscription");
+  }
+  return data;
+}
+async function staffSavePlan(client, params) {
+  const { data, error } = await client.rpc("staff_save_plan", {
+    p_plan_id: params.planId,
+    p_plan: params.plan,
+    p_activity_ids: params.activityIds
+  });
+  if (error) {
+    handleRpcError(error, "staff_save_plan");
+  }
+  return data;
+}
+async function staffArchiveLessons(client, params) {
+  var _a;
+  const { data, error } = await client.rpc("staff_archive_lessons", {
+    p_lesson_ids: params.lessonIds,
+    p_reason: (_a = params.reason) != null ? _a : null
+  });
+  if (error) {
+    handleRpcError(error, "staff_archive_lessons");
+  }
+  return data;
+}
 
 // src/labels.ts
 var EVENT_TYPE_LABELS = {
@@ -583,6 +622,6 @@ async function getEventsWithAvailability(client, params) {
   return result;
 }
 
-export { EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };
+export { EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, RpcError, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, setMyNewsletterSubscription, staffArchiveLessons, staffBookEvent, staffCancelEventBooking, staffSavePlan, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

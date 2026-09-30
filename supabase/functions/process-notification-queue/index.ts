@@ -42,11 +42,25 @@ interface QueueItem {
     id: string
     email: string | null
     full_name: string
+    email_bounced: boolean | null
   }
 }
 
+// Titolo e testo arrivano dalla coda e possono contenere dati scritti dalle persone (per esempio il nome
+// nell'avviso di una prova allo staff): vanno sempre trattati come testo, mai come HTML.
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 // HTML email template
-function emailTemplate(title: string, body: string, ctaUrl: string): string {
+function emailTemplate(rawTitle: string, rawBody: string, ctaUrl: string, preferencesUrl: string): string {
+  const title = escapeHtml(rawTitle)
+  const body = escapeHtml(rawBody).replace(/\n/g, '<br>')
   return `
 <!DOCTYPE html>
 <html lang="it">
@@ -58,7 +72,7 @@ function emailTemplate(title: string, body: string, ctaUrl: string): string {
 <body style="font-family: 'Jost', 'Segoe UI', Arial, sans-serif; background: #FDFBF7; margin: 0; padding: 40px 20px;">
   <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
     <div style="text-align: center; margin-bottom: 24px;">
-      <h1 style="color: #036257; font-size: 24px; margin: 0;">Studio Kalos</h1>
+      <h1 style="color: #036257; font-size: 24px; margin: 0;">Studio Kalòs</h1>
     </div>
     <h2 style="color: #0F2D3B; font-size: 20px; margin-bottom: 16px;">${title}</h2>
     <p style="color: #0F2D3B; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">${body}</p>
@@ -69,6 +83,7 @@ function emailTemplate(title: string, body: string, ctaUrl: string): string {
     </div>
   </div>
   <p style="text-align: center; margin-top: 24px; font-size: 12px; color: #6B7280; line-height: 1.6;">
+    <a href="${preferencesUrl}" style="color: #6B7280;">Scegli quali messaggi ricevere</a><br>
     ${legalLineHtml()}
   </p>
 </body>
@@ -251,18 +266,43 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     )
 
-    // Get pending notifications
-    const { data: queue, error: queueError } = await supabaseAdmin
+    // Get pending notifications: push ed email in due code separate, così un blocco di email ferme
+    // (tetto giornaliero) non tiene indietro le push che arrivano dopo.
+    const fetchPending = (channel: 'push' | 'email') => supabaseAdmin
       .from('notification_queue')
       .select(`
         *,
-        clients!inner(id, email, full_name)
+        clients!inner(id, email, full_name, email_bounced)
       `)
       .eq('status', 'pending')
+      .eq('channel', channel)
       .lte('scheduled_for', new Date().toISOString())
       .lt('attempts', 3)
       .order('scheduled_for', { ascending: true })
-      .limit(BATCH_SIZE) as { data: QueueItem[] | null, error: Error | null }
+      .limit(BATCH_SIZE) as unknown as Promise<{ data: QueueItem[] | null, error: Error | null }>
+    const [pushRes, emailRes] = await Promise.all([fetchPending('push'), fetchPending('email')])
+    const queueError = pushRes.error ?? emailRes.error
+    const fetched: QueueItem[] | null = queueError ? null : [...(pushRes.data ?? []), ...(emailRes.data ?? [])]
+
+    // Un promemoria di una lezione già iniziata non si manda più (per esempio dopo un blocco della
+    // coda): si segna saltato.
+    const now = Date.now()
+    const stale = (fetched ?? []).filter((n) => {
+      const startsAt = typeof n.data?.starts_at === 'string' ? Date.parse(n.data.starts_at as string) : NaN
+      return n.category === 'lesson_reminder' && Number.isFinite(startsAt) && startsAt <= now
+    })
+    for (const notification of stale) {
+      await supabaseAdmin
+        .from('notification_queue')
+        .update({
+          status: 'skipped',
+          error_message: 'Lesson already started',
+          attempts: notification.attempts + 1,
+          processed_at: new Date().toISOString(),
+        })
+        .eq('id', notification.id)
+    }
+    const queue = fetched ? fetched.filter((n) => !stale.includes(n)) : null
 
     if (queueError) {
       console.error('Error fetching queue:', queueError)
@@ -415,10 +455,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!cap.allowed) {
       console.error(`Daily cap gate: ${emailNotifications.length} email notifications queued, ${cap.available} available (cap ${cap.cap}, sent ${cap.sentLast24Hours})`)
     }
-    const emailsToSend = cap.allowed ? emailNotifications : []
+    // Con il tetto quasi raggiunto si manda quello che si può; il resto resta in coda per il giro dopo.
+    const emailsToSend = cap.allowed ? emailNotifications : emailNotifications.slice(0, Math.max(0, cap.available))
 
     for (const notification of emailsToSend) {
       const client = notification.clients
+      if (client?.email && client.email_bounced) {
+        await supabaseAdmin
+          .from('notification_queue')
+          .update({
+            status: 'skipped',
+            error_message: 'Email bounced',
+            attempts: notification.attempts + 1,
+            processed_at: new Date().toISOString(),
+          })
+          .eq('id', notification.id)
+        continue
+      }
       if (!client?.email) {
         await supabaseAdmin
           .from('notification_queue')
@@ -435,7 +488,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       // Il pulsante porta alla pagina giusta dell'app (solo percorsi dell'app, mai altri siti)
       const path = typeof notification.data?.url === 'string' ? notification.data.url : ''
       const ctaUrl = /^\/([^/\\]|$)/.test(path) ? appUrl + path : appUrl
-      const html = emailTemplate(notification.title, notification.body, ctaUrl)
+      const html = emailTemplate(notification.title, notification.body, ctaUrl, `${appUrl}/notifications/preferences`)
 
       const { data, error } = await sendEmail({
         from: fromEmail,

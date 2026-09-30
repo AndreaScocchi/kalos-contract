@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { unsubscribeToken } from '../_shared/unsubscribe.ts'
 
 // Simple unsubscribe page - returns HTML directly
 Deno.serve(async (req: Request): Promise<Response> => {
@@ -115,13 +116,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 })
 
 // Generate a simple token for email verification
-async function generateToken(email: string): Promise<string> {
-  const secret = Deno.env.get('UNSUBSCRIBE_SECRET') || 'kalos-newsletter-2024'
-  const data = new TextEncoder().encode(email + secret)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('')
-}
+const generateToken = unsubscribeToken
 
 // Export for use in send-newsletter
 export { generateToken }

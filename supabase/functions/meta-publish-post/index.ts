@@ -37,6 +37,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: false, reason: 'UNAUTHORIZED' }, 401)
     }
 
+    // Le campagne programmate la chiamano con la chiave di sistema (execute-scheduled-campaigns): prima
+    // qui `is_staff()` rispondeva falso e ogni post programmato falliva. Altrimenti serve unə dello staff.
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const isServiceRole = serviceKey !== '' && authHeader === `Bearer ${serviceKey}`
+
     // Create client with user's token to verify they are staff
     const supabaseUser = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -44,16 +49,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
       { global: { headers: { Authorization: authHeader } } }
     )
 
-    // Verify user is staff
-    const { data: isStaff, error: staffError } = await supabaseUser.rpc('is_staff')
-    if (staffError || !isStaff) {
-      return jsonResponse({ ok: false, reason: 'UNAUTHORIZED' }, 403)
-    }
+    let user: { id: string } | null = null
+    if (!isServiceRole) {
+      // Verify user is staff
+      const { data: isStaff, error: staffError } = await supabaseUser.rpc('is_staff')
+      if (staffError || !isStaff) {
+        return jsonResponse({ ok: false, reason: 'UNAUTHORIZED' }, 403)
+      }
 
-    // Get user ID
-    const { data: { user } } = await supabaseUser.auth.getUser()
-    if (!user) {
-      return jsonResponse({ ok: false, reason: 'UNAUTHORIZED' }, 401)
+      // Get user ID
+      const { data: userData } = await supabaseUser.auth.getUser()
+      if (!userData.user) {
+        return jsonResponse({ ok: false, reason: 'UNAUTHORIZED' }, 401)
+      }
+      user = userData.user
     }
 
     // Get request body

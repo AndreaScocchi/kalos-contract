@@ -220,13 +220,20 @@ async function anonChecks() {
 
   console.log('\n▸ anon — dati pubblici che il sito deve continuare a leggere');
   for (const t of ['public_site_activities', 'public_site_events', 'public_site_operators', 'public_site_schedule',
-    'public_site_pricing', 'activities', 'lessons', 'events', 'plans', 'operators', 'feature_flags',
+    'public_site_pricing', 'activities', 'lessons', 'events', 'plans', 'feature_flags',
     // Sessione 3: gruppi e luoghi alimentano le pagine del sito e la SEO per comune
     'public_site_groups', 'public_site_locations', 'activity_groups', 'locations']) {
     const c = await count(anon, t);
     check(`anon: ${t} leggibile`, c.status === 200 || c.status === 206, `HTTP ${c.status}`);
   }
   await expectRpcOk(anon, 'get_events_booking_counts', { p_event_ids: [ZERO_UUID] });
+
+  // Dal 30/09/2026 anon legge di `operators` solo le colonne pubbliche (le usano l'app senza accesso
+  // e le view del sito), non il rapporto con l'associazione né il collegamento all'account.
+  const opsPublic = await call(anon, 'GET', '/rest/v1/operators?select=id,name,role,image_url,deleted_at&limit=1');
+  check('anon: operators leggibile (colonne pubbliche)', opsPublic.status === 200, describe(opsPublic));
+  const opsInternal = await call(anon, 'GET', '/rest/v1/operators?select=engagement_type,is_admin,profile_id&limit=1');
+  check('anon: operators senza le colonne interne', isDenied(opsInternal), describe(opsInternal));
 }
 
 // ── Solo in locale: utenti e dati di prova ────────────────────────────────────────────────────
@@ -457,11 +464,27 @@ async function localChecks() {
     isDenied(directCancel) || (directCancel.status === 200 && directCancel.json?.length === 0), describe(directCancel));
   await expectRpcOk(cliente, 'cancel_event_booking', { p_booking_id: evBooked?.booking_id });
 
-  await expectRpcOk(cliente, 'register_device_token',
-    { p_token: `ExponentPushToken[verify-${stamp}]`, p_platform: 'web', p_device_id: 'verify', p_app_version: '0' });
+  // I dispositivi li registra l'edge function register-push-token (service_role); la vecchia RPC
+  // `register_device_token` della KMP non c'è più (30/09/2026).
+  await expectRpcNotExposed(cliente, 'register_device_token',
+    { p_token: 'x', p_platform: 'web', p_device_id: 'verify', p_app_version: '0' });
+  await insert(service, 'device_tokens',
+    { client_id: clientId, expo_push_token: `ExponentPushToken[verify-${stamp}]`, platform: 'web', is_active: true });
   const tokens = await count(cliente, 'device_tokens');
   check('cliente: vede il proprio token push', tokens.n === 1, `righe visibili: ${tokens.n}`);
   await expectRpcOk(cliente, 'deactivate_device_token', { p_token: `ExponentPushToken[verify-${stamp}]` });
+
+  // Verifica del 30/09/2026: niente richieste di parere accodate da unə cliente; la newsletter si
+  // spegne e si riaccende dall'app; le note dello staff e i token di Meta non si leggono.
+  await expectRpcDenied(cliente, 'queue_feedback_request',
+    { p_client_id: clientId, p_kind: 'onboarding', p_target_id: null, p_scheduled_for: '1970-01-01T00:00:00Z' });
+  await expectRpcOk(cliente, 'set_my_newsletter_subscription', { p_subscribed: false });
+  await expectRpcOk(cliente, 'set_my_newsletter_subscription', { p_subscribed: true });
+  const staffNotes = await count(cliente, 'client_staff_notes');
+  check('cliente: non vede le note dello staff', (staffNotes.status === 200 || staffNotes.status === 206) && staffNotes.n === 0,
+    `HTTP ${staffNotes.status}, righe: ${staffNotes.n}`);
+  const metaToken = await call(cliente, 'GET', '/rest/v1/social_connections?select=access_token&limit=1');
+  check('cliente: non legge i token delle pagine Meta', isDenied(metaToken), describe(metaToken));
   await expectRpcOk(cliente, 'get_my_notifications', { p_limit: 20, p_offset: 0 });
   await expectRpcOk(cliente, 'get_unread_notifications_count');
   const logs = await select(cliente, `notification_logs?select=id&client_id=eq.${clientId}`);
@@ -649,7 +672,7 @@ async function localChecks() {
   check('admin: la promozione a operatrice ha effetto', promoted?.role === 'operator', JSON.stringify(promoted));
 
   console.log('\n▸ service_role — edge function e automazioni');
-  await expectRpcOk(service, 'queue_birthday', {}, 'queue_birthday (schedule-notifications)');
+  await expectRpcOk(service, 'queue_birthday', {}, 'queue_birthday (job di pg_cron)');
   const svcToken = await insert(service, 'device_tokens',
     { client_id: clientId, expo_push_token: `ExponentPushToken[svc-${stamp}]`, platform: 'web', is_active: true });
   check('service_role: registra un token push (register-push-token)', svcToken.status === 201, describe(svcToken));

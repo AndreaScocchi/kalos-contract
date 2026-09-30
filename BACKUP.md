@@ -132,7 +132,7 @@ Repo `kalos-contract` → **Settings → Secrets and variables → Actions**.
 | Secret | `BACKUP_AWS_ACCESS_KEY_ID` | access key del §2.3 |
 | Secret | `BACKUP_AWS_SECRET_ACCESS_KEY` | secret access key del §2.3 |
 | Secret | `ALERT_EMAIL_TO` | chi riceve gli avvisi (più indirizzi separati da virgola) |
-| Secret | `SUPABASE_URL` | *c'è già* (lo usa `notification-cron.yml`) |
+| Secret | `SUPABASE_URL` | *c'è già* |
 | Secret | `SUPABASE_SERVICE_ROLE_KEY` | *c'è già* |
 | Variabile | `BACKUP_S3_BUCKET` | nome del bucket del §2.2 |
 | Variabile | `BACKUP_AGE_RECIPIENT` | chiave pubblica `age1…` del §2.1 |

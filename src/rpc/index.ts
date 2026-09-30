@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../types/database';
+import type { Database, Json } from '../types/database';
 
 /**
  * Risultato della chiamata RPC book_lesson
@@ -97,17 +97,39 @@ export type StaffCancelEventBookingParams = {
 /**
  * Helper per gestire errori dalle chiamate RPC
  */
+/**
+ * Errore di una chiamata RPC (dalla v0.3.10). Il messaggio resta quello di prima
+ * (`RPC <nome> failed: …`), in più porta il codice di PostgREST o di Postgres (`code`, per esempio
+ * `42501` permesso negato, `PGRST301` sessione scaduta, `PGRST202` funzione inesistente), così le app
+ * possono distinguere un problema di rete da una sessione scaduta o da un permesso mancante.
+ */
+export class RpcError extends Error {
+  readonly rpcName: string;
+  readonly code: string | null;
+  readonly details: string | null;
+  readonly hint: string | null;
+
+  constructor(rpcName: string, message: string, error: any) {
+    super(message);
+    this.name = 'RpcError';
+    this.rpcName = rpcName;
+    this.code = typeof error?.code === 'string' ? error.code : null;
+    this.details = typeof error?.details === 'string' ? error.details : null;
+    this.hint = typeof error?.hint === 'string' ? error.hint : null;
+  }
+}
+
 function handleRpcError(error: any, rpcName: string): never {
   if (error?.message) {
-    throw new Error(`RPC ${rpcName} failed: ${error.message}`);
+    throw new RpcError(rpcName, `RPC ${rpcName} failed: ${error.message}`, error);
   }
   if (error?.details) {
-    throw new Error(`RPC ${rpcName} failed: ${error.details}`);
+    throw new RpcError(rpcName, `RPC ${rpcName} failed: ${error.details}`, error);
   }
   if (error?.hint) {
-    throw new Error(`RPC ${rpcName} failed: ${error.hint}`);
+    throw new RpcError(rpcName, `RPC ${rpcName} failed: ${error.hint}`, error);
   }
-  throw new Error(`RPC ${rpcName} failed with unknown error: ${JSON.stringify(error)}`);
+  throw new RpcError(rpcName, `RPC ${rpcName} failed with unknown error: ${JSON.stringify(error)}`, error);
 }
 
 /**
@@ -1429,4 +1451,101 @@ export async function acceptMyLegalDocuments(client: SupabaseClient<Database>): 
     handleRpcError(error, 'accept_my_legal_documents');
   }
   return data as unknown as AcceptMyLegalDocumentsResult;
+}
+
+export type SetMyNewsletterSubscriptionResult = {
+  ok: boolean;
+  reason?: 'CLIENT_NOT_FOUND' | 'INVALID_VALUE';
+  subscribed?: boolean;
+};
+
+/**
+ * Wrapper tipizzato per la RPC set_my_newsletter_subscription (dalla v0.3.10): la persona accende o
+ * spegne la newsletter dalla propria app.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+export async function setMyNewsletterSubscription(
+  client: SupabaseClient<Database>,
+  subscribed: boolean
+): Promise<SetMyNewsletterSubscriptionResult> {
+  const { data, error } = await client.rpc('set_my_newsletter_subscription', { p_subscribed: subscribed });
+  if (error) {
+    handleRpcError(error, 'set_my_newsletter_subscription');
+  }
+  return data as unknown as SetMyNewsletterSubscriptionResult;
+}
+
+export type StaffSavePlanInput = {
+  name: string;
+  discipline?: string | null;
+  price_cents: number;
+  currency?: string;
+  /** NULL = ingressi illimitati */
+  entries: number | null;
+  validity_days: number;
+  description?: string | null;
+  is_active?: boolean;
+  discount_percent?: number | null;
+  sold_in_app?: boolean;
+};
+
+export type StaffSavePlanResult = {
+  ok: boolean;
+  reason?: 'NOT_STAFF' | 'ACTIVITIES_REQUIRED' | 'NAME_REQUIRED' | 'INVALID_PRICE' | 'INVALID_VALIDITY' | 'INVALID_ENTRIES' | 'PLAN_NOT_FOUND';
+  plan_id?: string;
+};
+
+/**
+ * Wrapper tipizzato per la RPC staff_save_plan (dalla v0.3.10): crea (`planId` null) o modifica un
+ * piano con le sue attività in una transazione sola. Serve almeno un'attività: un piano senza
+ * attività varrebbe per tutte.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+export async function staffSavePlan(
+  client: SupabaseClient<Database>,
+  params: { planId: string | null; plan: StaffSavePlanInput; activityIds: string[] }
+): Promise<StaffSavePlanResult> {
+  const { data, error } = await client.rpc('staff_save_plan', {
+    p_plan_id: params.planId as string,
+    p_plan: params.plan as unknown as Json,
+    p_activity_ids: params.activityIds,
+  });
+  if (error) {
+    handleRpcError(error, 'staff_save_plan');
+  }
+  return data as unknown as StaffSavePlanResult;
+}
+
+export type StaffArchiveLessonsResult = {
+  ok: boolean;
+  reason?: 'NOT_STAFF';
+  /** Lezioni archiviate */
+  archived?: number;
+  /** Prenotazioni disdette (ingresso restituito, avviso «Lezione annullata») */
+  canceled_bookings?: number;
+  /** Lezioni già iniziate con prenotazioni o presenze: non archiviate */
+  skipped?: string[];
+};
+
+/**
+ * Wrapper tipizzato per la RPC staff_archive_lessons (dalla v0.3.10): archivia lezioni. Per quelle
+ * future chiude la lista d'attesa, disdice le prenotazioni restituendo l'ingresso e avvisa chi era
+ * prenotatə; quelle già iniziate con prenotazioni o presenze le salta.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+export async function staffArchiveLessons(
+  client: SupabaseClient<Database>,
+  params: { lessonIds: string[]; reason?: string | null }
+): Promise<StaffArchiveLessonsResult> {
+  const { data, error } = await client.rpc('staff_archive_lessons', {
+    p_lesson_ids: params.lessonIds,
+    p_reason: (params.reason ?? null) as string,
+  });
+  if (error) {
+    handleRpcError(error, 'staff_archive_lessons');
+  }
+  return data as unknown as StaffArchiveLessonsResult;
 }

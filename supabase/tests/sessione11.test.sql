@@ -252,7 +252,9 @@ SELECT is((SELECT (SELECT count(*) FROM public.journal_entries WHERE client_id =
              FROM s11)::int, 0, 'diario, dispositivi e notifiche sono cancellati');
 SELECT ok((SELECT deleted_at IS NOT NULL AND NOT is_active AND phone IS NULL AND birthday IS NULL
                   AND NOT newsletter_subscribed
-                  AND notes LIKE 'Nota dello staff' || E'\n' || 'Account dell''app eliminato dalla persona il %'
+                  AND notes IS NULL
+                  AND (SELECT n.notes FROM public.client_staff_notes n WHERE n.client_id = clients.id)
+                      LIKE 'Nota dello staff' || E'\n' || 'Account dell''app eliminato dalla persona il %'
              FROM public.clients WHERE id = (SELECT franco FROM s11)),
   'la scheda resta disattivata, senza telefono né compleanno, con le note dello staff intatte');
 SELECT is((SELECT status::text FROM public.members WHERE client_id = (SELECT franco FROM s11)), 'active',

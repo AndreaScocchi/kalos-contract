@@ -39,10 +39,15 @@ interface SesEvent {
     timestamp: string
     // SES delivers tag values as arrays, e.g. { email_id: ["<uuid>"] }
     tags?: Record<string, string[]>
+    destination?: string[]
   }
   delivery?: { timestamp?: string }
-  bounce?: { bounceType?: 'Permanent' | 'Transient' | 'Undetermined'; timestamp?: string }
-  complaint?: { timestamp?: string }
+  bounce?: {
+    bounceType?: 'Permanent' | 'Transient' | 'Undetermined'
+    timestamp?: string
+    bouncedRecipients?: { emailAddress?: string }[]
+  }
+  complaint?: { timestamp?: string; complainedRecipients?: { emailAddress?: string }[] }
   open?: { timestamp?: string }
   click?: { timestamp?: string; link?: string }
 }
@@ -217,13 +222,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: true }, 200)
     }
 
-    const emailId = tagValue(event, 'email_id')
-    if (!emailId) {
-      // Transactional mail carries no email_id tag: nothing to reconcile here
-      console.log('No email_id tag found in SES event, skipping')
-      return jsonResponse({ ok: true }, 200)
-    }
-
     const occurredAt = eventTimestamp(event)
 
     // Create admin client with service_role key
@@ -232,6 +230,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
+
+    // Per ogni email, newsletter o di servizio (notifiche, ricevute), un rimbalzo permanente spegne
+    // l'indirizzo della scheda e una segnalazione di spam la disiscrive dalla newsletter. Prima valeva
+    // solo per le newsletter: le email delle notifiche continuavano a partire verso indirizzi morti.
+    await applyAddressOutcome(supabaseAdmin, event, occurredAt)
+
+    const emailId = tagValue(event, 'email_id')
+    if (!emailId) {
+      // Transactional mail carries no email_id tag: nothing else to reconcile
+      return jsonResponse({ ok: true }, 200)
+    }
 
     // Get current email record to check status priority
     const { data: emailRecord, error: fetchError } = await supabaseAdmin
@@ -322,6 +331,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
 // generic resolves to `never` and every table call fails to typecheck. Pinning the
 // schema to 'public' restores it without pulling the whole type tree in.
 type AdminClient = SupabaseClient<any, 'public', any>
+
+async function applyAddressOutcome(supabase: AdminClient, event: SesEvent, occurredAt: string) {
+  const permanentBounce = event.eventType === 'Bounce' && event.bounce?.bounceType === 'Permanent'
+  const complaint = event.eventType === 'Complaint'
+  if (!permanentBounce && !complaint) return
+
+  const listed = permanentBounce
+    ? (event.bounce?.bouncedRecipients ?? []).map((r) => r.emailAddress)
+    : (event.complaint?.complainedRecipients ?? []).map((r) => r.emailAddress)
+  const addresses = [...new Set((listed.length > 0 ? listed : event.mail.destination ?? [])
+    .filter((a): a is string => typeof a === 'string' && a.includes('@'))
+    .map((a) => a.trim()))]
+  if (addresses.length === 0) return
+
+  // L'indirizzo come arriva e in minuscolo: le schede possono averlo scritto in tutti e due i modi
+  const variants = [...new Set([...addresses, ...addresses.map((a) => a.toLowerCase())])]
+  const update = permanentBounce
+    ? { email_bounced: true, email_bounced_at: occurredAt }
+    : { newsletter_subscribed: false }
+  const { error } = await supabase.from('clients').update(update).in('email', variants)
+  if (error) console.error('[ses-webhook] aggiornamento della scheda non riuscito:', error.message)
+}
 
 async function updateCampaignStats(supabase: AdminClient, campaignId: string) {
   try {

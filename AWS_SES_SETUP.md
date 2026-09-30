@@ -378,9 +378,12 @@ Poi rimuovi `SEND_DELAY_MS` dagli import di `send-newsletter` e
 `retry-newsletter` e rimetti `const EMAIL_DELAY_MS = 1000`, e rideploya.
 I record DKIM di Resend, se non li hai rimossi, sono ancora validi.
 
-Da fare solo **dopo** che SES è stabile da qualche settimana: rimuovere
-`_shared/resend.ts`, la function `resend-webhook`, i secret `RESEND_*` e i
-record DNS di Resend.
+**Fatto il 30/09/2026** (SES stabile da un mese): tolti dal codice `_shared/resend.ts` e la function
+`resend-webhook`; `getFromEmail()` non legge più `RESEND_FROM_EMAIL` (valeva
+`newsletter@kalosstudio.it`, lo stesso mittente predefinito). Il rollback qui sopra ora passa dal
+codice nella storia di git. Restano da togliere in produzione la function pubblicata
+`resend-webhook` e i secret `RESEND_*`, e dal DNS i record di Resend, dopo aver controllato che
+l'SMTP di Supabase Auth (conferme e reset) non usi `smtp.resend.com`.
 
 ---
 
@@ -395,8 +398,8 @@ record DNS di Resend.
 | `supabase/functions/process-notification-queue/index.ts` | import aggiornato |
 | `supabase/functions/resend-confirmation-email/index.ts` | import aggiornato |
 | `supabase/functions/get-email-quota/index.ts` | quota reale da SES invece dei limiti fissi di Resend |
-| `supabase/functions/_shared/resend.ts` | **invariato** — percorso di rollback |
-| `supabase/functions/resend-webhook/index.ts` | **invariato** — da rimuovere a migrazione consolidata |
+| `supabase/functions/_shared/resend.ts` | **tolto** il 30/09/2026 |
+| `supabase/functions/resend-webhook/index.ts` | **tolto** il 30/09/2026 |
 
 ### Differenze di comportamento rispetto a Resend
 

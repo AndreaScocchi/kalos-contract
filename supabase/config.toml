@@ -383,3 +383,10 @@ verify_jwt = false
 # nella function stessa. Come per ses-webhook, questa impostazione vale anche al deploy.
 [functions.stripe-webhook]
 verify_jwt = false
+
+# Il link «disiscriviti» delle newsletter e l'header List-Unsubscribe (anche il one-click POST dei
+# client di posta) arrivano da chi legge l'email, senza JWT: la sicurezza è il token del link,
+# verificato nella function (UNSUBSCRIBE_SECRET). Con verify_jwt attivo il gateway rispondeva 401 e
+# nessuno riusciva a disiscriversi (trovato il 30/09/2026).
+[functions.unsubscribe-newsletter]
+verify_jwt = false

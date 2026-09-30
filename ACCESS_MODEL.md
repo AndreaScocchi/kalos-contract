@@ -36,7 +36,8 @@ Helper usati da policy e RPC: `is_staff()` (operator, admin, finance), `is_admin
 
 ### Cosa è aperto ad `anon`
 
-- **Lettura:** `activities`, `lessons` (solo di gruppo), `operators` attive, `plans`, `plan_activities`,
+- **Lettura:** `activities`, `lessons` (solo di gruppo), `operators` attive (dal 30/09/2026 solo le
+  colonne pubbliche: non `engagement_type`, `is_admin`, `profile_id`), `plans`, `plan_activities`,
   `promotions` in corso, `events` attivi, `feature_flags`, `pass_tiers`, `pass_tier_benefits`,
   `activity_groups` e `locations` (i luoghi con `show_on_site`), le view `public_site_*` e
   `lesson_occupancy` (solo conteggi).
@@ -84,8 +85,19 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   (`get_my_notifications`, ora con `path`, `get_unread_notifications_count`, `mark_*`,
   `deactivate_device_token`); le preferenze si scrivono direttamente nelle proprie righe di
   `notification_preferences`, come prima;
+- **verifica del 30/09/2026 (v0.3.10):** `set_my_newsletter_subscription` (la persona accende o spegne
+  la newsletter); per lo staff `staff_save_plan` (piano e attività in una transazione, almeno
+  un'attività) e `staff_archive_lessons` (disdette con ingresso restituito e avviso «Lezione
+  annullata»). **Chiuse:** `queue_feedback_request` (solo service_role: prima unə cliente poteva
+  accodare migliaia di righe con date a piacere). **Tolte** perché senza chiamanti:
+  `register_device_token`, `get_financial_kpis`, `get_revenue_breakdown`,
+  `set_notification_quiet_hours`, `get_my_notification_settings`, `get_practice_metrics`,
+  `get_activity_booking_counts`, `get_auth_email_stats`, `queue_new_event` a 3 parametri.
+  `submit_member_application` resta aperta, ma canale, IP e dispositivo li accetta solo da
+  service_role (l'edge function `member-application`); `staff_set_member_fee` esonera, segna pagata o
+  rimborsata solo con `can_access_finance()`;
 - **Finanze:** `calculate_operator_compensation`, `calculate_compensation_v2`,
-  `get_monthly_revenue_by_*`, `get_financial_kpis`, `get_revenue_breakdown`,
+  `get_monthly_revenue_by_*`,
   `staff_freeze_compensation`, `generate_recurring_expenses`, `confirm_expense`,
   `staff_pay_volunteer_reimbursement` e, dalla sessione 7, `finance_income_lines`,
   `finance_income_allocations`, `finance_account_balances`, `finance_set_opening_balances`,
@@ -100,11 +112,20 @@ Tutto il resto è interno e vive nello schema `internal`: code delle notifiche (
 (`compute_compensation`), la numerazione (`next_receipt_number`, `next_member_number`), la regola
 "solo soci" (`member_booking_status`). Lo chiamano cron, trigger e edge function, mai le app.
 
-**Restano in `public` per necessità, pur essendo chiuse ad anon e authenticated:**
-`queue_lesson_reminders`, `queue_subscription_expiry`, `queue_entries_low`, `queue_re_engagement`
-e `queue_birthday`, perché l'edge function `schedule-notifications` le chiama **attraverso
-PostgREST** con la chiave di servizio, e `process_recurring_announcements`. Se un giorno quella
-edge function cambiasse modo di chiamarle, potrebbero seguire le altre.
+**Restano in `public`, chiuse ad anon e authenticated:** `queue_lesson_reminders`,
+`queue_subscription_expiry`, `queue_entries_low`, `queue_re_engagement`, `queue_birthday` e
+`process_recurring_announcements`. Le chiamano i job di pg_cron (`internal.cron_*`); l'edge function
+`schedule-notifications` che le chiamava via PostgREST è stata tolta il 30/09/2026, quindi alla
+prossima occasione possono passare in `internal` (i job vanno riscritti insieme).
+
+**Note dello staff (30/09/2026).** `client_staff_notes` (una riga per scheda) si legge e si scrive
+solo con `is_staff()`. `clients.notes` resta per compatibilità ma non si usa: un trigger sposta nella
+tabella nuova quello che ci arriva e la lascia vuota, e il profilo non copia più le note (prima la
+persona leggeva le note interne sulla propria scheda e sul proprio profilo).
+
+**`social_connections.access_token`** (30/09/2026): nessun grant di lettura ad authenticated sulla
+colonna. I token delle pagine Meta li usano solo le edge function del marketing, con la chiave di
+sistema.
 
 **Finanze (sessione 7).** `rendiconto_voci` si legge solo con `can_access_finance()` e non si scrive
 dall'API (lo schema del rendiconto cambia con una migrazione). `account_transfers` e
@@ -186,9 +207,13 @@ di questo tipo fa fallire il test: se serve davvero, la si aggiunge all'elenco e
     impronta dell'IP; dalla sessione 9 abbonamenti, contributi degli eventi e "da saldare"
     dall'app, sempre col token della persona (`prepare_my_*`) e con un limite orario per persona;
   - `stripe-refund`: col token di chi chiede, passa da `staff_prepare_stripe_refund` (solo Finanze);
-  - `member-application`: la domanda la registra `submit_member_application` col token della
-    persona; la function aggiunge IP e dispositivo presi dalla richiesta e manda il PDF;
+  - `member-application`: verifica il token della persona, poi (dal 30/09/2026) registra la domanda
+    con `submit_member_application` usando la chiave di sistema e l'utente del token nel payload:
+    solo così la funzione accetta canale, IP e dispositivo, presi dalla richiesta. Manda il PDF;
   - `send-receipt`: staff, e solo per ricevute che può leggere col proprio token.
+- **`unsubscribe-newsletter`** gira **senza JWT** (`config.toml`, dal 30/09/2026: prima il gateway
+  rispondeva 401 e nessunə riusciva a disiscriversi): la sicurezza è il token del link, derivato da
+  email e `UNSUBSCRIBE_SECRET` (obbligatorio, nessun valore di ripiego nel codice).
 - **`site-rebuild`** (sessione 6): accetta solo la chiave di servizio (la chiama il job
   `internal.cron_site_rebuild` via `call_edge_function`) e chiama il build hook di Netlify del sito,
   il cui indirizzo sta nel secret `NETLIFY_BUILD_HOOK_URL`, mai nel database né nel repo.

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { unsubscribeToken } from '../_shared/unsubscribe.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 import { renderNewsletterContent, personalizeContent, toPlainText, firstName } from '../_shared/newsletterContent.ts'
 import { legalLineHtml } from '../_shared/legal.ts'
@@ -25,13 +26,7 @@ interface ResponseBody {
 const EMAIL_DELAY_MS = SEND_DELAY_MS
 
 // Generate unsubscribe token (must match unsubscribe-newsletter function)
-async function generateUnsubscribeToken(email: string): Promise<string> {
-  const secret = Deno.env.get('UNSUBSCRIBE_SECRET') || 'kalos-newsletter-2024'
-  const data = new TextEncoder().encode(email + secret)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('')
-}
+const generateUnsubscribeToken = unsubscribeToken
 
 // Generate public URL for newsletter image (bucket is public, URLs never expire)
 function getImagePublicUrl(imageUrl: string | null): string | null {
@@ -224,12 +219,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return jsonResponse({ ok: false, reason: 'CAMPAIGN_NOT_FOUND' }, 404)
     }
 
-    // Get all failed emails for this campaign
+    // Da riprovare: le fallite e quelle rimaste in attesa (per esempio fermate dal tetto giornaliero,
+    // che rimanda proprio a «Riprova»). Prima si riprendevano solo le fallite.
     const { data: failedEmailsRaw, error: failedError } = await supabaseAdmin
       .from('newsletter_emails')
       .select('*')
       .eq('campaign_id', body.campaignId)
-      .eq('status', 'failed')
+      .in('status', ['failed', 'pending'])
 
     if (failedError) {
       console.error('Error getting failed emails:', failedError)
@@ -299,11 +295,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }, 200)
     }
 
-    // Update campaign status to 'sending'
-    await supabaseAdmin
+    // La campagna si prende in modo atomico: mai insieme a un invio o a un altro «Riprova» (le email
+    // in attesa le manderebbero tutti e due). Un invio fermo da più di mezz'ora si può riprendere.
+    const { data: claimed, error: claimError } = await supabaseAdmin
       .from('newsletter_campaigns')
       .update({ status: 'sending' })
       .eq('id', body.campaignId)
+      .or(`status.neq.sending,updated_at.lt.${new Date(Date.now() - 30 * 60 * 1000).toISOString()}`)
+      .select('id')
+    if (claimError || !claimed || claimed.length === 0) {
+      return jsonResponse({ ok: false, reason: 'ALREADY_SENDING', message: 'La campagna è già in invio.' }, 409)
+    }
 
     // Resolve delivery mode (defaults to 'promotions' for legacy campaigns)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

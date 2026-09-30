@@ -1,10 +1,11 @@
 // Domanda di ammissione inviata dal sito (e, dalla sessione 9, dall'app).
 //
-// POST con il token di chi è loggato e i dati della domanda. La domanda la registra
-// `submit_member_application` CON QUEL TOKEN, come se la chiamasse il sito: stessi controlli, stessa
-// scheda cliente. Qui si aggiunge quello che il browser non può dire in modo affidabile: l'indirizzo IP
-// e il dispositivo, presi dalla richiesta ("accettazione registrata", A7). Poi parte l'email "Domanda
-// ricevuta" con il PDF della domanda.
+// POST con il token di chi è loggato e i dati della domanda. Qui si verifica il token e si aggiunge
+// quello che il browser non può dire in modo affidabile: canale, indirizzo IP e dispositivo, presi
+// dalla richiesta ("accettazione registrata", A7). La domanda la registra `submit_member_application`
+// con la chiave di sistema e l'utente del token nel payload: solo così la funzione accetta canale, IP
+// e dispositivo (dal 30/09/2026; chiamata direttamente da un'app li ignora). Poi parte l'email
+// "Domanda ricevuta" con il PDF della domanda.
 //
 // Chi si registra dal sito ha, nella scheda cliente e nel profilo, un nome segnaposto: la parte
 // dell'email prima della "@", che mette il trigger di registrazione. Con la domanda arriva il nome
@@ -55,7 +56,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const { data: userData } = await user.auth.getUser()
   if (!userData?.user) return jsonResponse({ ok: false, reason: 'UNAUTHORIZED' }, 401)
 
-  const { data: result, error } = await user.rpc('submit_member_application', { p_payload: payload })
+  const { data: result, error } = await adminClient().rpc('submit_member_application', {
+    p_payload: { ...payload, user_id: userData.user.id },
+  })
   if (error) {
     console.error('[member-application] submit_member_application:', error.message)
     return jsonResponse({ ok: false, reason: 'SUBMIT_FAILED' }, 500)
@@ -167,7 +170,7 @@ function buildApplicationEmail(a: ApplicationPdfData): { subject: string; html: 
   const hello = `Ciao ${a.first_name},`
   const paragraphs = [
     `grazie! Abbiamo ricevuto la tua domanda per entrare in Studio Kalòs APS, inviata il ${formatDateTimeIt(a.submitted_at)}.`,
-    "Ora la domanda passa al Consiglio Direttivo, che delibera le ammissioni. Intanto, se hai versato la quota associativa dell'anno, puoi già prenotare le attività dall'app: per partecipare serve che l'ammissione sia confermata, e te lo diciamo appena succede.",
+    "Ora la domanda passa al Consiglio Direttivo, che delibera le ammissioni. Intanto, con la quota associativa dell'anno versata e un abbonamento, puoi già prenotare le attività dall'app (la lezione di prova non richiede l'abbonamento): per partecipare serve che l'ammissione sia confermata, e te lo diciamo appena succede.",
     'In allegato trovi la copia della tua domanda in PDF, con i dati e le accettazioni che hai inviato. Se qualcosa non torna, rispondi pure a questa email.',
   ]
 

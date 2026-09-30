@@ -428,6 +428,61 @@ vale per tutte** (`book_lesson`, `staff_book_lesson`, nuova app). `plans.discipl
 un'etichetta. I piani in listino che avevano solo la disciplina ricevono le attività non eliminate
 della stessa disciplina; il modulo del gestionale ora ne chiede sempre almeno una.
 
+### v0.3.10 (verifica generale del 30/09/2026)
+
+Migrazioni `20260930100000`…`100700` (più `20260929180000`, i piani «a disciplina»). Dettagli e motivi
+in `docs/ISSUES.md` del repo dei documenti.
+
+- **Notifiche:** `internal.get_notification_channel` dà un canale solo se si può usare (push accesa e
+  un dispositivo, oppure email accesa con un indirizzo che non rimbalza); NULL = non accodare, in tutte
+  le code (niente più `COALESCE(…, 'email')`). `internal.notification_exists` guarda coda (qualsiasi
+  stato) e log: una notifica saltata non si riaccoda. «Ci manchi!» una volta per assenza, fino a 60
+  giorni. Promemoria della sera alle 20:00 italiane (prima a mezzanotte) e ritirati se la prenotazione
+  non è più attiva o la lezione cambia orario o si archivia (trigger). `queue_new_event` solo per
+  eventi pubblicati, una volta per evento e canale, email solo a chi riceve la newsletter. Annunci:
+  push con le preferenze, ritirate o rimesse se l'annuncio cambia, ricorrenti in ora italiana.
+  `queue_feedback_request` solo service_role. Categoria nuova `lesson_canceled`.
+  `internal.rome_today()` è «oggi in Italia».
+- **Soci:** quota senza importo deliberato mai scaduta; decadenza 2026 al 31/12/2026 (decisione del
+  30/09); chi era cessatə e rifà domanda segue la domanda. `staff_set_member_fee`: esonero, pagata
+  senza incasso e rimborso solo Finanze (`FINANCE_ONLY`). `submit_member_application` accetta canale,
+  IP e dispositivo solo da service_role (con `user_id` nel payload). `staff_create_member_application`
+  con `p_client_id` NULL crea la scheda (`CLIENT_EMAIL_EXISTS`).
+- **Note dello staff** in `client_staff_notes` (solo staff); `clients.notes` resta vuota (trigger),
+  il profilo non copia più le note. `internal.append_client_staff_note` per i messaggi automatici.
+- **Registrazione** (`internal.handle_new_user`): email senza maiuscole, `accepted_privacy_at` e
+  `accepted_terms_at` nei metadata registrati con l'ora del server, `newsletter_opt_out` rispettato.
+  `set_my_newsletter_subscription(p_subscribed)` per l'app.
+- **Prenotazioni:** abbonamenti eliminati mai usabili; finestra sul giorno italiano; schede archiviate
+  non prenotano dall'app (`CLIENT_NOT_FOUND`); lezioni individuali che spostano l'ingresso invece di
+  regalarlo; lista d'attesa solo per chi potrebbe prenotare (`internal.lesson_booking_obstacle`);
+  `staff_update_booking_status` rifiuta di «riattivare» una disdetta (`BOOKING_CANCELED`); evento
+  iniziato non disdicibile dall'app; una prova `no_show` non si converte.
+- **Ricevute:** una annullata si sostituisce (`receipts.replaced_transaction_id`, senza chiave esterna
+  di proposito); `staff_undo_compensation_payment` rifiuta con la ritenuta già confermata.
+- **Gestionale:** `staff_save_plan`, `staff_archive_lessons`.
+- **Permessi e pulizia:** `search_path` fisso su tutte le SECURITY DEFINER; anon legge di `operators`
+  solo le colonne pubbliche; `social_connections.access_token` non leggibile dall'API; tolte 8
+  funzioni senza chiamanti e due indici doppi.
+- **Edge function:** `unsubscribe-newsletter` senza JWT (prima nessunə riusciva a disiscriversi);
+  token dei link in `_shared/unsubscribe.ts`, senza segreto di ripiego; `send-newsletter` e
+  `retry-newsletter` con una sola esecuzione per campagna, un invio per indirizzo, mai a disiscrittə
+  o rimbalzati, prova prima dell'invio a chi invia (o `NEWSLETTER_TEST_EMAIL`/`_CLIENT_ID`);
+  `process-notification-queue` con HTML sempre in escape, niente email a indirizzi rimbalzati, niente
+  promemoria di lezioni già iniziate, code push ed email separate, link «Scegli quali messaggi
+  ricevere»; `ses-webhook` segna rimbalzi e segnalazioni di spam anche per le email di servizio;
+  `execute-scheduled-campaigns` con i passi del wizard giusti e una sola esecuzione; `meta-publish-post`
+  accetta la chiave di sistema; `member-application` registra la domanda con la chiave di sistema.
+  Tolte: `resend-webhook` e `_shared/resend.ts` (SES stabile da un mese), `send-push` e
+  `recalculate-stats` (mai pubblicate), `schedule-notifications` (nessun chiamante) e il workflow
+  `notification-cron.yml`.
+- **Pulizie programmate** (`20260930100700`): `internal.purge_rejected_applications()` (domande
+  respinte cancellate dopo 12 mesi, come dice la privacy) e `internal.cleanup_job_history()` (storico
+  di pg_cron a 30 giorni); i due job si creano a mano in produzione (comandi nella migrazione).
+- **TS:** `RpcError` (errore con `code`, `details`, `hint`; stesso messaggio di prima),
+  `setMyNewsletterSubscription`, `staffSavePlan`, `staffArchiveLessons`.
+- **Test:** `supabase/tests/verifica_30_09.test.sql` (69), `verify-access` 221.
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -497,7 +552,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.9**
+Current: **v0.3.10**
 
 Consumers reference via git tag:
 ```json

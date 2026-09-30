@@ -194,7 +194,8 @@
       "membership_fee_due",
       "trial_followup",
       "trial_booked",
-      "trial_booked_staff"
+      "trial_booked_staff",
+      "lesson_canceled"
     ],
     "notification_channel": [
       "push",
@@ -2340,6 +2341,47 @@
         },
         {
           "name": "test_client_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        }
+      ]
+    },
+    {
+      "name": "client_staff_notes",
+      "columns": [
+        {
+          "name": "client_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": false
+        },
+        {
+          "name": "notes",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "updated_at",
+          "dataType": "timestamp with time zone",
+          "udtName": "timestamptz",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
+        },
+        {
+          "name": "updated_by",
           "dataType": "uuid",
           "udtName": "uuid",
           "isEnum": false,
@@ -7431,7 +7473,7 @@
           "udtName": "uuid",
           "isEnum": false,
           "isArray": false,
-          "nullable": false,
+          "nullable": true,
           "hasDefault": false
         },
         {
@@ -7618,6 +7660,15 @@
           "name": "send_error",
           "dataType": "text",
           "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
+        },
+        {
+          "name": "replaced_transaction_id",
+          "dataType": "uuid",
+          "udtName": "uuid",
           "isEnum": false,
           "isArray": false,
           "nullable": true,

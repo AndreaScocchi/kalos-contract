@@ -141,6 +141,21 @@ stripe webhook_endpoints create --live \
   -d "enabled_events[]=charge.dispute.created" -d "enabled_events[]=charge.dispute.updated" -d "enabled_events[]=charge.dispute.closed"
 ```
 
+**Con lo script, senza dashboard** (30/09): `scripts/stripe-setup.mjs` fa i controlli dell'account
+(paese, valuta, pagamenti e accrediti abilitati, dati ancora richiesti, descrittore, email di
+assistenza, colore e logo, carta/Apple Pay/Google Pay), crea l'endpoint con questi eventi e questa
+versione e scrive il file dei secret. La chiave si legge da un file e non viene mai stampata; il
+segreto del webhook finisce solo nel file (permessi 600). Rifiuta la chiave di un altro ente.
+
+```bash
+node scripts/stripe-setup.mjs --key-file <file con la chiave> --check-only     # solo i controlli
+node scripts/stripe-setup.mjs --key-file <file con la chiave> --out <secret.env>
+npx supabase secrets set --env-file <secret.env> && rm <secret.env>
+```
+
+Il segreto di un endpoint esistente non si rilegge: per rifarlo, `--replace-webhook` lo cancella e lo
+ricrea.
+
 **Secret** (li imposta chi ha accesso a Supabase):
 
 ```bash
@@ -184,10 +199,14 @@ npx supabase functions deploy stripe-checkout stripe-webhook stripe-refund send-
 7. Guardare `stripe_events` per qualche giorno: nessun `error_message`, nessun evento con
    `processed_at` vuoto (lo controlla anche ops-health ogni due ore).
 
-**Prova in modalità test prima del live** (facoltativa): in locale con le chiavi di prova dell'APS e
-`stripe listen --forward-to http://127.0.0.1:54321/functions/v1/stripe-webhook` (il CLI stampa il
-`whsec_` da mettere nel file di env delle function). In produzione una prova con chiavi di test è
-innocua per il registro, ma il pulsante di pagamento sarebbe visibile a tutti per quel tempo.
+**Prova in modalità test prima del live:** in locale con la chiave di prova dell'APS,
+`scripts/stripe-local/run-real-test.mjs` (istruzioni in testa al file). Parla con lo Stripe vero, non
+col finto: completa donazione, quota e abbonamento dall'app sulla vera pagina di Checkout (browser
+senza finestra, carte di prova), una carta rifiutata e un rimborso parziale, e controlla che Stripe
+accetti i nostri checkout, che la firma dei suoi eventi passi e che commissione e rimborsi arrivino
+nella forma attesa. `stripe listen --api-key` non richiede `stripe login`, quindi non tocca il CLI
+collegato all'altro ente. In produzione una prova con chiavi di test sarebbe innocua per il registro,
+ma il pulsante di pagamento resterebbe visibile a tutti per quel tempo.
 
 ## 5. Spegnimento d'emergenza
 

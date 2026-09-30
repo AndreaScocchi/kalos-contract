@@ -1,12 +1,12 @@
 name: Consumer Compat (early warning)
 
-# ALLERTA PRECOCE, NON BLOCCANTE: compila (type-check) website, gestionale e webapp-old contro
+# ALLERTA PRECOCE, NON BLOCCANTE: compila (type-check) website, gestionale, webapp-old e app contro
 # la versione CANDIDATA del contract (il working-tree di questo PR/commit), così scopriamo in
 # anticipo se un cambiamento dello schema/tipi romperebbe un consumer — PRIMA di taggare e fare
 # l'upgrade opt-in. Non blocca il merge (continue-on-error + non va messo tra i required checks).
 #
 # PREREQUISITO: secret `CONSUMER_REPOS_TOKEN` = PAT (fine-grained, sola lettura) con accesso ai
-# repo privati AndreaScocchi/Kalos, kalos-app-management, kalos-webapp. Senza il token i checkout
+# repo privati AndreaScocchi/Kalos, kalos-app-management, kalos-webapp, kalos-app. Senza il token i checkout
 # falliscono ma il workflow resta verde (è solo informativo).
 
 on:
@@ -64,6 +64,12 @@ jobs:
             repo: AndreaScocchi/kalos-webapp
             dir: .
             cmd: npx --yes tsc --noEmit
+          # Dal 30/09/2026: la nuova app Expo, il consumer principale dal lancio. Il token deve
+          # avere accesso anche ad AndreaScocchi/kalos-app (PAT fine-grained, sola lettura).
+          - name: app
+            repo: AndreaScocchi/kalos-app
+            dir: .
+            cmd: npm run typecheck
     steps:
       - name: Checkout ${{ matrix.name }}
         uses: actions/checkout@v5

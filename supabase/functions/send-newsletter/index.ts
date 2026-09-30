@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { unsubscribeToken } from '../_shared/unsubscribe.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 import { renderNewsletterContent, personalizeContent, toPlainText, firstName } from '../_shared/newsletterContent.ts'
 import { legalLineHtml, legalLine } from '../_shared/legal.ts'
@@ -38,10 +39,10 @@ const EMAIL_DELAY_MS = SEND_DELAY_MS
 // AWS for it. Override with MAIL_MAX_RECIPIENTS_PER_CAMPAIGN.
 const MAX_RECIPIENTS_PER_CAMPAIGN = Number(Deno.env.get('MAIL_MAX_RECIPIENTS_PER_CAMPAIGN') ?? '1000')
 
-// Atomicity gate: Admin client for pre-flight testing
-// Before sending to all recipients, we verify both email and push work
-const ATOMICITY_TEST_EMAIL = 'scocchiello@gmail.com'
-const ATOMICITY_TEST_CLIENT_ID = '23f253f5-9ef9-40da-b32a-4dc5e4370f3e'
+// Prova prima dell'invio: prima di mandare a tuttə si verifica che email e push funzionino.
+// Destinatario: NEWSLETTER_TEST_EMAIL e NEWSLETTER_TEST_CLIENT_ID se impostati, altrimenti chi sta
+// inviando (la sua email e i suoi dispositivi). Fino al 30/09/2026 era un indirizzo personale scritto
+// nel codice, e il repo è pubblico.
 
 interface WebPushSubscription {
   endpoint: string
@@ -113,13 +114,7 @@ function isWebPushSubscription(token: string): WebPushSubscription | null {
 }
 
 // Generate unsubscribe token (must match unsubscribe-newsletter function)
-async function generateUnsubscribeToken(email: string): Promise<string> {
-  const secret = Deno.env.get('UNSUBSCRIBE_SECRET') || 'kalos-newsletter-2024'
-  const data = new TextEncoder().encode(email + secret)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('')
-}
+const generateUnsubscribeToken = unsubscribeToken
 
 // Generate public URL for newsletter image (bucket is public, URLs never expire)
 function getImagePublicUrl(imageUrl: string | null): string | null {
@@ -312,6 +307,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     }
 
+    // Destinatario della prova prima dell'invio
+    let testEmail: string | null = Deno.env.get('NEWSLETTER_TEST_EMAIL') ?? null
+    let testClientId: string | null = Deno.env.get('NEWSLETTER_TEST_CLIENT_ID') ?? null
+    if (!isServiceRole && (!testEmail || !testClientId)) {
+      const { data: me } = await supabaseUser.auth.getUser()
+      testEmail = testEmail ?? me?.user?.email ?? null
+      if (!testClientId) {
+        const { data: myClientId } = await supabaseUser.rpc('get_my_client_id')
+        testClientId = (myClientId as string | null) ?? null
+      }
+    }
+
     // Get request body
     const body: RequestBody = await req.json()
     if (!body.campaignId) {
@@ -459,7 +466,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const fromEmail = buildFromAddress(deliveryMode === 'primary' ? primaryFromName : null)
     console.log(`[Send] delivery_mode=${deliveryMode}, from=${fromEmail}`)
 
-    if (!body.skipAtomicityCheck && !body.testClientId) {
+    if (!body.skipAtomicityCheck && !body.testClientId && !testEmail) {
+      console.warn('[Atomicity] Nessun destinatario per la prova prima dell\'invio: prova saltata')
+    }
+    if (!body.skipAtomicityCheck && !body.testClientId && testEmail) {
       console.log('Running atomicity pre-flight check...')
 
       const imagePublicUrl = getImagePublicUrl(campaign.image_url)
@@ -471,9 +481,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
         client_name: 'Admin Test',
         studio_name: 'Studio Kalòs',
       })
-      const testToken = await generateUnsubscribeToken(ATOMICITY_TEST_EMAIL)
+      const testToken = await generateUnsubscribeToken(testEmail)
       const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-      const testUnsubscribeUrl = `${supabaseUrl}/functions/v1/unsubscribe-newsletter?email=${encodeURIComponent(ATOMICITY_TEST_EMAIL)}&token=${testToken}`
+      const testUnsubscribeUrl = `${supabaseUrl}/functions/v1/unsubscribe-newsletter?email=${encodeURIComponent(testEmail)}&token=${testToken}`
 
       // Primary mode: minimal HTML, neutral headers (no Precedence/Feedback-ID).
       // Promotions mode: branded HTML + full bulk headers.
@@ -485,10 +495,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
         : buildBulkHeaders({ unsubscribeUrl: testUnsubscribeUrl, campaignId: body.campaignId })
 
       // 1. Test EMAIL delivery
-      console.log(`[Atomicity] Testing email to ${ATOMICITY_TEST_EMAIL}...`)
+      console.log('[Atomicity] Testing email...')
       const { error: testEmailError } = await sendEmail({
         from: fromEmail,
-        to: ATOMICITY_TEST_EMAIL,
+        to: testEmail,
         subject: `[TEST] ${campaign.subject}`,
         html: testHtml,
         text: `${toPlainText(testPersonalizedText)}\n\n—\n${legalLine()}`,
@@ -511,16 +521,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
       console.log('[Atomicity] Email test PASSED')
 
       // 2. Test PUSH notification delivery (skip for standalone newsletters)
-      if (body.skipPushTest) {
-        console.log('[Atomicity] Skipping push test (skipPushTest=true)')
+      if (body.skipPushTest || !testClientId) {
+        console.log('[Atomicity] Skipping push test')
       } else {
-        console.log(`[Atomicity] Testing push notification to client ${ATOMICITY_TEST_CLIENT_ID}...`)
+        console.log('[Atomicity] Testing push notification...')
 
         // Get admin's push token
         const { data: adminTokens, error: tokenError } = await supabaseAdmin
           .from('device_tokens')
           .select('expo_push_token')
-          .eq('client_id', ATOMICITY_TEST_CLIENT_ID)
+          .eq('client_id', testClientId)
           .eq('is_active', true)
 
         if (tokenError) {
@@ -581,27 +591,63 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // Update campaign status to 'sending'
-    await supabaseAdmin
+    // La campagna si prende in modo atomico: due invii insieme (doppio clic, due schede) non
+    // mandano due volte la stessa email.
+    const { data: claimed, error: claimError } = await supabaseAdmin
       .from('newsletter_campaigns')
       .update({ status: 'sending' })
       .eq('id', body.campaignId)
+      // Un invio rimasto a metà da più di mezz'ora (function interrotta) si può riprendere
+      .or(`status.neq.sending,updated_at.lt.${new Date(Date.now() - 30 * 60 * 1000).toISOString()}`)
+      .select('id')
+    if (claimError || !claimed || claimed.length === 0) {
+      return jsonResponse({ ok: false, reason: 'ALREADY_SENDING', message: 'La campagna è già in invio.' }, 409)
+    }
 
-    // Create newsletter_emails records for all recipients
-    const emailRecords = recipients.map(recipient => ({
-      campaign_id: body.campaignId,
-      client_id: recipient.clientId || null,
-      email_address: recipient.email,
-      client_name: recipient.name,
-      status: 'pending',
-    }))
+    // Un indirizzo una volta sola (senza guardare le maiuscole), e mai a chi si è disiscrittə o ha
+    // un indirizzo che rimbalza, anche se il gestionale lo passa (per esempio fra le email extra).
+    const unique = new Map<string, Recipient>()
+    for (const recipient of recipients) {
+      const key = (recipient.email ?? '').trim().toLowerCase()
+      if (key && !unique.has(key)) unique.set(key, { ...recipient, email: recipient.email.trim() })
+    }
+    const excluded = new Set<string>()
+    const emails = [...unique.keys()]
+    for (let i = 0; i < emails.length; i += 200) {
+      const chunk = emails.slice(i, i + 200)
+      // L'indirizzo come scritto e in minuscolo: le schede possono averlo in tutti e due i modi
+      const variants = [...new Set([...chunk, ...chunk.map((e) => unique.get(e)!.email)])]
+      const { data: blocked } = await supabaseAdmin
+        .from('clients')
+        .select('email')
+        .or('newsletter_subscribed.eq.false,email_bounced.eq.true')
+        .in('email', variants)
+      for (const row of blocked ?? []) excluded.add(String(row.email).toLowerCase())
+    }
 
+    const emailRecords = [...unique.entries()]
+      .filter(([key]) => !excluded.has(key))
+      .map(([, recipient]) => ({
+        campaign_id: body.campaignId,
+        client_id: recipient.clientId || null,
+        email_address: recipient.email,
+        client_name: recipient.name,
+        status: 'pending',
+      }))
+
+    // Le righe di un tentativo precedente restano com'erano (upsert che ignora i doppioni): prima un
+    // solo doppione faceva fallire l'inserimento di tutte, e non partiva nulla.
     const { error: insertError } = await supabaseAdmin
       .from('newsletter_emails')
-      .insert(emailRecords)
+      .upsert(emailRecords, { onConflict: 'campaign_id,email_address', ignoreDuplicates: true })
 
     if (insertError) {
       console.error('Error creating email records:', insertError)
-      // Continue anyway, some might already exist from a previous attempt
+      await supabaseAdmin
+        .from('newsletter_campaigns')
+        .update({ status: 'failed' })
+        .eq('id', body.campaignId)
+      return jsonResponse({ ok: false, reason: 'EMAIL_RECORDS_FAILED', message: insertError.message }, 500)
     }
 
     // Get all pending emails for this campaign
@@ -725,6 +771,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
         recipient_count: sentCount + failedCount,
       })
       .eq('id', body.campaignId)
+
+    if (sentCount === 0) {
+      return jsonResponse({
+        ok: false,
+        reason: pendingEmails.length === 0 ? 'NOTHING_TO_SEND' : 'ALL_FAILED',
+        sentCount,
+        failedCount,
+      }, 200)
+    }
 
     return jsonResponse({
       ok: true,

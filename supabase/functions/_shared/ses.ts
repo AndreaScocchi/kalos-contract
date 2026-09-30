@@ -1,8 +1,7 @@
 // Amazon SES (API v2) email utilities.
 //
-// Drop-in replacement for _shared/resend.ts: the exported surface is identical,
-// so call sites only need to change the import path. The old resend.ts is kept
-// in place as a rollback path until the SES migration is confirmed in production.
+// Sostituisce _shared/resend.ts, tenuto come percorso di rollback fino a SES stabile e tolto il
+// 30/09/2026 insieme alla function resend-webhook.
 //
 // Required secrets (supabase secrets set ...):
 //   SES_ACCESS_KEY_ID       IAM access key with ses:SendEmail
@@ -226,7 +225,9 @@ export function replaceTemplateVariables(template: string, variables: Record<str
  * The display name is MIME-encoded at send time, so the ò is safe to keep here.
  */
 export function getFromEmail(): string {
-  const configured = Deno.env.get('MAIL_FROM_EMAIL') || Deno.env.get('RESEND_FROM_EMAIL')
+  // RESEND_FROM_EMAIL non si legge più (30/09/2026): valeva newsletter@kalosstudio.it, lo stesso
+  // mittente predefinito qui sotto.
+  const configured = Deno.env.get('MAIL_FROM_EMAIL')
   if (configured && configured.trim().length > 0) {
     if (configured.includes('<')) return configured
     return `Studio Kalòs <${configured}>`

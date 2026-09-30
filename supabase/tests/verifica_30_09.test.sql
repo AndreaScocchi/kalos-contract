@@ -4,7 +4,7 @@
 -- ricevuta sostitutiva, piani e lezioni archiviate dal gestionale.
 
 BEGIN;
-SELECT plan(68);
+SELECT plan(69);
 
 -- ── Persone ──────────────────────────────────────────────────────────────────
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
@@ -440,6 +440,17 @@ SELECT is((SELECT count(*)::int FROM public.notification_queue WHERE category = 
 
 SELECT ok(NOT has_column_privilege('authenticated', 'public.social_connections', 'access_token', 'SELECT'),
   'il token delle pagine Meta non si legge dall''API');
+
+-- Domande respinte: dopo 12 mesi si cancellano (privacy §7), prima no
+INSERT INTO public.member_applications (client_id, year, channel, status, first_name, last_name, birth_date,
+                                         accepted_statute_at, accepted_privacy_at, decided_at, rejection_reason)
+SELECT bruno, yr, 'paper'::public.member_application_channel, 'rejected'::public.member_application_status, 'Vecchia', 'Respinta', '1990-01-01'::date, now(), now(), now() - interval '13 months', 'Prova' FROM v30
+UNION ALL
+SELECT bruno, yr, 'paper', 'rejected', 'Recente', 'Respinta', '1990-01-01', now(), now(), now() - interval '2 months', 'Prova' FROM v30;
+SELECT internal.purge_rejected_applications();
+SELECT is((SELECT string_agg(first_name, ',') FROM public.member_applications
+            WHERE client_id = (SELECT bruno FROM v30) AND status = 'rejected'), 'Recente',
+  'la domanda respinta da più di 12 mesi è cancellata, quella recente resta');
 
 SELECT * FROM finish();
 ROLLBACK;

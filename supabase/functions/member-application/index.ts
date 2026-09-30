@@ -170,7 +170,7 @@ function buildApplicationEmail(a: ApplicationPdfData): { subject: string; html: 
   const hello = `Ciao ${a.first_name},`
   const paragraphs = [
     `grazie! Abbiamo ricevuto la tua domanda per entrare in Studio Kalòs APS, inviata il ${formatDateTimeIt(a.submitted_at)}.`,
-    "Ora la domanda passa al Consiglio Direttivo, che delibera le ammissioni. Intanto, se hai versato la quota associativa dell'anno, puoi già prenotare le attività dall'app: per partecipare serve che l'ammissione sia confermata, e te lo diciamo appena succede.",
+    "Ora la domanda passa al Consiglio Direttivo, che delibera le ammissioni. Intanto, con la quota associativa dell'anno versata e un abbonamento, puoi già prenotare le attività dall'app (la lezione di prova non richiede l'abbonamento): per partecipare serve che l'ammissione sia confermata, e te lo diciamo appena succede.",
     'In allegato trovi la copia della tua domanda in PDF, con i dati e le accettazioni che hai inviato. Se qualcosa non torna, rispondi pure a questa email.',
   ]
 

@@ -430,7 +430,7 @@ della stessa disciplina; il modulo del gestionale ora ne chiede sempre almeno un
 
 ### v0.3.10 (verifica generale del 30/09/2026)
 
-Migrazioni `20260930100000`…`100600` (più `20260929180000`, i piani «a disciplina»). Dettagli e motivi
+Migrazioni `20260930100000`…`100700` (più `20260929180000`, i piani «a disciplina»). Dettagli e motivi
 in `docs/ISSUES.md` del repo dei documenti.
 
 - **Notifiche:** `internal.get_notification_channel` dà un canale solo se si può usare (push accesa e
@@ -476,9 +476,12 @@ in `docs/ISSUES.md` del repo dei documenti.
   Tolte: `resend-webhook` e `_shared/resend.ts` (SES stabile da un mese), `send-push` e
   `recalculate-stats` (mai pubblicate), `schedule-notifications` (nessun chiamante) e il workflow
   `notification-cron.yml`.
+- **Pulizie programmate** (`20260930100700`): `internal.purge_rejected_applications()` (domande
+  respinte cancellate dopo 12 mesi, come dice la privacy) e `internal.cleanup_job_history()` (storico
+  di pg_cron a 30 giorni); i due job si creano a mano in produzione (comandi nella migrazione).
 - **TS:** `RpcError` (errore con `code`, `details`, `hint`; stesso messaggio di prima),
   `setMyNewsletterSubscription`, `staffSavePlan`, `staffArchiveLessons`.
-- **Test:** `supabase/tests/verifica_30_09.test.sql` (68), `verify-access` 221.
+- **Test:** `supabase/tests/verifica_30_09.test.sql` (69), `verify-access` 221.
 
 ### get_my_client_id()
 - Returns current user's client_id

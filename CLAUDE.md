@@ -421,6 +421,13 @@ Migrazione `20260929120000`.
 - Wrapper TS: `getMyNotifications`, `updateMyProfile`, `acceptMyLegalDocuments` e i loro tipi.
 - Test: `supabase/tests/sessione11.test.sql` (50), `verify-access` (+9).
 
+### Dopo la v0.3.9: cosa copre un piano (solo dati, nessun tag)
+
+Migrazione `20260929180000`. Un piano vale per le attività di `plan_activities`; **senza attività
+vale per tutte** (`book_lesson`, `staff_book_lesson`, nuova app). `plans.discipline` è solo
+un'etichetta. I piani in listino che avevano solo la disciplina ricevono le attività non eliminate
+della stessa disciplina; il modulo del gestionale ora ne chiede sempre almeno una.
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su

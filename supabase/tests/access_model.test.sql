@@ -7,7 +7,7 @@
 -- Più alcuni comportamenti critici, simulando i ruoli come fa PostgREST (SET ROLE + claims JWT).
 
 BEGIN;
-SELECT plan(27);
+SELECT plan(28);
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- 1. Elenco esplicito: funzioni
@@ -48,28 +48,18 @@ SELECT set_eq(
     'deactivate_device_token(p_token text)',
     'delete_campaign(campaign_id uuid)',
     'generate_slug_from_discipline(discipline_text text)',
-    'get_activity_booking_counts()',
-    'get_auth_email_stats(p_user_id uuid)',
-    'get_financial_kpis(p_month_start date, p_month_end date)',
     'get_journey_summary()',
     'get_journey_timeline(p_limit integer, p_offset integer)',
     'get_monthly_revenue_by_client(p_month_start date, p_month_end date)',
     'get_monthly_revenue_by_plan(p_month_start date, p_month_end date)',
     'get_my_membership()',
-    'get_my_notification_settings()',
     'get_my_notifications(p_limit integer, p_offset integer)',
-    'get_practice_metrics()',
-    'get_revenue_breakdown(p_month_start date, p_month_end date)',
     'get_unread_notifications_count()',
     'mark_all_notifications_read()',
     'mark_notification_read(p_notification_log_id uuid, p_announcement_id uuid)',
     'promote_profile_to_operator(p_profile_id uuid)',
-    'queue_feedback_request(p_client_id uuid, p_kind feedback_kind, p_target_id uuid, p_scheduled_for timestamp with time zone)',
-    'queue_new_event(p_event_id uuid, p_event_name text, p_event_date timestamp with time zone)',
     'queue_new_event(p_event_id uuid, p_event_name text, p_event_date timestamp with time zone, p_send_push boolean, p_send_email boolean)',
-    'register_device_token(p_token text, p_platform text, p_device_id text, p_app_version text)',
     'request_bussola(p_preferred_at timestamp with time zone, p_note text)',
-    'set_notification_quiet_hours(p_enabled boolean, p_start time without time zone, p_end time without time zone)',
     'staff_book_event(p_event_id uuid, p_client_id uuid)',
     'staff_book_lesson(p_lesson_id uuid, p_client_id uuid, p_subscription_id uuid)',
     'staff_cancel_booking(p_booking_id uuid)',
@@ -136,7 +126,13 @@ SELECT set_eq(
     -- Sessione 11 (2026-09-29): i propri dati (profilo e scheda insieme), privacy e termini accettati.
     -- `delete_account_data` resta a service_role: la chiama l'edge function `delete-account`.
     'accept_my_legal_documents()',
-    'update_my_profile(p_full_name text, p_phone text, p_birthday date)'
+    'update_my_profile(p_full_name text, p_phone text, p_birthday date)',
+    -- Verifica del 30/09/2026 (v0.3.10): newsletter dall'app; piano con le attività in una
+    -- transazione e lezioni archiviate con disdette e avviso (staff). Tolte le funzioni senza
+    -- chiamanti e chiusa `queue_feedback_request` (solo service_role).
+    'set_my_newsletter_subscription(p_subscribed boolean)',
+    'staff_archive_lessons(p_lesson_ids uuid[], p_reason text)',
+    'staff_save_plan(p_plan_id uuid, p_plan jsonb, p_activity_ids uuid[])'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );
@@ -156,7 +152,7 @@ SELECT set_eq(
      WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r', 'v', 'm', 'p')
        AND has_table_privilege('anon', c.oid, 'SELECT') $$,
   ARRAY[
-    'activities', 'events', 'feature_flags', 'lesson_occupancy', 'lessons', 'operators',
+    'activities', 'events', 'feature_flags', 'lesson_occupancy', 'lessons',
     'pass_tier_benefits', 'pass_tiers', 'plan_activities', 'plans', 'promotions',
     'public_site_activities', 'public_site_events', 'public_site_operators',
     'public_site_pricing', 'public_site_schedule',
@@ -164,6 +160,17 @@ SELECT set_eq(
     'activity_groups', 'locations', 'public_site_groups', 'public_site_locations'
   ],
   'anon legge solo i dati pubblici del sito'
+);
+
+-- `operators` (dal 30/09/2026): anon legge solo le colonne pubbliche, non il rapporto con
+-- l'associazione né il collegamento all'account.
+SELECT set_eq(
+  $$ SELECT a.attname::text FROM pg_attribute a
+     WHERE a.attrelid = 'public.operators'::regclass AND a.attnum > 0 AND NOT a.attisdropped
+       AND has_column_privilege('anon', a.attrelid, a.attnum, 'SELECT') $$,
+  ARRAY['id', 'name', 'role', 'bio', 'disciplines', 'is_active', 'created_at', 'deleted_at',
+        'image_url', 'display_order', 'is_visible_on_site'],
+  'anon legge di operators solo le colonne pubbliche'
 );
 
 SELECT is_empty(

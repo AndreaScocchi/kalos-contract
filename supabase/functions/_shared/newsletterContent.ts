@@ -82,10 +82,24 @@ export function parseMarkdownFormatting(text: string): string {
   return result
 }
 
+// Il valore di un attributo HTML arriva con le entità (`&amp;` nei link con più parametri): si
+// decodifica prima di usarlo, perché all'uscita `escapeHtml` le rimette. Prima restavano `&amp;` e
+// diventavano `&amp;amp;`, e i link con `&` arrivavano rotti.
+function decodeEntities(value: string): string {
+  return value
+    .replace(/&quot;/g, '"')
+    .replace(/&#0*39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#([0-9]+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&amp;/g, '&')
+}
+
 function readAttribute(attrs: string, name: string): string | null {
   const match = attrs.match(new RegExp(`${name}\\s*=\\s*("([^"]*)"|'([^']*)')`, 'i'))
   if (!match) return null
-  return (match[2] ?? match[3] ?? '').trim()
+  return decodeEntities((match[2] ?? match[3] ?? '').trim())
 }
 
 function readStyleProperty(attrs: string, property: string): string | null {

@@ -4,7 +4,7 @@
 -- ricevuta sostitutiva, piani e lezioni archiviate dal gestionale.
 
 BEGIN;
-SELECT plan(69);
+SELECT plan(70);
 
 -- ── Persone ──────────────────────────────────────────────────────────────────
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
@@ -73,16 +73,19 @@ SELECT is((SELECT count(*)::int FROM public.notification_queue WHERE category = 
 UPDATE public.notification_queue SET status = 'skipped' WHERE category = 're_engagement';
 SELECT public.queue_re_engagement();
 SELECT is((SELECT count(*)::int FROM public.notification_queue WHERE category = 're_engagement' AND client_id = (SELECT bruno FROM v30)),
-  1, 'una volta sola per assenza, anche se la prima è stata saltata');
+  1, 'al massimo uno ogni 30 giorni, anche se il precedente è stato saltato');
 
--- Assente da 100 giorni: non si scrive più
+-- Assente da 100 giorni: «Ci manchi!» ogni mese finché non torna (decisione del 30/09)
 UPDATE public.lessons SET starts_at = now() - interval '100 days', ends_at = now() - interval '100 days' + interval '1 hour'
  WHERE id = '3c000000-0000-0000-0000-000000000001';
-DELETE FROM public.notification_queue WHERE category = 're_engagement';
+UPDATE public.notification_queue SET created_at = now() - interval '31 days' WHERE category = 're_engagement';
 SELECT public.queue_re_engagement();
 SELECT is((SELECT count(*)::int FROM public.notification_queue WHERE category = 're_engagement'
-             AND client_id IN (SELECT anna FROM v30 UNION ALL SELECT bruno FROM v30)),
-  0, 'oltre 60 giorni di assenza niente «Ci manchi!»');
+             AND client_id = (SELECT bruno FROM v30) AND created_at > now() - interval '1 day'),
+  1, 'dopo 30 giorni riparte, anche dopo 100 giorni di assenza');
+SELECT is((SELECT count(*)::int FROM public.notification_queue WHERE category = 're_engagement'
+             AND client_id = (SELECT anna FROM v30)),
+  0, 'chi ha spento tutto non lo riceve mai');
 DELETE FROM public.bookings WHERE lesson_id = '3c000000-0000-0000-0000-000000000001';
 
 -- ═════════════════════════════════════════════════════════════════════════════

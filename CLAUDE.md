@@ -436,8 +436,9 @@ in `docs/ISSUES.md` del repo dei documenti.
 - **Notifiche:** `internal.get_notification_channel` dà un canale solo se si può usare (push accesa e
   un dispositivo, oppure email accesa con un indirizzo che non rimbalza); NULL = non accodare, in tutte
   le code (niente più `COALESCE(…, 'email')`). `internal.notification_exists` guarda coda (qualsiasi
-  stato) e log: una notifica saltata non si riaccoda. «Ci manchi!» una volta per assenza, fino a 60
-  giorni. Promemoria della sera alle 20:00 italiane (prima a mezzanotte) e ritirati se la prenotazione
+  stato) e log: una notifica saltata non si riaccoda. «Ci manchi!» al massimo ogni 30 giorni
+  finché la persona non torna (v0.3.11, decisione dell'utente: nella v0.3.10 era una volta per
+  assenza, fino a 60 giorni). Promemoria della sera alle 20:00 italiane (prima a mezzanotte) e ritirati se la prenotazione
   non è più attiva o la lezione cambia orario o si archivia (trigger). `queue_new_event` solo per
   eventi pubblicati, una volta per evento e canale, email solo a chi riceve la newsletter. Annunci:
   push con le preferenze, ritirate o rimesse se l'annuncio cambia, ricorrenti in ora italiana.
@@ -552,7 +553,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.10**
+Current: **v0.3.11**
 
 Consumers reference via git tag:
 ```json

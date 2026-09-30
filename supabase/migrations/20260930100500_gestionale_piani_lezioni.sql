@@ -172,8 +172,10 @@ BEGIN
                                 'La lezione di ' || v_lesson.activity_name || ' del ' || v_when
                                     || ' è stata annullata. L''ingresso è tornato al tuo abbonamento.'
                                     || COALESCE(' ' || NULLIF(btrim(p_reason), ''), ''),
+                                -- Un indirizzo per lezione: il service worker usa l'url come
+                                -- identificativo, e due avvisi con lo stesso si sostituirebbero.
                                 jsonb_build_object('lesson_id', v_lesson.id, 'booking_id', v_booking.id,
-                                                   'url', '/bookings'),
+                                                   'url', '/bookings?lezione=' || v_lesson.id),
                                 now());
                     END IF;
                 END IF;

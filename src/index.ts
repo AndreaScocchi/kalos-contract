@@ -60,6 +60,10 @@ export {
   getMyNotifications,
   updateMyProfile,
   acceptMyLegalDocuments,
+  setMyNewsletterSubscription,
+  staffSavePlan,
+  staffArchiveLessons,
+  RpcError,
 } from './rpc';
 export type {
   BookLessonResult,
@@ -116,6 +120,10 @@ export type {
   GetMyNotificationsResult,
   UpdateMyProfileResult,
   AcceptMyLegalDocumentsResult,
+  SetMyNewsletterSubscriptionResult,
+  StaffSavePlanInput,
+  StaffSavePlanResult,
+  StaffArchiveLessonsResult,
 } from './rpc';
 
 // Etichette e domande condivise fra sito, gestionale e app

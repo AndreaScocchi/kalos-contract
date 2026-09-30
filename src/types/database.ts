@@ -1018,6 +1018,35 @@ export type Database = {
           },
         ]
       }
+      client_staff_notes: {
+        Row: {
+          client_id: string
+          notes: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          client_id: string
+          notes?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          client_id?: string
+          notes?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_staff_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           birthday: string | null
@@ -4049,12 +4078,13 @@ export type Database = {
           recipient_address: string | null
           recipient_fiscal_code: string | null
           recipient_name: string
+          replaced_transaction_id: string | null
           send_claimed_at: string | null
           send_error: string | null
           sent_at: string | null
           sent_to: string | null
           stamp_duty_cents: number
-          transaction_id: string
+          transaction_id: string | null
           updated_at: string
           void_reason: string | null
           voided_at: string | null
@@ -4074,12 +4104,13 @@ export type Database = {
           recipient_address?: string | null
           recipient_fiscal_code?: string | null
           recipient_name: string
+          replaced_transaction_id?: string | null
           send_claimed_at?: string | null
           send_error?: string | null
           sent_at?: string | null
           sent_to?: string | null
           stamp_duty_cents?: number
-          transaction_id: string
+          transaction_id?: string | null
           updated_at?: string
           void_reason?: string | null
           voided_at?: string | null
@@ -4099,12 +4130,13 @@ export type Database = {
           recipient_address?: string | null
           recipient_fiscal_code?: string | null
           recipient_name?: string
+          replaced_transaction_id?: string | null
           send_claimed_at?: string | null
           send_error?: string | null
           sent_at?: string | null
           sent_to?: string | null
           stamp_duty_cents?: number
-          transaction_id?: string
+          transaction_id?: string | null
           updated_at?: string
           void_reason?: string | null
           voided_at?: string | null
@@ -5731,23 +5763,6 @@ export type Database = {
         Args: { discipline_text: string }
         Returns: string
       }
-      get_activity_booking_counts: {
-        Args: never
-        Returns: {
-          activity_id: string
-          booking_count: number
-        }[]
-      }
-      get_auth_email_stats: {
-        Args: { p_user_id: string }
-        Returns: {
-          bounced_count: number
-          failed_count: number
-          last_sent_at: string
-          last_status: string
-          total_sent: number
-        }[]
-      }
       get_event_booking_count: { Args: { p_event_id: string }; Returns: number }
       get_events_booking_counts: {
         Args: { p_event_ids: string[] }
@@ -5755,10 +5770,6 @@ export type Database = {
           booked_count: number
           event_id: string
         }[]
-      }
-      get_financial_kpis: {
-        Args: { p_month_end?: string; p_month_start?: string }
-        Returns: Json
       }
       get_journey_summary: { Args: never; Returns: Json }
       get_journey_timeline: {
@@ -5788,7 +5799,6 @@ export type Database = {
       get_my_member_card: { Args: never; Returns: Json }
       get_my_membership: { Args: never; Returns: Json }
       get_my_membership_status: { Args: never; Returns: Json }
-      get_my_notification_settings: { Args: never; Returns: Json }
       get_my_notifications: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
@@ -5797,11 +5807,6 @@ export type Database = {
       get_my_payment_status: { Args: { p_payment_id: string }; Returns: Json }
       get_my_receipt: { Args: { p_receipt_id: string }; Returns: Json }
       get_my_receipts: { Args: never; Returns: Json }
-      get_practice_metrics: { Args: never; Returns: Json }
-      get_revenue_breakdown: {
-        Args: { p_month_end?: string; p_month_start?: string }
-        Returns: Json
-      }
       get_unread_notifications_count: { Args: never; Returns: number }
       is_admin: { Args: never; Returns: boolean }
       is_finance: { Args: never; Returns: boolean }
@@ -5853,25 +5858,16 @@ export type Database = {
         Returns: Json
       }
       queue_lesson_reminders: { Args: never; Returns: Json }
-      queue_new_event:
-        | {
-            Args: {
-              p_event_date: string
-              p_event_id: string
-              p_event_name: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_event_date: string
-              p_event_id: string
-              p_event_name: string
-              p_send_email?: boolean
-              p_send_push?: boolean
-            }
-            Returns: Json
-          }
+      queue_new_event: {
+        Args: {
+          p_event_date: string
+          p_event_id: string
+          p_event_name: string
+          p_send_email?: boolean
+          p_send_push?: boolean
+        }
+        Returns: Json
+      }
       queue_re_engagement: { Args: never; Returns: Json }
       queue_subscription_expiry: { Args: never; Returns: Json }
       receipt_claim_send: {
@@ -5882,25 +5878,20 @@ export type Database = {
         Args: { p_error?: string; p_receipt_id: string; p_to: string }
         Returns: undefined
       }
-      register_device_token: {
-        Args: {
-          p_app_version?: string
-          p_device_id?: string
-          p_platform?: string
-          p_token: string
-        }
-        Returns: Json
-      }
       request_bussola: {
         Args: { p_note?: string; p_preferred_at?: string }
         Returns: Json
       }
-      set_notification_quiet_hours: {
-        Args: { p_enabled: boolean; p_end?: string; p_start?: string }
+      set_my_newsletter_subscription: {
+        Args: { p_subscribed: boolean }
         Returns: Json
       }
       staff_add_to_waitlist: {
         Args: { p_client_id: string; p_lesson_id: string }
+        Returns: Json
+      }
+      staff_archive_lessons: {
+        Args: { p_lesson_ids: string[]; p_reason?: string }
         Returns: Json
       }
       staff_book_event: {
@@ -6015,6 +6006,10 @@ export type Database = {
       }
       staff_save_compensation_model: {
         Args: { p_payload: Json }
+        Returns: Json
+      }
+      staff_save_plan: {
+        Args: { p_activity_ids: string[]; p_plan: Json; p_plan_id: string }
         Returns: Json
       }
       staff_set_member_fee: {
@@ -6234,6 +6229,7 @@ export type Database = {
         | "trial_followup"
         | "trial_booked"
         | "trial_booked_staff"
+        | "lesson_canceled"
       notification_channel: "push" | "email"
       notification_status:
         | "pending"
@@ -6559,6 +6555,7 @@ export const Constants = {
         "trial_followup",
         "trial_booked",
         "trial_booked_staff",
+        "lesson_canceled",
       ],
       notification_channel: ["push", "email"],
       notification_status: [

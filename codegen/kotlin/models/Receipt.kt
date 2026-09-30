@@ -9,7 +9,7 @@ import kotlinx.serialization.json.JsonElement
 @Serializable
 data class Receipt(
     val id: String,
-    @SerialName("transaction_id") val transactionId: String,
+    @SerialName("transaction_id") val transactionId: String? = null,
     val year: Int,
     val number: Int,
     @SerialName("full_number") val fullNumber: String,
@@ -31,4 +31,5 @@ data class Receipt(
     @SerialName("sent_to") val sentTo: String? = null,
     @SerialName("send_claimed_at") val sendClaimedAt: String? = null,
     @SerialName("send_error") val sendError: String? = null,
+    @SerialName("replaced_transaction_id") val replacedTransactionId: String? = null,
 )

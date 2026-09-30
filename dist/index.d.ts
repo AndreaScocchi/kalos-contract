@@ -1010,6 +1010,35 @@ type Database = {
                     }
                 ];
             };
+            client_staff_notes: {
+                Row: {
+                    client_id: string;
+                    notes: string;
+                    updated_at: string;
+                    updated_by: string | null;
+                };
+                Insert: {
+                    client_id: string;
+                    notes?: string;
+                    updated_at?: string;
+                    updated_by?: string | null;
+                };
+                Update: {
+                    client_id?: string;
+                    notes?: string;
+                    updated_at?: string;
+                    updated_by?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "client_staff_notes_client_id_fkey";
+                        columns: ["client_id"];
+                        isOneToOne: true;
+                        referencedRelation: "clients";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             clients: {
                 Row: {
                     birthday: string | null;
@@ -4035,12 +4064,13 @@ type Database = {
                     recipient_address: string | null;
                     recipient_fiscal_code: string | null;
                     recipient_name: string;
+                    replaced_transaction_id: string | null;
                     send_claimed_at: string | null;
                     send_error: string | null;
                     sent_at: string | null;
                     sent_to: string | null;
                     stamp_duty_cents: number;
-                    transaction_id: string;
+                    transaction_id: string | null;
                     updated_at: string;
                     void_reason: string | null;
                     voided_at: string | null;
@@ -4060,12 +4090,13 @@ type Database = {
                     recipient_address?: string | null;
                     recipient_fiscal_code?: string | null;
                     recipient_name: string;
+                    replaced_transaction_id?: string | null;
                     send_claimed_at?: string | null;
                     send_error?: string | null;
                     sent_at?: string | null;
                     sent_to?: string | null;
                     stamp_duty_cents?: number;
-                    transaction_id: string;
+                    transaction_id?: string | null;
                     updated_at?: string;
                     void_reason?: string | null;
                     voided_at?: string | null;
@@ -4085,12 +4116,13 @@ type Database = {
                     recipient_address?: string | null;
                     recipient_fiscal_code?: string | null;
                     recipient_name?: string;
+                    replaced_transaction_id?: string | null;
                     send_claimed_at?: string | null;
                     send_error?: string | null;
                     sent_at?: string | null;
                     sent_to?: string | null;
                     stamp_duty_cents?: number;
-                    transaction_id?: string;
+                    transaction_id?: string | null;
                     updated_at?: string;
                     void_reason?: string | null;
                     voided_at?: string | null;
@@ -5790,25 +5822,6 @@ type Database = {
                 };
                 Returns: string;
             };
-            get_activity_booking_counts: {
-                Args: never;
-                Returns: {
-                    activity_id: string;
-                    booking_count: number;
-                }[];
-            };
-            get_auth_email_stats: {
-                Args: {
-                    p_user_id: string;
-                };
-                Returns: {
-                    bounced_count: number;
-                    failed_count: number;
-                    last_sent_at: string;
-                    last_status: string;
-                    total_sent: number;
-                }[];
-            };
             get_event_booking_count: {
                 Args: {
                     p_event_id: string;
@@ -5823,13 +5836,6 @@ type Database = {
                     booked_count: number;
                     event_id: string;
                 }[];
-            };
-            get_financial_kpis: {
-                Args: {
-                    p_month_end?: string;
-                    p_month_start?: string;
-                };
-                Returns: Json;
             };
             get_journey_summary: {
                 Args: never;
@@ -5883,10 +5889,6 @@ type Database = {
                 Args: never;
                 Returns: Json;
             };
-            get_my_notification_settings: {
-                Args: never;
-                Returns: Json;
-            };
             get_my_notifications: {
                 Args: {
                     p_limit?: number;
@@ -5912,17 +5914,6 @@ type Database = {
             };
             get_my_receipts: {
                 Args: never;
-                Returns: Json;
-            };
-            get_practice_metrics: {
-                Args: never;
-                Returns: Json;
-            };
-            get_revenue_breakdown: {
-                Args: {
-                    p_month_end?: string;
-                    p_month_start?: string;
-                };
                 Returns: Json;
             };
             get_unread_notifications_count: {
@@ -6040,13 +6031,6 @@ type Database = {
                     p_event_date: string;
                     p_event_id: string;
                     p_event_name: string;
-                };
-                Returns: Json;
-            } | {
-                Args: {
-                    p_event_date: string;
-                    p_event_id: string;
-                    p_event_name: string;
                     p_send_email?: boolean;
                     p_send_push?: boolean;
                 };
@@ -6075,15 +6059,6 @@ type Database = {
                 };
                 Returns: undefined;
             };
-            register_device_token: {
-                Args: {
-                    p_app_version?: string;
-                    p_device_id?: string;
-                    p_platform?: string;
-                    p_token: string;
-                };
-                Returns: Json;
-            };
             request_bussola: {
                 Args: {
                     p_note?: string;
@@ -6091,11 +6066,9 @@ type Database = {
                 };
                 Returns: Json;
             };
-            set_notification_quiet_hours: {
+            set_my_newsletter_subscription: {
                 Args: {
-                    p_enabled: boolean;
-                    p_end?: string;
-                    p_start?: string;
+                    p_subscribed: boolean;
                 };
                 Returns: Json;
             };
@@ -6103,6 +6076,13 @@ type Database = {
                 Args: {
                     p_client_id: string;
                     p_lesson_id: string;
+                };
+                Returns: Json;
+            };
+            staff_archive_lessons: {
+                Args: {
+                    p_lesson_ids: string[];
+                    p_reason?: string;
                 };
                 Returns: Json;
             };
@@ -6249,6 +6229,14 @@ type Database = {
             staff_save_compensation_model: {
                 Args: {
                     p_payload: Json;
+                };
+                Returns: Json;
+            };
+            staff_save_plan: {
+                Args: {
+                    p_activity_ids: string[];
+                    p_plan: Json;
+                    p_plan_id: string;
                 };
                 Returns: Json;
             };
@@ -6403,7 +6391,7 @@ type Database = {
             newsletter_campaign_status: "draft" | "scheduled" | "sending" | "sent" | "failed";
             newsletter_email_status: "pending" | "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained" | "failed";
             newsletter_event_type: "delivered" | "opened" | "clicked" | "bounced" | "complained";
-            notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder" | "feedback_request" | "waitlist_promotion" | "member_application_decided" | "membership_fee_due" | "trial_followup" | "trial_booked" | "trial_booked_staff";
+            notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder" | "feedback_request" | "waitlist_promotion" | "member_application_decided" | "membership_fee_due" | "trial_followup" | "trial_booked" | "trial_booked_staff" | "lesson_canceled";
             notification_channel: "push" | "email";
             notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
             pass_benefit_type: "subscription_discount" | "event_discount" | "bussola" | "community_access" | "priority_booking" | "other";
@@ -6611,6 +6599,22 @@ type StaffBookEventParams = {
 type StaffCancelEventBookingParams = {
     bookingId: string;
 };
+/**
+ * Helper per gestire errori dalle chiamate RPC
+ */
+/**
+ * Errore di una chiamata RPC (dalla v0.3.10). Il messaggio resta quello di prima
+ * (`RPC <nome> failed: …`), in più porta il codice di PostgREST o di Postgres (`code`, per esempio
+ * `42501` permesso negato, `PGRST301` sessione scaduta, `PGRST202` funzione inesistente), così le app
+ * possono distinguere un problema di rete da una sessione scaduta o da un permesso mancante.
+ */
+declare class RpcError extends Error {
+    readonly rpcName: string;
+    readonly code: string | null;
+    readonly details: string | null;
+    readonly hint: string | null;
+    constructor(rpcName: string, message: string, error: any);
+}
 /**
  * Wrapper tipizzato per la RPC book_lesson.
  * Prenota una lezione con l'abbonamento indicato. Dalla v0.3.6 l'abbonamento è obbligatorio per i
@@ -7368,6 +7372,69 @@ type AcceptMyLegalDocumentsResult = {
  * @throws Error se la chiamata RPC fallisce
  */
 declare function acceptMyLegalDocuments(client: SupabaseClient<Database>): Promise<AcceptMyLegalDocumentsResult>;
+type SetMyNewsletterSubscriptionResult = {
+    ok: boolean;
+    reason?: 'CLIENT_NOT_FOUND' | 'INVALID_VALUE';
+    subscribed?: boolean;
+};
+/**
+ * Wrapper tipizzato per la RPC set_my_newsletter_subscription (dalla v0.3.10): la persona accende o
+ * spegne la newsletter dalla propria app.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+declare function setMyNewsletterSubscription(client: SupabaseClient<Database>, subscribed: boolean): Promise<SetMyNewsletterSubscriptionResult>;
+type StaffSavePlanInput = {
+    name: string;
+    discipline?: string | null;
+    price_cents: number;
+    currency?: string;
+    /** NULL = ingressi illimitati */
+    entries: number | null;
+    validity_days: number;
+    description?: string | null;
+    is_active?: boolean;
+    discount_percent?: number | null;
+    sold_in_app?: boolean;
+};
+type StaffSavePlanResult = {
+    ok: boolean;
+    reason?: 'NOT_STAFF' | 'ACTIVITIES_REQUIRED' | 'NAME_REQUIRED' | 'INVALID_PRICE' | 'INVALID_VALIDITY' | 'INVALID_ENTRIES' | 'PLAN_NOT_FOUND';
+    plan_id?: string;
+};
+/**
+ * Wrapper tipizzato per la RPC staff_save_plan (dalla v0.3.10): crea (`planId` null) o modifica un
+ * piano con le sue attività in una transazione sola. Serve almeno un'attività: un piano senza
+ * attività varrebbe per tutte.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+declare function staffSavePlan(client: SupabaseClient<Database>, params: {
+    planId: string | null;
+    plan: StaffSavePlanInput;
+    activityIds: string[];
+}): Promise<StaffSavePlanResult>;
+type StaffArchiveLessonsResult = {
+    ok: boolean;
+    reason?: 'NOT_STAFF';
+    /** Lezioni archiviate */
+    archived?: number;
+    /** Prenotazioni disdette (ingresso restituito, avviso «Lezione annullata») */
+    canceled_bookings?: number;
+    /** Lezioni già iniziate con prenotazioni o presenze: non archiviate */
+    skipped?: string[];
+};
+/**
+ * Wrapper tipizzato per la RPC staff_archive_lessons (dalla v0.3.10): archivia lezioni. Per quelle
+ * future chiude la lista d'attesa, disdice le prenotazioni restituendo l'ingresso e avvisa chi era
+ * prenotatə; quelle già iniziate con prenotazioni o presenze le salta.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+declare function staffArchiveLessons(client: SupabaseClient<Database>, params: {
+    lessonIds: string[];
+    reason?: string | null;
+}): Promise<StaffArchiveLessonsResult>;
 
 /**
  * Etichette e testi condivisi fra sito, gestionale e app, così che la stessa cosa si chiami allo
@@ -7531,4 +7598,4 @@ type GetEventsWithAvailabilityParams = {
  */
 declare function getEventsWithAvailability(client: SupabaseClient<Database>, params?: GetEventsWithAvailabilityParams): Promise<EventWithAvailability[]>;
 
-export { type AcceptMyLegalDocumentsResult, type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyNotificationsResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetMyReceiptsResult, type GetPublicEventsParams, type GetPublicScheduleParams, type JourneySummaryResult, type JourneyTimelineItem, type JourneyTimelineKind, type JourneyTimelineResult, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type MyNotification, type MyReceipt, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type UpdateMyProfileResult, type Views, type WaitlistResult, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, staffBookEvent, staffCancelEventBooking, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };
+export { type AcceptMyLegalDocumentsResult, type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyNotificationsResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetMyReceiptsResult, type GetPublicEventsParams, type GetPublicScheduleParams, type JourneySummaryResult, type JourneyTimelineItem, type JourneyTimelineKind, type JourneyTimelineResult, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type MyNotification, type MyReceipt, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, RpcError, type SetMyNewsletterSubscriptionResult, type StaffArchiveLessonsResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type StaffSavePlanInput, type StaffSavePlanResult, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type UpdateMyProfileResult, type Views, type WaitlistResult, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, setMyNewsletterSubscription, staffArchiveLessons, staffBookEvent, staffCancelEventBooking, staffSavePlan, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };

@@ -10,4 +10,4 @@ workflow programmati restano accesi.
 
 Questo branch non contiene codice e non va mai mergiato su `main`.
 
-Ultima esecuzione: 23/09/2026 11:12 UTC
+Ultima esecuzione: 01/10/2026 10:52 UTC

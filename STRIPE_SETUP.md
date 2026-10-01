@@ -4,9 +4,12 @@ Quota associativa dal sito ("Diventa sociə") e donazioni con carta, dalla sessi
 [piano](../docs/PIANO-APS-E-NUOVA-APP.md). Dalla sessione 9 (contract v0.3.7), sullo stesso webhook,
 anche gli acquisti dall'app: abbonamenti, contributi degli eventi e "da saldare" (§1bis).
 
-> **Stato (24/09/2026):** codice, database e function pronti; **l'account Stripe dell'APS non esiste
-> ancora**. Finché non c'è, l'interruttore `payments` resta spento: il sito accetta le domande di
-> ammissione e dice che la quota si versa in studio; le donazioni con carta non compaiono.
+> **Stato (01/10/2026): live.** Account dell'APS aperto dal Presidente (organizzazione senza scopo di
+> lucro, Radar Lite, descrittore `STUDIO KALOS APS`), chiave ristretta «accesso completo tranne
+> operazioni sensibili» (`rk_live_…`, niente accrediti né trasferimenti), endpoint del webhook creato
+> con `scripts/stripe-setup.mjs`, secret su Supabase, `stripe_live` e `payments` accesi. Provato con un
+> checkout vero chiuso subito: evento firmato ricevuto ed elaborato, niente nel registro. Quota 2026:
+> 35 €. Gli accrediti sul conto partono quando Stripe ha finito le sue verifiche.
 
 ## 1. Come funziona
 
@@ -99,7 +102,14 @@ il segnale che qualcosa è stato configurato a metà.
 
 ⚠️ Lo Stripe CLI installato sul Mac è collegato all'account **"ASD Pallacanestro Bisiaca"**: prima di
 usarlo per Kalòs, `stripe login` sull'account dell'APS. Mai chiavi di un altro ente nei secret di
-Supabase.
+Supabase (`scripts/stripe-setup.mjs` le rifiuta).
+
+**La chiave (nuova dashboard, 2026):** Sviluppatori → Chiavi API → «Crea una chiave privata» →
+«Creare la tua integrazione» → **«Accesso completo, tranne operazioni sensibili»**. È una chiave
+ristretta `rk_live_…`: basta per checkout, rimborsi, lettura di commissioni ed eventi e per creare il
+webhook, ma non può spostare denaro fuori dall'account. Stripe la mostra una volta sola. Per non farla
+passare da chat o terminale: la si copia negli appunti e la si salva in un file con `pbpaste`, poi
+`stripe-setup.mjs --key-file`.
 
 ## 3. Webhook e secret
 

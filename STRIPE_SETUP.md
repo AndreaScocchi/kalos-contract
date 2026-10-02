@@ -173,14 +173,15 @@ npx supabase secrets set \
   STRIPE_SECRET_KEY=sk_live_… \
   STRIPE_WEBHOOK_SECRET=whsec_… \
   CHECKOUT_ALLOWED_ORIGINS=https://kalosstudio.it,https://www.kalosstudio.it \
-  APP_RETURN_ORIGINS=https://kalos-app-beta.netlify.app
+  APP_RETURN_ORIGINS=https://app.kalosstudio.it
 ```
 
 - `STRIPE_WEBHOOK_SECRET` accetta più segreti separati da virgola: serve durante una rotazione.
 - `CHECKOUT_ALLOWED_ORIGINS`: dove si torna dopo il pagamento. Il primo è quello di ripiego.
-- `APP_RETURN_ORIGINS` (sessione 9): gli indirizzi dell'app, separati da quelli del sito. Il primo
-  serve anche al ritorno da iPhone e Android. Oggi il sito di prova; al cambio di link (sessione 12)
-  `https://app.kalosstudio.it` (prima) e il sito di prova (dopo).
+- `APP_RETURN_ORIGINS` (sessione 9): gli indirizzi dell'app, separati da quelli del sito. Dal
+  02/10/2026 in produzione contiene **solo `https://app.kalosstudio.it`**, anche per il ritorno da
+  iPhone, Android e vecchie schede della beta. Non reinserire la beta: i suoi vecchi link vengono
+  reindirizzati da Netlify al dominio ufficiale. In locale resta `http://localhost:8081`.
 - `STRIPE_API_BASE` **non va mai impostato in produzione** (serve solo al finto Stripe locale, e
   fuori dal locale viene ignorato comunque).
 

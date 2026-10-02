@@ -1,13 +1,13 @@
 # Migrazione email: Resend → Amazon SES
 
-> **Stato (2026-08-31): cutover completato.** Account SES in produzione su `eu-central-1`
-> (50.000 email/giorno, 14/sec), secret configurati, le sei function deployate,
-> `SES_SEND_DELAY_MS` rimosso e `SES_DAILY_QUOTA` a 50000 (§9). Resend resta come
-> percorso di rollback (§10) finché SES non è stabile da qualche settimana.
+> **Stato (2026-10-02): tutte le email applicative passano da Amazon SES.** Le edge function
+> usano l'API SES; anche Supabase Auth (reset password, conferme, inviti e magic link) ora usa
+> SMTP SES, configurato in §9.1. Account in produzione su `eu-central-1`, invio abilitato,
+> quota verificata di 50.000 email/giorno e 14/sec. Nessun trasporto o secret Resend attivo.
+> **Indicazione dell'utente: solo AWS, non ripristinare Resend come fallback.**
 
-Guida operativa per portare l'invio email di Studio Kalòs su Amazon SES.
-Il codice è già pronto (vedi [Stato del codice](#stato-del-codice)); questa
-guida copre la parte da fare in console AWS e il cutover.
+Guida di configurazione dell'invio email di Studio Kalòs su Amazon SES. I passaggi iniziali
+documentano il setup eseguito ad agosto; §9.1 registra il completamento di Supabase Auth a ottobre.
 
 **Perché:** il piano free di Resend è limitato a 100 email/giorno, il che rende
 impossibile inviare una newsletter a ~500 clienti in un colpo solo. SES non ha
@@ -19,7 +19,8 @@ significa **circa $0,60 all'anno**.
 
 ## 0. Checklist operativa
 
-> Da seguire in ordine; le sezioni numerate sotto spiegano ogni punto per esteso.
+> Checklist del setup iniziale di agosto, già eseguito; non è una lista di attività ancora aperte.
+> Le sezioni numerate sotto spiegano ogni punto per esteso.
 > Circa un'ora di clic più due attese. Esiste anche in versione stampabile:
 > [`AWS_SES_CHECKLIST.html`](AWS_SES_CHECKLIST.html).
 > **Percorsi e moduli verificati sulla documentazione AWS ad agosto 2026.**
@@ -37,7 +38,7 @@ significa **circa $0,60 all'anno**.
 - [ ] **2. Regione `eu-central-1` (Frankfurt)** e restarci sempre: identità, set, topic, quote e stato sandbox sono per-regione. → §1
 - [ ] **3. Dominio + Easy DKIM (RSA_2048)** — `SES → Configuration → Identities → Create identity`, tipo Domain. Restituisce **3 CNAME** da pubblicare (i valori li genera AWS). Attenzione ai pannelli DNS che aggiungono da soli il suffisso del dominio. → §2
 - [ ] ⏳ *Attesa: di norma < 30 minuti, ma SES può metterci fino a 72 ore*
-- [ ] **4. SPF e DMARC sul dominio** — **mai due record SPF**: se ne esiste già uno, aggiungere `include:amazonses.com` dentro quello, lasciando Resend. DMARC in osservazione (`p=none`) su `_dmarc.kalosstudio.it`. → §2
+- [ ] **4. SPF e DMARC sul dominio** — **mai due record SPF**: se ne esiste già uno, aggiungere `include:amazonses.com` dentro quello. DMARC in osservazione (`p=none`) su `_dmarc.kalosstudio.it`. → §2
 - [ ] **5. Custom MAIL FROM** `mail.kalosstudio.it` — `Behavior on MX failure` = **Use default MAIL FROM domain** (l'altra opzione fa fallire tutti gli invii). **Un solo MX** su quel sottodominio, e il sottodominio non va usato per altro. Rilevamento fino a 72 h, ma non blocca gli invii. → §2
 - [ ] **6. Configuration set `kalos-events`** — open/click tracking, custom redirect domain `track.kalosstudio.it` (senza, i link vengono riscritti su `awstrack.me`), reputation metrics, suppression list a livello account. → §3
 - [ ] **7. Topic SNS `kalos-ses-events`** — Standard, **Signature version 2**, event destination con Send/Delivery/Bounce/Complaint/Open/Click/Reject. *La sottoscrizione HTTPS si crea dopo il deploy.* → §3
@@ -45,7 +46,7 @@ significa **circa $0,60 all'anno**.
 - [ ] **9. Uscita dalla sandbox** — `Account dashboard → View Get set up page → Request production access`. Campi: Mail type **Transactional**, Website URL, Additional contacts, lingua **English**, Acknowledgement. **Niente campo per il volume**: approvati, la quota è 50.000/giorno. → §5
 - [ ] **10. Tetto di spesa** — `Budgets → Create budget → Cost budget`, **$5/mese**, notifica a 80% e 100%. È qui che si mette il limite, non nella quota. → §8
 - [ ] ⏳ *Attesa ~24 ore — risposta di AWS. Nel frattempo si può già fare il punto 11.*
-- [ ] **11. Passare le due chiavi a Claude** → secret su Supabase, deploy delle 6 function, segreto webhook, poi **insieme** la sottoscrizione SNS e il test di fumo. → §6, §7
+- [ ] **11. Configurare le due chiavi nei secret Supabase**, senza copiarle nel repository o in chat; deploy delle function, segreto webhook, sottoscrizione SNS e test di invio. → §6, §7
 
 **Valori già compilati**
 
@@ -63,10 +64,8 @@ significa **circa $0,60 all'anno**.
 | TXT · `mail.kalosstudio.it` | `v=spf1 include:amazonses.com ~all` |
 | CNAME · `track.kalosstudio.it` | `r.eu-central-1.awstrack.me` |
 
-**Se qualcosa non convince:** `_shared/resend.ts` è intatto e i record DNS di Resend restano validi
-finché non si rimuovono — i due provider usano selettori DKIM diversi e convivono. Tornare indietro è
-cambiare un import e rideployare (§10). Non rimuovere nulla di Resend finché SES non è stabile da
-qualche settimana.
+**In caso di problemi:** controllare credenziali, regione, identità mittente e quote SES (§10).
+Il vecchio helper Resend è stato rimosso; non esiste un fallback attivo verso quel provider.
 
 ---
 
@@ -363,27 +362,52 @@ quindi un rate leggermente troppo aggressivo rallenta ma non perde email.
 
 ---
 
-## 10. Rollback
+## 9.1 Supabase Auth — SMTP SES dal 02/10/2026
 
-`_shared/resend.ts` è rimasto al suo posto, intatto. Per tornare indietro:
+La migrazione delle edge function non modifica il server SMTP di Supabase Auth: fino al
+02/10 questo era ancora Resend. È stato sostituito con la seguente configurazione:
 
-```bash
-cd kalos-contract/supabase/functions
-sed -i '' "s|from '../_shared/ses.ts'|from '../_shared/resend.ts'|" \
-  send-newsletter/index.ts retry-newsletter/index.ts \
-  process-notification-queue/index.ts resend-confirmation-email/index.ts
-```
+| Campo Auth | Valore |
+|---|---|
+| `smtp_host` | `email-smtp.eu-central-1.amazonaws.com` |
+| `smtp_port` | `465` (TLS) |
+| `smtp_admin_email` | `newsletter@kalosstudio.it` |
+| `smtp_sender_name` | `Studio Kalòs` |
+| `smtp_user` | Access key ID dell'utente SES, custodita fuori dal repository |
+| `smtp_pass` | Password SMTP derivata dalla chiave IAM per `eu-central-1` |
 
-Poi rimuovi `SEND_DELAY_MS` dagli import di `send-newsletter` e
-`retry-newsletter` e rimetti `const EMAIL_DELAY_MS = 1000`, e rideploya.
-I record DKIM di Resend, se non li hai rimossi, sono ancora validi.
+La password SMTP **non è** la secret access key: usare l'algoritmo della
+[documentazione AWS](https://docs.aws.amazon.com/ses/latest/dg/smtp-credentials.html).
+L'utente IAM già usato dalle edge function dispone di `ses:SendRawEmail` per il mittente.
+Una rotazione di quella chiave richiede l'aggiornamento sia dei secret delle function sia di
+`smtp_user` / `smtp_pass` in Auth.
 
-**Fatto il 30/09/2026** (SES stabile da un mese): tolti dal codice `_shared/resend.ts` e la function
-`resend-webhook`; `getFromEmail()` non legge più `RESEND_FROM_EMAIL` (valeva
-`newsletter@kalosstudio.it`, lo stesso mittente predefinito). Il rollback qui sopra ora passa dal
-codice nella storia di git. Restano da togliere in produzione la function pubblicata
-`resend-webhook` e i secret `RESEND_*`, e dal DNS i record di Resend, dopo aver controllato che
-l'SMTP di Supabase Auth (conferme e reset) non usi `smtp.resend.com`.
+La configurazione si aggiorna da Authentication → Email → SMTP o con
+[`PATCH /config/auth`](https://supabase.com/docs/guides/auth/auth-smtp), limitando il payload ai
+campi SMTP. Conservare `site_url=https://app.kalosstudio.it`, Redirect URLs, template e limiti Auth.
+Il send-email hook è disabilitato: tutte le email gestite da Auth usano questo SMTP.
+
+**Verifiche del 02/10:** autenticazione TLS SMTP riuscita, un invio accettato al solo mailbox
+simulator AWS, risposta del salvataggio e rilettura della configurazione coerenti. L'API restituisce
+la password oscurata con HMAC, non il valore originale né un semplice SHA-256.
+Nessuna email di prova a clienti, nessun account di prova creato e nessuna comunicazione di lancio.
+Il test SMTP non sostituisce una prova completa di reset con ricezione in una casella reale.
+
+## 10. Manutenzione e rimozione di Resend
+
+Dal 02/10/2026 la scelta esplicita è **solo AWS SES**. In caso di errore controllare il server
+regionale, le credenziali SMTP derivate, i permessi IAM, l'identità mittente e lo stato/quote SES.
+Non riattivare Resend automaticamente o tramite una vecchia procedura di rollback.
+
+Il 30/09 sono stati rimossi `_shared/resend.ts` e `resend-webhook` dal codice. Il controllo del
+02/10 ha confermato l'assenza della function pubblicata `resend-webhook` e dei secret `RESEND_*`.
+Controllati anche i bundle delle 21 function pubblicate, le funzioni SQL `public` / `internal`
+e le variabili Netlify di app, gestionale e sito: nessun endpoint di invio Resend.
+
+I nomi storici `resend_id` nel database contengono ora il MessageId SES; la function
+`resend-confirmation-email` significa «reinvia conferma» e usa SES. Questi nomi non selezionano
+il provider. Eventuali record DNS o credenziali conservati nel vecchio account Resend non sono
+stati modificati da questo intervento e non vengono usati per gli invii applicativi.
 
 ---
 

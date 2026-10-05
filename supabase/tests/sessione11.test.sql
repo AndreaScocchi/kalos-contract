@@ -132,9 +132,9 @@ SELECT ok((SELECT scheduled_for >= now() - interval '1 second'
                   AND extract(hour FROM scheduled_for AT TIME ZONE 'Europe/Rome') BETWEEN 9 AND 20
              FROM public.notification_queue WHERE category = 'trial_followup'),
   'non prima di adesso e mai di sera o di notte');
-SELECT ok((SELECT body LIKE '%primo ingresso%' AND title = 'Com''è andata la prova di S11 Respiro?'
+SELECT ok((SELECT body LIKE '%abbonamenti%' AND body NOT LIKE '%primo ingresso%' AND title = 'Com''è andata la prova di S11 Respiro?'
              FROM public.notification_queue WHERE category = 'trial_followup'),
-  'col nome dell''attività e l''invito ai piani (la prova vale come primo ingresso)');
+  'col nome dell''attività e l''invito ai piani (la prova resta gratuita)');
 
 UPDATE public.bookings SET status = 'no_show' WHERE is_trial AND lesson_id = '3b000000-0000-0000-0000-000000000004';
 UPDATE public.bookings SET status = 'attended' WHERE is_trial AND lesson_id = '3b000000-0000-0000-0000-000000000004';

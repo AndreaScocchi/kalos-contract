@@ -162,7 +162,7 @@ npm run verify:migrations   # Check migration integrity
 | `compensation_models`, `compensation_components`, `compensation_tiers`, `compensation_assignments`, `compensation_entries` | Compensi a mattoni, congelati quando il mese si chiude |
 | `event_operators` | Chi tiene un evento, per calcolarne il compenso |
 | `activity_groups`, `locations` | Gruppi di attività e luoghi (sito e app) |
-| `trials` | Lezioni di prova: una per attività, con la conversione in primo ingresso |
+| `trials` | Lezioni di prova: una per attività, sempre gratuite; «convertita» = ha comprato dopo la prova (dalla v0.3.13 non scala ingressi) |
 | `site_rebuild_state` | Riga unica: quando il sito va ricostruito e com'è andata l'ultima build (sessione 6) |
 | `stripe_events`, `stripe_payments`, `stripe_refunds` | Pagamenti online: memoria del webhook, pagamenti (con `source`, `metadata`, `is_duplicate`), rimborsi |
 | `stripe_checkout_attempts` | Limite orario dei checkout delle donazioni per impronta dell'IP (interna) |
@@ -494,6 +494,17 @@ cliente solo i propri abbonamenti. `access_model.test.sql` elenca ora anche le r
 authenticated** per scelta: una tabella o view nuova che serve alle app e nasce senza GRANT fa
 fallire il test. Test: `supabase/tests/ingressi_rimasti.test.sql` (7).
 
+### v0.3.13 (05/10/2026: la prova è sempre gratuita)
+
+Migrazione `20261005110000`, decisione dell'utente del 05/10 che sostituisce F1/F2: **la lezione di
+prova non scala mai un ingresso** dagli abbonamenti comprati dopo (prima diventava il primo ingresso,
+e un pacchetto da un ingresso comprato dopo la prova nasceva «completato»).
+`internal.convert_trial_on_new_subscription` segna ancora la prova `converted` (= ha comprato dopo la
+prova, per la pagina Prove) ma non scrive più la riga `TRIAL` in `subscription_usages`; il messaggio
+`trial_followup` invita agli abbonamenti senza parlare di primo ingresso. Le righe `TRIAL` esistenti
+sono state tolte e il trigger sulla cancellazione ha ricalcolato lo stato degli abbonamenti.
+Test: `supabase/tests/prove_gratuite.test.sql` (8); aggiornati `trials`, `sessione9`, `sessione11`.
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -563,7 +574,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.12**
+Current: **v0.3.13**
 
 Consumers reference via git tag:
 ```json

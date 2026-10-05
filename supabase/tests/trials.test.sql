@@ -54,7 +54,7 @@ SELECT '51000000-0000-0000-0000-000000000001', c.id, '41000000-0000-0000-0000-00
 
 SELECT is(
   (SELECT status::text FROM public.trials WHERE activity_id = '21000000-0000-0000-0000-000000000001'),
-  'converted', 'la prova dell''attività coperta diventa il primo ingresso'
+  'converted', 'comprando un abbonamento che copre l''attività la prova risulta convertita'
 );
 
 SELECT is(
@@ -64,14 +64,14 @@ SELECT is(
 
 SELECT is(
   (SELECT remaining_entries::int FROM public.subscriptions_with_remaining
-    WHERE id = '51000000-0000-0000-0000-000000000001'), 9,
-  'la conversione scala esattamente un ingresso, non due'
+    WHERE id = '51000000-0000-0000-0000-000000000001'), 10,
+  'la conversione non scala nessun ingresso (prove sempre gratuite, 05/10/2026)'
 );
 
 SELECT is(
   (SELECT count(*)::int FROM public.subscription_usages
-    WHERE subscription_id = '51000000-0000-0000-0000-000000000001' AND reason = 'TRIAL'), 1,
-  'e lascia una sola riga di consumo, marcata come prova'
+    WHERE subscription_id = '51000000-0000-0000-0000-000000000001' AND reason = 'TRIAL'), 0,
+  'e non lascia nessuna riga di consumo della prova'
 );
 
 SELECT * FROM finish();

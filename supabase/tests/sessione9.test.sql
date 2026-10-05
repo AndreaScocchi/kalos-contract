@@ -265,7 +265,7 @@ SELECT public.stripe_apply_payment_state(pg_temp.paid('99000000-0000-0000-0000-0
 
 SELECT is(
   (SELECT t.status::text FROM public.trials t, s9 WHERE t.client_id = s9.bruno),
-  'converted', 'comprando l''abbonamento, la prova diventa il primo ingresso (F2)');
+  'converted', 'comprando l''abbonamento, la prova risulta convertita');
 
 SELECT is(
   (SELECT concat_ws(' | ', COALESCE(s.first_entry_on::text, 'nessun ingresso'), s.expires_at - d.today,
@@ -273,7 +273,7 @@ SELECT is(
      FROM public.subscriptions s, s9 d
     WHERE s.id = (SELECT t.id FROM public.transactions x JOIN public.subscriptions t ON t.id = x.subscription_id
                    WHERE x.stripe_payment_id = '99000000-0000-0000-0000-000000000003')),
-  'nessun ingresso | 150 | -1', 'la prova scala un ingresso ma non fa partire la validità');
+  'nessun ingresso | 150', 'la prova non scala un ingresso e non fa partire la validità (05/10/2026)');
 
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub":"19000000-0000-0000-0000-000000000003","role":"authenticated"}';

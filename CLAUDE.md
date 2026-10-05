@@ -484,6 +484,16 @@ in `docs/ISSUES.md` del repo dei documenti.
   `setMyNewsletterSubscription`, `staffSavePlan`, `staffArchiveLessons`.
 - **Test:** `supabase/tests/verifica_30_09.test.sql` (69), `verify-access` 221.
 
+### v0.3.12 (05/10/2026: ingressi rimasti leggibili)
+
+Migrazione `20261005100000`. `subscriptions_with_remaining` non aveva mai avuto un GRANT esplicito e la
+leggeva solo service_role: dal 30/09 il gestionale la legge in blocco (Dashboard, Abbonamenti,
+Clienti, prenotazioni di lezioni ed eventi) e quelle pagine ricevevano `permission denied` (42501).
+Ora `GRANT SELECT ... TO authenticated`; è `security_invoker`, quindi lo staff vede tuttə e ciascun
+cliente solo i propri abbonamenti. `access_model.test.sql` elenca ora anche le relazioni **chiuse ad
+authenticated** per scelta: una tabella o view nuova che serve alle app e nasce senza GRANT fa
+fallire il test. Test: `supabase/tests/ingressi_rimasti.test.sql` (7).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -553,7 +563,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.11**
+Current: **v0.3.12**
 
 Consumers reference via git tag:
 ```json

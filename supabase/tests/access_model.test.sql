@@ -7,7 +7,7 @@
 -- Più alcuni comportamenti critici, simulando i ruoli come fa PostgREST (SET ROLE + claims JWT).
 
 BEGIN;
-SELECT plan(28);
+SELECT plan(29);
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
 -- 1. Elenco esplicito: funzioni
@@ -160,6 +160,23 @@ SELECT set_eq(
     'activity_groups', 'locations', 'public_site_groups', 'public_site_locations'
   ],
   'anon legge solo i dati pubblici del sito'
+);
+
+-- Chiuse anche col login, per scelta. Tutto il resto di public authenticated lo legge (decidono le
+-- RLS). Le tabelle e le view nuove nascono chiuse (default privileges): una che serve alle app senza
+-- il suo GRANT finiva qui, come `subscriptions_with_remaining` fino alla v0.3.12, e le pagine del
+-- gestionale che la leggevano ricevevano `permission denied`.
+SELECT set_eq(
+  $$ SELECT c.relname::text FROM pg_class c
+     WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r', 'v', 'm', 'p')
+       AND NOT has_table_privilege('authenticated', c.oid, 'SELECT') $$,
+  ARRAY[
+    'financial_monthly_summary', 'member_number_sequences', 'receipt_sequences',
+    'site_rebuild_state', 'stripe_checkout_attempts', 'stripe_events',
+    -- solo alcune colonne (il token di accesso resta fuori)
+    'social_connections'
+  ],
+  'authenticated legge tutto public tranne l''elenco chiuso per scelta'
 );
 
 -- `operators` (dal 30/09/2026): anon legge solo le colonne pubbliche, non il rapporto con

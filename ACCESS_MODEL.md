@@ -188,6 +188,10 @@ di questo tipo fa fallire il test: se serve davvero, la si aggiunge all'elenco e
 
 **Nuova view**
 - `WITH (security_invoker = true)`, così valgono le RLS delle tabelle sotto.
+- Anche le view nascono chiuse: se un'app la legge, `GRANT SELECT ... TO authenticated` nella stessa
+  migrazione. `access_model.test.sql` elenca le relazioni chiuse ad authenticated per scelta, e una
+  view fuori elenco senza GRANT lo fa fallire (`subscriptions_with_remaining`, v0.3.12: dal 30/09 il
+  gestionale la leggeva e riceveva `permission denied`).
 - Le view pubbliche senza `security_invoker` sono ammesse solo se espongono esclusivamente colonne
   pubbliche (come `public_site_activities`).
 

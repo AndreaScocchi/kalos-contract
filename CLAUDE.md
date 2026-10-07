@@ -159,7 +159,7 @@ npm run verify:migrations   # Check migration integrity
 | `transactions` | Registro degli incassi; i rimborsi sono righe negative |
 | `receipts`, `receipt_sequences` | Ricevute numerate per anno, senza buchi |
 | `expense_categories`, `recurring_expenses` | Categorie modificabili e spese ricorrenti da confermare |
-| `compensation_models`, `compensation_components`, `compensation_tiers`, `compensation_assignments`, `compensation_entries` | Compensi a mattoni, congelati quando il mese si chiude |
+| `compensation_models`, `compensation_components`, `compensation_tiers`, `compensation_assignments`, `compensation_entries` | Compensi a mattoni (dalla v0.3.14 con le spese della lezione e il tetto a lezione), congelati quando il mese si chiude |
 | `event_operators` | Chi tiene un evento, per calcolarne il compenso |
 | `activity_groups`, `locations` | Gruppi di attività e luoghi (sito e app) |
 | `trials` | Lezioni di prova: una per attività, sempre gratuite; «convertita» = ha comprato dopo la prova (dalla v0.3.13 non scala ingressi) |
@@ -318,7 +318,7 @@ Contabilità per cassa dell'associazione, dal 19/08/2026, con il rendiconto nell
 | `staff_unfreeze_compensation(p_month_start, p_operator_id?)` | Riapre i congelati non pagati |
 | `staff_pay_compensation(p_operator_id, p_month_start, p_paid_on?, p_method?, p_withholding_percent?, p_gross_cents?, p_note?)` | Paga una persona per un mese: netto come uscita del giorno, ritenuta come uscita da confermare con scadenza il 16 del mese dopo (F24). Sostituisce `staff_mark_compensation_paid` |
 | `staff_undo_compensation_payment(p_payment_id)` | Annulla un pagamento sbagliato |
-| `staff_save_compensation_model(p_payload)` | Modello, mattoni e scaglioni in un colpo solo (`INVALID_MODEL` e niente di scritto se un mattone è sbagliato) |
+| `staff_save_compensation_model(p_payload)` | Modello, spese, mattoni, scaglioni e tetti in un colpo solo (`INVALID_MODEL` e niente di scritto se un mattone è sbagliato) |
 | `preview_compensation(p_model_id, p_duration_minutes, p_participants, p_revenue_cents)` | Prova di un modello |
 
 Test: `supabase/tests/finanze.test.sql` (66).
@@ -505,6 +505,33 @@ prova, per la pagina Prove) ma non scrive più la riga `TRIAL` in `subscription_
 sono state tolte e il trigger sulla cancellazione ha ricalcolato lo stato degli abbonamenti.
 Test: `supabase/tests/prove_gratuite.test.sql` (8); aggiornati `trials`, `sessione9`, `sessione11`.
 
+### v0.3.14 (07/10/2026: spese della lezione nei modelli di compenso)
+
+Migrazioni `20261007100000` (valori dell'enum) e `…100100`. Richiesta della tesoreria per Yoga e
+Meditazione: dagli incassi della lezione si tolgono le spese fisse, quello che resta va all'insegnante
+fino a un tetto e il resto allo Studio. Il calcolo (`internal.compute_compensation`) ora è:
+
+```
+incassi − spese (mattoni cost_*) = quello che resta
+compenso = altri mattoni + scaglione → tetti (a lezione e orario: vale il più basso) → minimo → mai < 0
+allo Studio = quello che resta − compenso   (può essere negativo)
+```
+
+- **Spese della lezione**, nuovi valori di `compensation_component_kind`: `cost_per_lesson`,
+  `cost_per_hour`, `cost_per_participant` e `cost_percent_of_revenue` (era `room_fee_percent`,
+  rinominato). Il nome della spesa sta in `compensation_components.note`. **Servono solo al calcolo:
+  non diventano uscite** (l'affitto vero si registra in Uscite).
+- **`percent_of_margin`**: percentuale di quello che resta dopo le spese (zero se le spese superano
+  gli incassi, senza mangiare gli altri mattoni). `percent_of_revenue` resta sugli incassi lordi.
+- **`compensation_models.max_per_lesson_cents`**: tetto a lezione, salvato da `staff_save_compensation_model`.
+- **Cambia il significato della «Trattenuta sala»**: prima si sottraeva dal compenso, ora dagli
+  incassi. «100% degli incassi − 15% di sala» si scrive «spesa 15% sugli incassi + 100% di quello che
+  resta». In produzione al 07/10 non c'era nessun modello né compenso congelato.
+- Il dettaglio del calcolo (`breakdown`, anche in `preview_compensation` e `calculate_compensation_v2`)
+  ha in più `costs` (`kind`, `note`, `amount_cents`), `costs_cents`, `margin_cents`, `studio_cents`;
+  fra i `components` c'è il nuovo `max_lesson_cap`.
+- Test: `supabase/tests/compensation.test.sql` (27, con la ricetta di Yoga e Meditazione).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -574,7 +601,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.13**
+Current: **v0.3.14**
 
 Consumers reference via git tag:
 ```json

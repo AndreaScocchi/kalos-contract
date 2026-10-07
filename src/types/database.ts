@@ -1418,6 +1418,7 @@ export type Database = {
           id: string
           is_active: boolean
           max_hourly_cents: number | null
+          max_per_lesson_cents: number | null
           min_guaranteed_cents: number | null
           name: string
           updated_at: string
@@ -1429,6 +1430,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_hourly_cents?: number | null
+          max_per_lesson_cents?: number | null
           min_guaranteed_cents?: number | null
           name: string
           updated_at?: string
@@ -1440,6 +1442,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_hourly_cents?: number | null
+          max_per_lesson_cents?: number | null
           min_guaranteed_cents?: number | null
           name?: string
           updated_at?: string
@@ -6145,7 +6148,11 @@ export type Database = {
         | "fixed_per_hour"
         | "per_participant"
         | "percent_of_revenue"
-        | "room_fee_percent"
+        | "cost_percent_of_revenue"
+        | "percent_of_margin"
+        | "cost_per_lesson"
+        | "cost_per_hour"
+        | "cost_per_participant"
       compensation_entry_status: "pending" | "approved" | "paid"
       content_status:
         | "pending"
@@ -6462,7 +6469,11 @@ export const Constants = {
         "fixed_per_hour",
         "per_participant",
         "percent_of_revenue",
-        "room_fee_percent",
+        "cost_percent_of_revenue",
+        "percent_of_margin",
+        "cost_per_lesson",
+        "cost_per_hour",
+        "cost_per_participant",
       ],
       compensation_entry_status: ["pending", "approved", "paid"],
       content_status: [

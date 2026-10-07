@@ -1410,6 +1410,7 @@ type Database = {
                     id: string;
                     is_active: boolean;
                     max_hourly_cents: number | null;
+                    max_per_lesson_cents: number | null;
                     min_guaranteed_cents: number | null;
                     name: string;
                     updated_at: string;
@@ -1421,6 +1422,7 @@ type Database = {
                     id?: string;
                     is_active?: boolean;
                     max_hourly_cents?: number | null;
+                    max_per_lesson_cents?: number | null;
                     min_guaranteed_cents?: number | null;
                     name: string;
                     updated_at?: string;
@@ -1432,6 +1434,7 @@ type Database = {
                     id?: string;
                     is_active?: boolean;
                     max_hourly_cents?: number | null;
+                    max_per_lesson_cents?: number | null;
                     min_guaranteed_cents?: number | null;
                     name?: string;
                     updated_at?: string;
@@ -6374,7 +6377,7 @@ type Database = {
             campaign_tone: "formale" | "amichevole" | "urgente" | "entusiasta" | "professionale" | "empatico" | "diretto" | "esclusivo";
             campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo";
             cash_account: "cash" | "bank";
-            compensation_component_kind: "fixed_per_lesson" | "fixed_per_hour" | "per_participant" | "percent_of_revenue" | "room_fee_percent";
+            compensation_component_kind: "fixed_per_lesson" | "fixed_per_hour" | "per_participant" | "percent_of_revenue" | "cost_percent_of_revenue" | "percent_of_margin" | "cost_per_lesson" | "cost_per_hour" | "cost_per_participant";
             compensation_entry_status: "pending" | "approved" | "paid";
             content_status: "pending" | "generated" | "edited" | "scheduled" | "sent" | "published" | "failed" | "skipped";
             event_type: "evento" | "laboratorio" | "incontro";

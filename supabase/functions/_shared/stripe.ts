@@ -171,3 +171,36 @@ export async function reconcilePaymentIntent(
   if (error) throw new Error(`stripe_apply_payment_state: ${error.message}`)
   return data as ApplyResult
 }
+
+export interface PayoutResult {
+  ok: boolean
+  reason?: string
+  /** recorded | updated | unchanged | removed | waiting | ignored */
+  action?: string
+  transfer_id?: string
+}
+
+/**
+ * Riporta nel database un accredito di Stripe sul conto (v0.3.15): arrivato = giroconto Stripe →
+ * banca nel giorno di arrivo, fallito o annullato = nessun giroconto. Si passa l'accredito già
+ * letto da Stripe (lista del riallineamento) oppure solo l'id (webhook), e allora lo si rilegge.
+ */
+export async function reconcilePayout(
+  stripe: Stripe,
+  admin: SupabaseClient,
+  payout: string | Stripe.Payout,
+): Promise<PayoutResult> {
+  const p = typeof payout === 'string' ? await stripe.payouts.retrieve(payout) : payout
+  const { data, error } = await admin.rpc('stripe_apply_payout_state', {
+    p_payout: {
+      id: p.id,
+      status: p.status,
+      amount: p.amount,
+      currency: p.currency,
+      arrival_date: p.arrival_date,
+      livemode: p.livemode,
+    },
+  })
+  if (error) throw new Error(`stripe_apply_payout_state: ${error.message}`)
+  return data as PayoutResult
+}

@@ -6,6 +6,8 @@
 //
 // Gli eventi sono un campanello, non dati: ognuno che riguarda un pagamento fa rileggere da Stripe lo
 // stato completo (`reconcilePaymentIntent`) e lo riporta nel database con `stripe_apply_payment_state`.
+// Allo stesso modo un evento `payout.*` fa rileggere l'accredito sul conto (`reconcilePayout`,
+// `stripe_apply_payout_state`, v0.3.15).
 // Quindi l'ordine in cui arrivano, i doppioni e le consegne in parallelo non cambiano il risultato.
 //
 // Risposte:
@@ -18,7 +20,14 @@
 
 import { adminClient, jsonResponse, runAfterResponse } from '../_shared/http.ts'
 import { sendReceiptEmail } from '../_shared/receiptEmail.ts'
-import { getStripe, reconcilePaymentIntent, verifyStripeEvent, type ApplyResult, type Stripe } from '../_shared/stripe.ts'
+import {
+  getStripe,
+  reconcilePaymentIntent,
+  reconcilePayout,
+  verifyStripeEvent,
+  type ApplyResult,
+  type Stripe,
+} from '../_shared/stripe.ts'
 
 type Handled = { receiptIds: string[]; note: string }
 
@@ -137,6 +146,17 @@ async function handleEvent(event: Stripe.Event, stripe: Stripe): Promise<Handled
       if (typeof refund.payment_intent !== 'string') return { receiptIds: [], note: 'rimborso senza PaymentIntent' }
       const result = await reconcilePaymentIntent(stripe, admin, refund.payment_intent)
       return { receiptIds: receipts(result), note: `pagamento ${result.status}` }
+    }
+
+    // Accrediti di Stripe sul conto (v0.3.15): diventano giroconti Stripe → banca quando arrivano
+    case 'payout.paid':
+    case 'payout.failed':
+    case 'payout.canceled':
+    case 'payout.updated': {
+      const payout = event.data.object as Stripe.Payout
+      const result = await reconcilePayout(stripe, admin, payout.id)
+      if (!result.ok) throw new Error(`accredito non applicato: ${result.reason}`)
+      return { receiptIds: [], note: `accredito ${result.action}` }
     }
 
     // Contestazioni: nessuna scrittura automatica nel registro. L'evento resta in `stripe_events`

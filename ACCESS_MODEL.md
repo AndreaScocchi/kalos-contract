@@ -145,8 +145,9 @@ anon e authenticated: la scrive il job `internal.cron_site_rebuild`, la aggiorna
 Per lo stesso motivo stanno in `public`, **solo per service_role**, le funzioni dei pagamenti online
 che chiamano le edge function (sessione 5): `stripe_apply_payment_state` (l'unico punto che scrive un
 pagamento nel registro), `stripe_checkout_expired`, `stripe_event_received`, `stripe_event_done`,
-`stripe_register_checkout_attempt`, `receipt_claim_send` e `receipt_mark_sent`. Nessun `GRANT` ad
-anon o authenticated: il test pgTAP e `verify-access` controllano che restino chiuse.
+`stripe_register_checkout_attempt`, `receipt_claim_send` e `receipt_mark_sent`, e dalla v0.3.15
+`stripe_apply_payout_state` (gli accrediti di Stripe sul conto). Nessun `GRANT` ad anon o
+authenticated: il test pgTAP e `verify-access` controllano che restino chiuse.
 
 ### Scritture dirette dalle app
 
@@ -206,6 +207,12 @@ di questo tipo fa fallire il test: se serve davvero, la si aggiunge all'elenco e
   - `stripe-webhook` gira **senza JWT** (`config.toml`): la sicurezza è la firma di Stripe,
     verificata sul corpo grezzo. Scrive solo attraverso `stripe_apply_payment_state`, dopo aver
     riletto il pagamento dall'API di Stripe: un evento inventato non basta a creare un incasso;
+    dalla v0.3.15 anche gli accrediti sul conto, solo attraverso `stripe_apply_payout_state` e
+    dopo averli riletti;
+  - `stripe-reconcile` (v0.3.15): col token di chi è loggato, solo Finanze (`can_access_finance`);
+    rilegge da Stripe accrediti e saldo e scrive gli accrediti con la chiave di servizio, attraverso
+    la stessa `stripe_apply_payout_state`. I giroconti che toccano il conto Stripe non si scrivono né
+    si cancellano dall'API (trigger `internal.account_transfers_before_write`, `AUTOMATIC_TRANSFER`);
   - `stripe-checkout`: la quota con il token di chi è loggato (`prepare_my_fee_payment` decide
     importo e permesso), le donazioni anche con la sola chiave anon, con un limite orario per
     impronta dell'IP; dalla sessione 9 abbonamenti, contributi degli eventi e "da saldare"

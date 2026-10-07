@@ -60,7 +60,8 @@
     ],
     "cash_account": [
       "cash",
-      "bank"
+      "bank",
+      "stripe"
     ],
     "compensation_component_kind": [
       "fixed_per_lesson",
@@ -410,6 +411,15 @@
           "isArray": false,
           "nullable": false,
           "hasDefault": true
+        },
+        {
+          "name": "stripe_payout_id",
+          "dataType": "text",
+          "udtName": "text",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
         }
       ]
     },

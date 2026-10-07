@@ -297,7 +297,7 @@ Contabilità per cassa dell'associazione, dal 19/08/2026, con il rendiconto nell
 | Oggetto | Cosa fa |
 |---|---|
 | `rendiconto_voci` | Le 58 voci del Modello D (entrate e uscite A–E, imposte, investimenti e disinvestimenti). Sola lettura: le categorie di uscita (`expense_categories.rendiconto_bucket`) e le righe (`expenses.rendiconto_voce`, `transactions.rendiconto_voce`) ci puntano; un trigger rifiuta una voce di entrata su un'uscita e viceversa |
-| `account_transfers` | Giroconti fra cassa e banca (enum `cash_account`) |
+| `account_transfers` | Giroconti fra i conti (enum `cash_account`: cassa, banca e, dalla v0.3.15, Stripe); gli accrediti di Stripe hanno `stripe_payout_id` |
 | `association_settings.opening_cash_cents` / `opening_bank_cents` | Saldi al 19/08/2026; si impostano con `finance_set_opening_balances` |
 | `expenses.payment_method` | Conto dell'uscita (contanti = cassa, il resto banca). Trigger `internal.expenses_before_write`: allinea `category` da `category_id`, conferma le uscite a mano, e dall'API impedisce di inserire, cambiare o cancellare le uscite automatiche (`payout`, `stripe_fee`, `volunteer`) |
 | `operator_compensation_settings` | Ritenuta d'acconto per persona (tabella a parte: `operators` è leggibile dal sito) |
@@ -307,7 +307,7 @@ Contabilità per cassa dell'associazione, dal 19/08/2026, con il rendiconto nell
 |---|---|
 | `finance_income_lines(p_from, p_to)` | Entrate del periodo, riga per riga (rimborsi in negativo): conto, voce del rendiconto (`internal.income_voce`: A1 quote, A4 donazioni, A3/A7 contributi da associatə/terzi secondo `internal.client_is_member_on`, B per le commerciali), ricevuta, abbonamento, evento |
 | `finance_income_allocations(p_from, p_to)` | Entrate per attività ed evento: un abbonamento si divide in proporzione alle lezioni prenotate con esso (resto dei centesimi alle quote più grandi); `unused` = abbonamento senza prenotazioni, `unlinked` = incasso non collegato |
-| `finance_account_balances(p_at)` | Saldi di cassa e banca a fine giornata |
+| `finance_account_balances(p_at)` | Saldi di cassa, banca e (v0.3.15) Stripe a fine giornata |
 | `finance_set_opening_balances(p_cash_cents, p_bank_cents)` | Saldi iniziali |
 | `staff_register_payment` | Stessa firma: accetta `rendiconto_voce` nel payload, solo dalle Finanze |
 | `generate_recurring_expenses(p_month?)` | Recupera i mesi mancanti fino a quello in corso (mai oltre); una ricorrenza riattivata riparte dal mese in corso |
@@ -532,6 +532,35 @@ allo Studio = quello che resta − compenso   (può essere negativo)
   fra i `components` c'è il nuovo `max_lesson_cap`.
 - Test: `supabase/tests/compensation.test.sql` (27, con la ricetta di Yoga e Meditazione).
 
+### v0.3.15 (07/10/2026: Stripe è un conto)
+
+Migrazioni `20261007120000` (valore `stripe` dell'enum `cash_account`) e `…120100`. Prima un
+pagamento con carta contava «in banca» dal giorno del pagamento, ma i soldi restano su Stripe finché
+Stripe non li accredita sul conto: «In banca» del gestionale non tornava con l'estratto conto.
+
+- **Tre conti:** `internal.cash_account_for` manda il metodo `stripe` sul conto **Stripe** (pagamenti
+  con carta e commissioni, che hanno già `payment_method = 'stripe'`); `finance_account_balances`
+  restituisce anche `stripe_cents`, e `total_cents` lo comprende. `bank_cents` ora è solo il conto
+  corrente. `finance_income_lines` dà `account = 'stripe'` ai pagamenti con carta.
+- **Accrediti = giroconti Stripe → banca** nel giorno di arrivo (`account_transfers.stripe_payout_id`,
+  unico; vincolo: un giroconto tocca Stripe solo se è un accredito). Li scrive solo
+  **`stripe_apply_payout_state(p_payout)`** (solo service_role, idempotente: `recorded`, `updated`,
+  `unchanged`, `removed` se l'accredito fallisce o si annulla, `waiting` finché è in viaggio,
+  `ignored` se di prova senza `stripe_test_ledger`). Dall'API niente giroconti che toccano Stripe e
+  niente modifiche agli accrediti, tranne la nota (`internal.account_transfers_before_write`,
+  `AUTOMATIC_TRANSFER`).
+- **Edge function:** `stripe-webhook` gestisce `payout.paid`, `payout.failed`, `payout.canceled`,
+  `payout.updated` (`reconcilePayout` in `_shared/stripe.ts`); **`stripe-reconcile`** (solo Finanze,
+  la chiama il gestionale aprendo le Finanze) rilegge gli accrediti dall'inizio della contabilità e
+  confronta il conto Stripe del registro con il saldo vero (disponibile + in arrivo + accrediti in
+  viaggio), più `payouts_enabled` e il calendario degli accrediti. `scripts/stripe-setup.mjs` ha gli
+  eventi `payout.*` e `--update-events` per aggiungerli all'endpoint esistente senza cambiarne il
+  segreto. Dettagli in [STRIPE_SETUP.md](STRIPE_SETUP.md).
+- **Rendiconto:** invariato; il saldo di Stripe a fine anno sta nei «Depositi bancari e postali»
+  (lo somma il gestionale).
+- Test: `supabase/tests/stripe_conto.test.sql` (32), `finanze.test.sql` aggiornato (carta su Stripe),
+  `verify-access` (+3), scenari `scripts/stripe-local/run-scenarios-payouts.mjs` (21).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -601,7 +630,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.14**
+Current: **v0.3.15**
 
 Consumers reference via git tag:
 ```json

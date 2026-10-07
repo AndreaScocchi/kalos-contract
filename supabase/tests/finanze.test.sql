@@ -7,7 +7,7 @@
 -- database vuoto.
 
 BEGIN;
-SELECT plan(71);
+SELECT plan(72);
 
 -- ── Persone ──────────────────────────────────────────────────────────────────
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
@@ -144,8 +144,8 @@ SELECT is(
      FROM public.finance_income_lines('2026-09-01', '2026-09-30') l
     WHERE l.transaction_id IN ('aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-000000000002',
                                'aa000000-0000-0000-0000-000000000004')),
-  'true/cash, false/bank, false/bank',
-  'stato di sociə alla data e conto: contanti in cassa, bonifico e carta in banca'
+  'true/cash, false/bank, false/stripe',
+  'stato di sociə alla data e conto: contanti in cassa, bonifico in banca, carta su Stripe'
 );
 
 SELECT is(
@@ -556,8 +556,9 @@ INSERT INTO public.account_transfers (occurred_on, from_account, to_account, amo
 VALUES ('2026-09-14', 'cash', 'bank', 2000, 'S7 versamento');
 
 -- Movimenti del test fino al 30/09: in cassa 10 + 25 − 1 + 8 (entrate) − 12 (materiali) − 20
--- (versamento) − 4 (rimborso) = 6 €; in banca 20 + 50 − 5 + 15 + 100 (entrate) − 1,50
--- (commissione) + 20 (versamento) = 198,50 €. I compensi sono pagati in ottobre.
+-- (versamento) − 4 (rimborso) = 6 €; in banca 20 − 5 + 15 + 100 (entrate) + 20 (versamento) =
+-- 150 €; su Stripe la donazione con carta meno la commissione, 50 − 1,50 = 48,50 € (v0.3.15: Stripe è
+-- un conto finché non accredita). I compensi sono pagati in ottobre.
 SELECT is(
   (SELECT (public.finance_account_balances('2026-09-30')->>'cash_cents')::bigint
           - ((b->>'cash_cents')::bigint - oc + 10000) FROM s7_base),
@@ -566,7 +567,12 @@ SELECT is(
 SELECT is(
   (SELECT (public.finance_account_balances('2026-09-30')->>'bank_cents')::bigint
           - ((b->>'bank_cents')::bigint - ob + 50000) FROM s7_base),
-  19850::bigint, 'saldo di banca: bonifici, carta e versamento, meno la commissione di Stripe');
+  15000::bigint, 'saldo di banca: bonifici e versamento; la carta resta su Stripe fino all''accredito');
+
+SELECT is(
+  (SELECT (public.finance_account_balances('2026-09-30')->>'stripe_cents')::bigint
+          - (COALESCE((b->>'stripe_cents')::bigint, 0) + 4850) FROM s7_base),
+  0::bigint, 'saldo di Stripe: il pagamento con carta meno la commissione');
 
 SELECT is(
   (SELECT r->>'cash_cents' || '|' || (r->>'bank_cents') || '|' || (r->>'before_ledger')

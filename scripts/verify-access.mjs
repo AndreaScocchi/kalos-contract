@@ -200,6 +200,8 @@ async function anonChecks() {
   await expectRpcDenied(anon, 'finance_income_lines', { p_from: '1900-01-01', p_to: '1900-01-31' });
   await expectRpcDenied(anon, 'finance_income_allocations', { p_from: '1900-01-01', p_to: '1900-01-31' });
   await expectRpcDenied(anon, 'finance_account_balances', { p_at: '1900-01-01' });
+  // v0.3.15: un id che Stripe non darebbe mai (deve iniziare con po_): anche se fosse aperta, non scriverebbe
+  await expectRpcDenied(anon, 'stripe_apply_payout_state', { p_payout: { id: 'verifica' } });
   await expectRpcDenied(anon, 'staff_pay_compensation', { p_operator_id: ZERO_UUID, p_month_start: '1900-01-01' });
   await expectRpcNotExposed(anon, 'income_voce', { p_kind: 'donation', p_is_commercial: false, p_is_member: false });
   // Sessione 9: acquisti dall'app (id inesistenti: anche se fossero aperte, non troverebbero nulla)
@@ -618,6 +620,12 @@ async function localChecks() {
   const transfer = await insert(tesoriere, 'account_transfers',
     { occurred_on: today, from_account: 'cash', to_account: 'bank', amount_cents: 100, note: 'verifica' });
   check('Tesoriere: registra un giroconto fra cassa e banca', transfer.status === 201, describe(transfer));
+  // v0.3.15: il conto Stripe si muove solo con i pagamenti e gli accrediti
+  const stripeTransfer = await insert(tesoriere, 'account_transfers',
+    { occurred_on: today, from_account: 'stripe', to_account: 'bank', amount_cents: 100, note: 'verifica' });
+  check('Tesoriere: un giroconto da Stripe non si scrive a mano (lo scrivono gli accrediti)',
+    stripeTransfer.status >= 400 && (stripeTransfer.text || '').includes('AUTOMATIC_TRANSFER'), describe(stripeTransfer));
+  await expectRpcDenied(tesoriere, 'stripe_apply_payout_state', { p_payout: { id: 'po_verifica' } });
   const tesModel = await expectRpcOk(tesoriere, 'staff_save_compensation_model', {
     p_payload: { name: `Modello Tesoriere ${stamp}`, components: [{ kind: 'fixed_per_lesson', value_cents: 2000 }] },
   });

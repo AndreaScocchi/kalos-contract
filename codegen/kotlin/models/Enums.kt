@@ -80,6 +80,7 @@ enum class CampaignType {
 enum class CashAccount {
     @SerialName("cash") CASH,
     @SerialName("bank") BANK,
+    @SerialName("stripe") STRIPE,
 }
 
 @Serializable

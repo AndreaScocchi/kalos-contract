@@ -16,4 +16,5 @@ data class AccountTransfer(
     @SerialName("created_by") val createdBy: String? = null,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String,
+    @SerialName("stripe_payout_id") val stripePayoutId: String? = null,
 )

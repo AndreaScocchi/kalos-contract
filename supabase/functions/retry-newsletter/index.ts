@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { unsubscribeToken } from '../_shared/unsubscribe.ts'
 import { corsHeaders } from '../_shared/cors.ts'
+import { urlImmagineEmail } from '../_shared/fotoEmail.ts'
 import { renderNewsletterContent, personalizeContent, toPlainText, firstName } from '../_shared/newsletterContent.ts'
 import { legalLineHtml } from '../_shared/legal.ts'
 import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, SEND_DELAY_MS, PRIMARY_DEFAULT_FROM_NAME, checkDailyCap } from '../_shared/ses.ts'
@@ -28,19 +29,6 @@ const EMAIL_DELAY_MS = SEND_DELAY_MS
 // Generate unsubscribe token (must match unsubscribe-newsletter function)
 const generateUnsubscribeToken = unsubscribeToken
 
-// Generate public URL for newsletter image (bucket is public, URLs never expire)
-function getImagePublicUrl(imageUrl: string | null): string | null {
-  if (!imageUrl) return null
-
-  // If it's already a full URL, return as-is
-  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-    return imageUrl
-  }
-
-  // Generate public URL from storage bucket
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-  return `${supabaseUrl}/storage/v1/object/public/newsletter/${imageUrl}`
-}
 
 // HTML email template with professional styling (same as send-newsletter)
 function wrapTextInHtml(text: string, unsubscribeUrl: string, imageUrl: string | null = null): string {
@@ -333,7 +321,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     let failedCount = 0
 
     // Generate public URL for newsletter image (only used in promotions mode)
-    const imagePublicUrl = getImagePublicUrl(campaign.image_url)
+    const imagePublicUrl = await urlImmagineEmail(campaign.image_url)
 
     for (let i = 0; i < failedEmails.length; i++) {
       const emailRecord = failedEmails[i]

@@ -88,7 +88,11 @@ enum class CompensationComponentKind {
     @SerialName("fixed_per_hour") FIXED_PER_HOUR,
     @SerialName("per_participant") PER_PARTICIPANT,
     @SerialName("percent_of_revenue") PERCENT_OF_REVENUE,
-    @SerialName("room_fee_percent") ROOM_FEE_PERCENT,
+    @SerialName("cost_percent_of_revenue") COST_PERCENT_OF_REVENUE,
+    @SerialName("percent_of_margin") PERCENT_OF_MARGIN,
+    @SerialName("cost_per_lesson") COST_PER_LESSON,
+    @SerialName("cost_per_hour") COST_PER_HOUR,
+    @SerialName("cost_per_participant") COST_PER_PARTICIPANT,
 }
 
 @Serializable

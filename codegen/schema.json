@@ -67,7 +67,11 @@
       "fixed_per_hour",
       "per_participant",
       "percent_of_revenue",
-      "room_fee_percent"
+      "cost_percent_of_revenue",
+      "percent_of_margin",
+      "cost_per_lesson",
+      "cost_per_hour",
+      "cost_per_participant"
     ],
     "compensation_entry_status": [
       "pending",
@@ -2980,6 +2984,15 @@
           "isArray": false,
           "nullable": false,
           "hasDefault": true
+        },
+        {
+          "name": "max_per_lesson_cents",
+          "dataType": "integer",
+          "udtName": "int4",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": true,
+          "hasDefault": false
         }
       ]
     },

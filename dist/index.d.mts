@@ -41,6 +41,7 @@ type Database = {
                     id: string;
                     note: string | null;
                     occurred_on: string;
+                    stripe_payout_id: string | null;
                     to_account: Database["public"]["Enums"]["cash_account"];
                     updated_at: string;
                 };
@@ -52,6 +53,7 @@ type Database = {
                     id?: string;
                     note?: string | null;
                     occurred_on?: string;
+                    stripe_payout_id?: string | null;
                     to_account: Database["public"]["Enums"]["cash_account"];
                     updated_at?: string;
                 };
@@ -63,6 +65,7 @@ type Database = {
                     id?: string;
                     note?: string | null;
                     occurred_on?: string;
+                    stripe_payout_id?: string | null;
                     to_account?: Database["public"]["Enums"]["cash_account"];
                     updated_at?: string;
                 };
@@ -6296,6 +6299,12 @@ type Database = {
                 };
                 Returns: Json;
             };
+            stripe_apply_payout_state: {
+                Args: {
+                    p_payout: Json;
+                };
+                Returns: Json;
+            };
             stripe_checkout_expired: {
                 Args: {
                     p_checkout_session_id: string;
@@ -6376,7 +6385,7 @@ type Database = {
             campaign_content_type: "brief" | "push_notification" | "newsletter" | "instagram_post" | "instagram_story" | "instagram_reel" | "instagram_carousel" | "facebook_post";
             campaign_tone: "formale" | "amichevole" | "urgente" | "entusiasta" | "professionale" | "empatico" | "diretto" | "esclusivo";
             campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo";
-            cash_account: "cash" | "bank";
+            cash_account: "cash" | "bank" | "stripe";
             compensation_component_kind: "fixed_per_lesson" | "fixed_per_hour" | "per_participant" | "percent_of_revenue" | "cost_percent_of_revenue" | "percent_of_margin" | "cost_per_lesson" | "cost_per_hour" | "cost_per_participant";
             compensation_entry_status: "pending" | "approved" | "paid";
             content_status: "pending" | "generated" | "edited" | "scheduled" | "sent" | "published" | "failed" | "skipped";

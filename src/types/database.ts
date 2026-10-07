@@ -43,6 +43,7 @@ export type Database = {
           id: string
           note: string | null
           occurred_on: string
+          stripe_payout_id: string | null
           to_account: Database["public"]["Enums"]["cash_account"]
           updated_at: string
         }
@@ -54,6 +55,7 @@ export type Database = {
           id?: string
           note?: string | null
           occurred_on?: string
+          stripe_payout_id?: string | null
           to_account: Database["public"]["Enums"]["cash_account"]
           updated_at?: string
         }
@@ -65,6 +67,7 @@ export type Database = {
           id?: string
           note?: string | null
           occurred_on?: string
+          stripe_payout_id?: string | null
           to_account?: Database["public"]["Enums"]["cash_account"]
           updated_at?: string
         }
@@ -6055,6 +6058,7 @@ export type Database = {
         Returns: Json
       }
       stripe_apply_payment_state: { Args: { p_payload: Json }; Returns: Json }
+      stripe_apply_payout_state: { Args: { p_payout: Json }; Returns: Json }
       stripe_checkout_expired: {
         Args: { p_checkout_session_id: string }
         Returns: Json
@@ -6142,7 +6146,7 @@ export type Database = {
         | "diretto"
         | "esclusivo"
       campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo"
-      cash_account: "cash" | "bank"
+      cash_account: "cash" | "bank" | "stripe"
       compensation_component_kind:
         | "fixed_per_lesson"
         | "fixed_per_hour"
@@ -6463,7 +6467,7 @@ export const Constants = {
         "esclusivo",
       ],
       campaign_type: ["promo", "evento", "annuncio", "corso_nuovo"],
-      cash_account: ["cash", "bank"],
+      cash_account: ["cash", "bank", "stripe"],
       compensation_component_kind: [
         "fixed_per_lesson",
         "fixed_per_hour",

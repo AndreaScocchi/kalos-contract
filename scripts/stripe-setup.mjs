@@ -5,6 +5,7 @@
  * scrive il file dei secret per `supabase secrets set --env-file`.
  *
  *   node scripts/stripe-setup.mjs --key-file <file> [--out <file>] [--check-only] [--replace-webhook]
+ *   node scripts/stripe-setup.mjs --key-file <file> --update-events
  *
  * --key-file         file con la sola chiave segreta (sk_… o rk_…, test o live). Non si passa mai
  *                    come argomento: finirebbe nella cronologia della shell.
@@ -13,6 +14,8 @@
  * --check-only       solo i controlli: nessun endpoint creato, nessun file scritto.
  * --replace-webhook  se l'endpoint esiste già lo cancella e lo ricrea: il suo segreto non si può
  *                    rileggere, quindi è l'unico modo di averlo senza la dashboard.
+ * --update-events    aggiunge all'endpoint esistente gli eventi che mancano (per esempio i `payout.*`
+ *                    della v0.3.15). Il segreto non cambia: nessun secret da aggiornare.
  *
  * La chiave e il segreto del webhook non vengono mai stampati.
  */
@@ -36,6 +39,11 @@ const EVENTS = [
   'charge.dispute.created',
   'charge.dispute.updated',
   'charge.dispute.closed',
+  // Accrediti sul conto (v0.3.15): diventano giroconti Stripe → banca
+  'payout.paid',
+  'payout.failed',
+  'payout.canceled',
+  'payout.updated',
 ]
 const CHECKOUT_ALLOWED_ORIGINS = 'https://kalosstudio.it,https://www.kalosstudio.it'
 const DESCRIPTOR = 'STUDIO KALOS APS'
@@ -54,9 +62,10 @@ const keyFile = opt('--key-file')
 const outFile = opt('--out')
 const checkOnly = flag('--check-only')
 const replaceWebhook = flag('--replace-webhook')
+const updateEvents = flag('--update-events')
 
-if (!keyFile || (!checkOnly && !outFile)) {
-  console.error('Uso: node scripts/stripe-setup.mjs --key-file <file> (--out <file> | --check-only) [--replace-webhook]')
+if (!keyFile || (!checkOnly && !updateEvents && !outFile)) {
+  console.error('Uso: node scripts/stripe-setup.mjs --key-file <file> (--out <file> | --check-only | --update-events) [--replace-webhook]')
   process.exit(1)
 }
 
@@ -157,6 +166,24 @@ for (const e of ours) {
 
 if (checkOnly) {
   console.log(problems.length ? `\n${problems.length} cose da sistemare.` : '\nTutto a posto.')
+  process.exit(0)
+}
+
+if (updateEvents) {
+  if (ours.length !== 1) {
+    console.error(`\n❌ Serve esattamente un endpoint ${ENDPOINT_URL}, ce ne sono ${ours.length}: usa --out (e --replace-webhook).`)
+    process.exit(1)
+  }
+  const [endpoint] = ours
+  const missing = EVENTS.filter((ev) => !endpoint.enabled_events.includes(ev) && !endpoint.enabled_events.includes('*'))
+  if (!missing.length) {
+    ok('eventi già completi: niente da cambiare')
+    process.exit(0)
+  }
+  // Si tengono anche gli eventi in più che l'endpoint avesse già: si aggiunge soltanto
+  const events = [...new Set([...endpoint.enabled_events, ...EVENTS])]
+  const updated = await stripe('POST', `webhook_endpoints/${endpoint.id}`, { enabled_events: events })
+  ok(`aggiornato ${updated.id}: aggiunti ${missing.join(', ')} (${updated.enabled_events.length} eventi, segreto invariato)`)
   process.exit(0)
 }
 

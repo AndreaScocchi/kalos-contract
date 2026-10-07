@@ -2,7 +2,8 @@
 /**
  * Finto server Stripe, SOLO per le prove in locale (sessione 5).
  *
- * Risponde alle poche chiamate che fanno le edge function (Checkout, PaymentIntent, rimborsi) con
+ * Risponde alle poche chiamate che fanno le edge function (Checkout, PaymentIntent, rimborsi, e dalla
+ * v0.3.15 accrediti, saldo e account per `stripe-reconcile`) con
  * oggetti nella forma di Stripe, tenendo tutto in memoria. Le function lo usano quando
  * STRIPE_API_BASE punta qui, cosa che `_shared/stripe.ts` accetta solo con il Supabase locale e una
  * chiave di prova. Così si prova il giro completo (checkout → pagamento → webhook → registro →
@@ -25,7 +26,9 @@ const state = {
   paymentIntents: new Map(),
   charges: new Map(),
   refunds: new Map(),
+  payouts: new Map(),
   idempotency: new Map(),
+  payoutsEnabled: true,
 }
 
 const id = (prefix) => `${prefix}_test_${randomBytes(9).toString('hex')}`
@@ -121,6 +124,48 @@ function createRefund({ payment_intent: piId, amount, metadata = {}, reason = nu
   return refund
 }
 
+/**
+ * Un accredito sul conto (v0.3.15): nuovo con `amount`, oppure cambia stato o data di uno esistente
+ * (`id`). `arrival_date` in AAAA-MM-GG, come la mezzanotte UTC che usa Stripe.
+ */
+function upsertPayout({ id: payoutId, amount, status = 'in_transit', arrival_date: arrival }) {
+  const toUnix = (day) => Math.floor(Date.parse(`${day}T00:00:00Z`) / 1000)
+  const existing = payoutId ? state.payouts.get(payoutId) : null
+  if (payoutId && !existing) throw new Error(`accredito ${payoutId} inesistente`)
+  const payout = existing ?? {
+    id: id('po'), object: 'payout', amount: Number(amount), currency: 'eur', livemode: false, created: now(),
+    arrival_date: now(), method: 'standard', type: 'bank_account', automatic: true,
+  }
+  payout.status = status
+  if (arrival) payout.arrival_date = toUnix(arrival)
+  state.payouts.set(payout.id, payout)
+  return payout
+}
+
+/**
+ * Il saldo: pagamenti netti meno rimborsi e accrediti partiti (quelli falliti o annullati tornano).
+ * Tutto «disponibile», tranne i pagamenti di cui non si conosce ancora la commissione: «in arrivo».
+ */
+function balanceView() {
+  let available = 0
+  let pending = 0
+  for (const charge of state.charges.values()) {
+    if (charge.fee_cents == null) pending += charge.amount
+    else available += charge.amount - charge.fee_cents
+  }
+  for (const refund of state.refunds.values()) {
+    if (!['failed', 'canceled'].includes(refund.status)) available -= refund.amount
+  }
+  for (const payout of state.payouts.values()) {
+    if (!['failed', 'canceled'].includes(payout.status)) available -= payout.amount
+  }
+  return {
+    object: 'balance', livemode: false,
+    available: [{ amount: available, currency: 'eur' }],
+    pending: [{ amount: pending, currency: 'eur' }],
+  }
+}
+
 // ── Server ───────────────────────────────────────────────────────────────────────────────────
 
 const server = http.createServer(async (req, res) => {
@@ -187,7 +232,34 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { object: 'list', data, has_more: false, url: '/v1/refunds' })
     }
 
+    // GET /v1/payouts?created[gte]=…  —  GET /v1/payouts/:id
+    if (req.method === 'GET' && parts[0] === 'v1' && parts[1] === 'payouts') {
+      if (parts[2]) {
+        const payout = state.payouts.get(parts[2])
+        if (!payout) return stripeError(res, 404, `No such payout: '${parts[2]}'`)
+        return send(res, 200, payout)
+      }
+      const gte = Number(url.searchParams.get('created[gte]') ?? 0)
+      const data = [...state.payouts.values()].filter((p) => p.created >= gte).reverse()
+      return send(res, 200, { object: 'list', data, has_more: false, url: '/v1/payouts' })
+    }
+
+    // GET /v1/balance  —  GET /v1/account
+    if (req.method === 'GET' && url.pathname === '/v1/balance') return send(res, 200, balanceView())
+    if (req.method === 'GET' && url.pathname === '/v1/account') {
+      return send(res, 200, {
+        id: 'acct_test_locale', object: 'account', country: 'IT', default_currency: 'eur',
+        charges_enabled: true, payouts_enabled: state.payoutsEnabled,
+        settings: { payouts: { schedule: { interval: 'daily', delay_days: 7 } } },
+      })
+    }
+
     // ── Controllo, per il driver ──
+    if (url.pathname === '/_control/payout') return send(res, 200, upsertPayout(body))
+    if (url.pathname === '/_control/payouts-enabled') {
+      state.payoutsEnabled = !!body.enabled
+      return send(res, 200, { payouts_enabled: state.payoutsEnabled })
+    }
     if (url.pathname === '/_control/pay') return send(res, 200, pay(body.session_id, body))
     if (url.pathname === '/_control/fee') {
       const charge = state.charges.get(body.charge_id)
@@ -202,7 +274,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === '/_control/object') {
       const kind = body.kind
-      const map = { session: state.sessions, payment_intent: state.paymentIntents, charge: state.charges, refund: state.refunds }[kind]
+      const map = { session: state.sessions, payment_intent: state.paymentIntents, charge: state.charges, refund: state.refunds, payout: state.payouts }[kind]
       const object = map?.get(body.id)
       if (!object) return send(res, 404, { error: 'not found' })
       return send(res, 200, kind === 'payment_intent' ? paymentIntentView(object) : kind === 'charge' ? chargeView(object.id) : object)

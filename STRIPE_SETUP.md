@@ -39,6 +39,15 @@ sito ──► stripe-checkout ──► Stripe Checkout (pagina di Stripe) ─�
   registrato. Stripe non restituisce la commissione: l'uscita resta.
 - **Contestazioni (chargeback):** nessuna scrittura automatica; ops-health manda l'avviso e le si
   gestisce dalla dashboard di Stripe.
+- **Stripe è un conto (v0.3.15):** un pagamento con carta e la sua commissione stanno sul conto
+  **Stripe** delle Finanze, non in banca, finché Stripe non li accredita sul conto corrente. Ogni
+  accredito (payout) diventa un giroconto Stripe → banca nel giorno di arrivo, scritto solo da
+  `stripe_apply_payout_state` dopo aver riletto l'accredito da Stripe: dal webhook (eventi `payout.*`)
+  e dall'edge function **`stripe-reconcile`**, che il gestionale chiama aprendo le Finanze (al massimo
+  ogni 5 minuti, solo admin e Tesoriere). `stripe-reconcile` confronta anche il conto Stripe del
+  registro con il saldo vero (disponibile + in arrivo + accrediti in viaggio): così «In banca» torna
+  con l'estratto conto e «Su Stripe» con la dashboard. Un accredito fallito o annullato toglie il
+  giroconto. Accrediti di prova mai nel registro vero (stessa regola dei pagamenti).
 
 ### 1bis. Acquisti dall'app (sessione 9)
 
@@ -134,7 +143,16 @@ refund.failed
 charge.dispute.created
 charge.dispute.updated
 charge.dispute.closed
+payout.paid
+payout.failed
+payout.canceled
+payout.updated
 ```
+
+I quattro `payout.*` servono dalla v0.3.15 (accrediti sul conto). Senza, gli accrediti entrano lo
+stesso nel registro quando si aprono le Finanze (`stripe-reconcile`), solo più tardi. Per aggiungerli
+a un endpoint che esiste già, senza cambiarne il segreto: dashboard (Sviluppatori → Webhook →
+l'endpoint → Modifica eventi) oppure `node scripts/stripe-setup.mjs --key-file <file> --update-events`.
 
 Dalla dashboard (Sviluppatori → Webhook → Aggiungi destinazione, scegliendo la versione dell'API),
 oppure col CLI collegato all'account dell'APS (`--live` crea l'endpoint in modalità live; senza, in
@@ -148,7 +166,8 @@ stripe webhook_endpoints create --live \
   -d "enabled_events[]=checkout.session.async_payment_succeeded" -d "enabled_events[]=checkout.session.async_payment_failed" \
   -d "enabled_events[]=charge.updated" -d "enabled_events[]=charge.refunded" \
   -d "enabled_events[]=refund.created" -d "enabled_events[]=refund.updated" -d "enabled_events[]=refund.failed" \
-  -d "enabled_events[]=charge.dispute.created" -d "enabled_events[]=charge.dispute.updated" -d "enabled_events[]=charge.dispute.closed"
+  -d "enabled_events[]=charge.dispute.created" -d "enabled_events[]=charge.dispute.updated" -d "enabled_events[]=charge.dispute.closed" \
+  -d "enabled_events[]=payout.paid" -d "enabled_events[]=payout.failed" -d "enabled_events[]=payout.canceled" -d "enabled_events[]=payout.updated"
 ```
 
 **Con lo script, senza dashboard** (30/09): `scripts/stripe-setup.mjs` fa i controlli dell'account
@@ -242,7 +261,12 @@ node scripts/stripe-local/run-scenarios.mjs          # la prima volta scrive l'e
 npx supabase functions serve --env-file scripts/stripe-local/.env.functions.local &
 node scripts/stripe-local/run-scenarios.mjs          # 44 controlli (sessione 5: sito)
 node scripts/stripe-local/run-scenarios-app.mjs      # 31 controlli (sessione 9: acquisti dall'app)
+node scripts/stripe-local/run-scenarios-payouts.mjs  # 21 controlli (v0.3.15: conto Stripe e accrediti)
 ```
+
+Il finto Stripe ascolta sulla 12111; se è occupata (un altro progetto con `stripe-mock` usa 12111 e
+12112) si avvia con `FAKE_STRIPE_PORT=<porta>`, si cambia la porta in `STRIPE_API_BASE` dell'env
+delle function e si lanciano gli scenari con `FAKE_STRIPE_URL=http://localhost:<porta>`.
 
 Le utilità comuni stanno in `lib.mjs`, che aggiunge `APP_RETURN_ORIGINS` all'env delle function se
 manca (poi va rilanciato `functions serve`).

@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { unsubscribeToken } from '../_shared/unsubscribe.ts'
 import { corsHeaders } from '../_shared/cors.ts'
+import { urlImmagineEmail } from '../_shared/fotoEmail.ts'
 import { renderNewsletterContent, personalizeContent, toPlainText, firstName } from '../_shared/newsletterContent.ts'
 import { legalLineHtml, legalLine } from '../_shared/legal.ts'
 import { sendEmail, replaceTemplateVariables, getReplyToEmail, buildBulkHeaders, buildPrimaryHeaders, buildFromAddress, delay, SEND_DELAY_MS, PRIMARY_DEFAULT_FROM_NAME, checkDailyCap } from '../_shared/ses.ts'
@@ -116,19 +117,6 @@ function isWebPushSubscription(token: string): WebPushSubscription | null {
 // Generate unsubscribe token (must match unsubscribe-newsletter function)
 const generateUnsubscribeToken = unsubscribeToken
 
-// Generate public URL for newsletter image (bucket is public, URLs never expire)
-function getImagePublicUrl(imageUrl: string | null): string | null {
-  if (!imageUrl) return null
-
-  // If it's already a full URL, return as-is
-  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-    return imageUrl
-  }
-
-  // Generate public URL from storage bucket
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-  return `${supabaseUrl}/storage/v1/object/public/newsletter/${imageUrl}`
-}
 
 // Generate preview text padding to hide other content from email preview
 function generatePreviewPadding(): string {
@@ -472,7 +460,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (!body.skipAtomicityCheck && !body.testClientId && testEmail) {
       console.log('Running atomicity pre-flight check...')
 
-      const imagePublicUrl = getImagePublicUrl(campaign.image_url)
+      const imagePublicUrl = await urlImmagineEmail(campaign.image_url)
 
       // Prepare test email content
       const testPersonalizedText = personalizeContent(campaign.content, {
@@ -689,7 +677,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     let failedCount = 0
 
     // Generate public URL for newsletter image (if present; only used in promotions mode)
-    const imagePublicUrl = getImagePublicUrl(campaign.image_url)
+    const imagePublicUrl = await urlImmagineEmail(campaign.image_url)
 
     for (let i = 0; i < pendingEmails.length; i++) {
       const emailRecord = pendingEmails[i]

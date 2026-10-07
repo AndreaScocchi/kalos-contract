@@ -581,6 +581,17 @@ Stripe non li accredita sul conto: «In banca» del gestionale non tornava con l
 La registrazione dei dispositivi passa dall'edge function `register-push-token` (push web: il testo
 JSON dell'iscrizione; app: `ExponentPushToken[…]`).
 
+## Foto nello storage (07/10/2026, nessun tag)
+
+Le foto si comprimono nel gestionale, nel browser di chi le carica. Accanto a ogni originale, che è al
+massimo 2400×3600 px, il gestionale salva le versioni ridotte in `varianti/<percorso>/w480|w960|w1600|w2400`
+(WebP) e `jpeg1200`. Sito, app e newsletter leggono queste versioni; se una manca, ripiegano
+sull'originale. Regole, qualità e motivi in **[supabase/storage/FOTO.md](supabase/storage/FOTO.md)**.
+
+- **Non usare il ridimensionamento di Supabase (`render/image`):** il piano gratuito non lo include.
+- **Newsletter:** `send-newsletter` e `retry-newsletter` mettono nell'email la versione `jpeg1200`
+  (`_shared/fotoEmail.ts`, che controlla con HEAD che esista).
+
 ## Row-Level Security e permessi
 
 Modello completo e regole per funzioni, tabelle e view nuove: **[ACCESS_MODEL.md](ACCESS_MODEL.md)**.
@@ -660,6 +671,7 @@ dist/
 - [ACCESS_MODEL.md](ACCESS_MODEL.md) - Chi può leggere, scrivere ed eseguire cosa; regole per funzioni/tabelle/view nuove
 - [BACKUP.md](BACKUP.md) - Backup notturno cifrato su S3 (UE), avvisi email, procedura di ripristino
 - [STRIPE_SETUP.md](STRIPE_SETUP.md) - Pagamenti online: account, webhook, secret, go-live, prove in locale
+- [supabase/storage/FOTO.md](supabase/storage/FOTO.md) - Foto: compressione nel gestionale, versioni ridotte, chi le legge
 
 ## Important Rules
 

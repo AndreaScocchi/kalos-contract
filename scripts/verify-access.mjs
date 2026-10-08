@@ -557,7 +557,7 @@ async function localChecks() {
   await expectRpcNotExposed(cliente, 'stripe_record_income', { p_stripe_payment_id: ZERO_UUID, p_paid_at: iso(new Date()), p_currency: 'EUR' });
 
   // Sessione 10 — le proprie ricevute: quella di un'altra scheda non compare e non si scarica, e la
-  // tabella resta chiusa (le note dello staff stanno sull'incasso). La Bussola è dei soci.
+  // tabella resta chiusa (le note dello staff stanno sull'incasso).
   const [otherPaid] = sql(`insert into public.transactions (client_id, kind, amount_cents, method, source, status, description, note)
     values ('${newClient.json?.[0]?.id}', 'donation', 1500, 'cash', 'studio', 'paid', 'Verifica ricevuta ${stamp}', 'nota interna') returning id`);
   const [otherReceipt] = sql(`select internal.issue_receipt_core('${otherPaid?.id}', 'Verifica ${stamp}', null)->>'receipt_id' as id`);
@@ -569,9 +569,6 @@ async function localChecks() {
   check('cliente: non legge la ricevuta di un\'altra persona',
     otherReceiptData.status === 200 && otherReceiptData.json?.reason === 'RECEIPT_NOT_FOUND', describe(otherReceiptData));
   await expectRowsHidden(cliente, 'receipts');
-  const bussola = await rpc(cliente, 'request_bussola', {});
-  check('cliente non sociə: la Bussola si chiede da sociə',
-    bussola.status === 200 && bussola.json?.reason === 'NOT_A_MEMBER', describe(bussola));
 
   // Sessione 11 — i propri dati arrivano anche alla scheda dello staff; privacy e termini con l'ora
   // del server; l'eliminazione dell'account non si chiama dall'API (solo l'edge function, col service role)

@@ -634,74 +634,6 @@ export type Database = {
           },
         ]
       }
-      bussola_requests: {
-        Row: {
-          client_id: string
-          created_at: string
-          handled_by: string | null
-          id: string
-          lesson_id: string | null
-          metadata: Json | null
-          note: string | null
-          preferred_at: string | null
-          status: Database["public"]["Enums"]["bussola_request_status"]
-          updated_at: string
-        }
-        Insert: {
-          client_id: string
-          created_at?: string
-          handled_by?: string | null
-          id?: string
-          lesson_id?: string | null
-          metadata?: Json | null
-          note?: string | null
-          preferred_at?: string | null
-          status?: Database["public"]["Enums"]["bussola_request_status"]
-          updated_at?: string
-        }
-        Update: {
-          client_id?: string
-          created_at?: string
-          handled_by?: string | null
-          id?: string
-          lesson_id?: string | null
-          metadata?: Json | null
-          note?: string | null
-          preferred_at?: string | null
-          status?: Database["public"]["Enums"]["bussola_request_status"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bussola_requests_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bussola_requests_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lesson_occupancy"
-            referencedColumns: ["lesson_id"]
-          },
-          {
-            foreignKeyName: "bussola_requests_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "lessons"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bussola_requests_lesson_id_fkey"
-            columns: ["lesson_id"]
-            isOneToOne: false
-            referencedRelation: "public_site_schedule"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       campaign_analytics: {
         Row: {
           campaign_id: string
@@ -5700,7 +5632,6 @@ export type Database = {
       }
       can_access_finance: { Args: never; Returns: boolean }
       cancel_booking: { Args: { p_booking_id: string }; Returns: Json }
-      cancel_bussola_request: { Args: { p_request_id: string }; Returns: Json }
       cancel_event_booking: { Args: { p_booking_id: string }; Returns: Json }
       cancel_membership: { Args: { p_membership_id: string }; Returns: Json }
       confirm_expense: {
@@ -5886,10 +5817,6 @@ export type Database = {
       receipt_mark_sent: {
         Args: { p_error?: string; p_receipt_id: string; p_to: string }
         Returns: undefined
-      }
-      request_bussola: {
-        Args: { p_note?: string; p_preferred_at?: string }
-        Returns: Json
       }
       set_my_newsletter_subscription: {
         Args: { p_subscribed: boolean }
@@ -6129,11 +6056,6 @@ export type Database = {
         | "monthly"
       booking_status: "booked" | "canceled" | "attended" | "no_show"
       bug_status: "open" | "in_progress" | "resolved" | "closed"
-      bussola_request_status:
-        | "pending"
-        | "scheduled"
-        | "completed"
-        | "cancelled"
       campaign_content_type:
         | "brief"
         | "push_notification"
@@ -6258,7 +6180,6 @@ export type Database = {
       pass_benefit_type:
         | "subscription_discount"
         | "event_discount"
-        | "bussola"
         | "community_access"
         | "priority_booking"
         | "other"
@@ -6447,12 +6368,6 @@ export const Constants = {
       ],
       booking_status: ["booked", "canceled", "attended", "no_show"],
       bug_status: ["open", "in_progress", "resolved", "closed"],
-      bussola_request_status: [
-        "pending",
-        "scheduled",
-        "completed",
-        "cancelled",
-      ],
       campaign_content_type: [
         "brief",
         "push_notification",
@@ -6590,7 +6505,6 @@ export const Constants = {
       pass_benefit_type: [
         "subscription_discount",
         "event_discount",
-        "bussola",
         "community_access",
         "priority_booking",
         "other",

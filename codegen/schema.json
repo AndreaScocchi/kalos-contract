@@ -26,12 +26,6 @@
       "resolved",
       "closed"
     ],
-    "bussola_request_status": [
-      "pending",
-      "scheduled",
-      "completed",
-      "cancelled"
-    ],
     "campaign_content_type": [
       "brief",
       "push_notification",
@@ -216,7 +210,6 @@
     "pass_benefit_type": [
       "subscription_discount",
       "event_discount",
-      "bussola",
       "community_access",
       "priority_booking",
       "other"
@@ -1531,101 +1524,6 @@
           "isArray": false,
           "nullable": true,
           "hasDefault": false
-        }
-      ]
-    },
-    {
-      "name": "bussola_requests",
-      "columns": [
-        {
-          "name": "id",
-          "dataType": "uuid",
-          "udtName": "uuid",
-          "isEnum": false,
-          "isArray": false,
-          "nullable": false,
-          "hasDefault": true
-        },
-        {
-          "name": "client_id",
-          "dataType": "uuid",
-          "udtName": "uuid",
-          "isEnum": false,
-          "isArray": false,
-          "nullable": false,
-          "hasDefault": false
-        },
-        {
-          "name": "status",
-          "dataType": "bussola_request_status",
-          "udtName": "bussola_request_status",
-          "isEnum": true,
-          "isArray": false,
-          "nullable": false,
-          "hasDefault": true
-        },
-        {
-          "name": "preferred_at",
-          "dataType": "timestamp with time zone",
-          "udtName": "timestamptz",
-          "isEnum": false,
-          "isArray": false,
-          "nullable": true,
-          "hasDefault": false
-        },
-        {
-          "name": "note",
-          "dataType": "text",
-          "udtName": "text",
-          "isEnum": false,
-          "isArray": false,
-          "nullable": true,
-          "hasDefault": false
-        },
-        {
-          "name": "lesson_id",
-          "dataType": "uuid",
-          "udtName": "uuid",
-          "isEnum": false,
-          "isArray": false,
-          "nullable": true,
-          "hasDefault": false
-        },
-        {
-          "name": "handled_by",
-          "dataType": "uuid",
-          "udtName": "uuid",
-          "isEnum": false,
-          "isArray": false,
-          "nullable": true,
-          "hasDefault": false
-        },
-        {
-          "name": "metadata",
-          "dataType": "jsonb",
-          "udtName": "jsonb",
-          "isEnum": false,
-          "isArray": false,
-          "nullable": true,
-          "hasDefault": true
-        },
-        {
-          "name": "created_at",
-          "dataType": "timestamp with time zone",
-          "udtName": "timestamptz",
-          "isEnum": false,
-          "isArray": false,
-          "nullable": false,
-          "hasDefault": true
-        },
-        {
-          "name": "updated_at",
-          "dataType": "timestamp with time zone",
-          "udtName": "timestamptz",
-          "isEnum": false,
-          "isArray": false,
-          "nullable": false,
-          "hasDefault": true
         }
       ]
     },

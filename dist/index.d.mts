@@ -626,74 +626,6 @@ type Database = {
                     }
                 ];
             };
-            bussola_requests: {
-                Row: {
-                    client_id: string;
-                    created_at: string;
-                    handled_by: string | null;
-                    id: string;
-                    lesson_id: string | null;
-                    metadata: Json | null;
-                    note: string | null;
-                    preferred_at: string | null;
-                    status: Database["public"]["Enums"]["bussola_request_status"];
-                    updated_at: string;
-                };
-                Insert: {
-                    client_id: string;
-                    created_at?: string;
-                    handled_by?: string | null;
-                    id?: string;
-                    lesson_id?: string | null;
-                    metadata?: Json | null;
-                    note?: string | null;
-                    preferred_at?: string | null;
-                    status?: Database["public"]["Enums"]["bussola_request_status"];
-                    updated_at?: string;
-                };
-                Update: {
-                    client_id?: string;
-                    created_at?: string;
-                    handled_by?: string | null;
-                    id?: string;
-                    lesson_id?: string | null;
-                    metadata?: Json | null;
-                    note?: string | null;
-                    preferred_at?: string | null;
-                    status?: Database["public"]["Enums"]["bussola_request_status"];
-                    updated_at?: string;
-                };
-                Relationships: [
-                    {
-                        foreignKeyName: "bussola_requests_client_id_fkey";
-                        columns: ["client_id"];
-                        isOneToOne: false;
-                        referencedRelation: "clients";
-                        referencedColumns: ["id"];
-                    },
-                    {
-                        foreignKeyName: "bussola_requests_lesson_id_fkey";
-                        columns: ["lesson_id"];
-                        isOneToOne: false;
-                        referencedRelation: "lesson_occupancy";
-                        referencedColumns: ["lesson_id"];
-                    },
-                    {
-                        foreignKeyName: "bussola_requests_lesson_id_fkey";
-                        columns: ["lesson_id"];
-                        isOneToOne: false;
-                        referencedRelation: "lessons";
-                        referencedColumns: ["id"];
-                    },
-                    {
-                        foreignKeyName: "bussola_requests_lesson_id_fkey";
-                        columns: ["lesson_id"];
-                        isOneToOne: false;
-                        referencedRelation: "public_site_schedule";
-                        referencedColumns: ["id"];
-                    }
-                ];
-            };
             campaign_analytics: {
                 Row: {
                     campaign_id: string;
@@ -5708,12 +5640,6 @@ type Database = {
                 };
                 Returns: Json;
             };
-            cancel_bussola_request: {
-                Args: {
-                    p_request_id: string;
-                };
-                Returns: Json;
-            };
             cancel_event_booking: {
                 Args: {
                     p_booking_id: string;
@@ -6068,13 +5994,6 @@ type Database = {
                 };
                 Returns: undefined;
             };
-            request_bussola: {
-                Args: {
-                    p_note?: string;
-                    p_preferred_at?: string;
-                };
-                Returns: Json;
-            };
             set_my_newsletter_subscription: {
                 Args: {
                     p_subscribed: boolean;
@@ -6390,7 +6309,6 @@ type Database = {
             announcement_recurrence_frequency: "daily" | "weekly" | "biweekly" | "monthly";
             booking_status: "booked" | "canceled" | "attended" | "no_show";
             bug_status: "open" | "in_progress" | "resolved" | "closed";
-            bussola_request_status: "pending" | "scheduled" | "completed" | "cancelled";
             campaign_content_type: "brief" | "push_notification" | "newsletter" | "instagram_post" | "instagram_story" | "instagram_reel" | "instagram_carousel" | "facebook_post";
             campaign_tone: "formale" | "amichevole" | "urgente" | "entusiasta" | "professionale" | "empatico" | "diretto" | "esclusivo";
             campaign_type: "promo" | "evento" | "annuncio" | "corso_nuovo";
@@ -6415,7 +6333,7 @@ type Database = {
             notification_category: "lesson_reminder" | "subscription_expiry" | "entries_low" | "re_engagement" | "first_lesson" | "milestone" | "birthday" | "new_event" | "announcement" | "practice_reminder" | "practice_resume" | "journal_reminder" | "feedback_request" | "waitlist_promotion" | "member_application_decided" | "membership_fee_due" | "trial_followup" | "trial_booked" | "trial_booked_staff" | "lesson_canceled";
             notification_channel: "push" | "email";
             notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
-            pass_benefit_type: "subscription_discount" | "event_discount" | "bussola" | "community_access" | "priority_booking" | "other";
+            pass_benefit_type: "subscription_discount" | "event_discount" | "community_access" | "priority_booking" | "other";
             payment_method: "cash" | "bank_transfer" | "stripe" | "other";
             practice_block_type: "text" | "image" | "audio" | "video";
             practice_category: "meditazione" | "corpo" | "respiro" | "scrittura" | "rilassamento";
@@ -6762,7 +6680,7 @@ declare function queueFeedbackRequest(client: SupabaseClient<Database>, params: 
 /**
  * Tipo di vantaggio del Pass (allineato all'enum DB pass_benefit_type).
  */
-type PassBenefitType = 'subscription_discount' | 'event_discount' | 'bussola' | 'community_access' | 'priority_booking' | 'other';
+type PassBenefitType = 'subscription_discount' | 'event_discount' | 'community_access' | 'priority_booking' | 'other';
 /**
  * Vantaggio del Pass come restituito da get_my_membership.
  */
@@ -6819,35 +6737,11 @@ type AssignMembershipResult = {
     expires_at?: string;
 };
 /**
- * Risultato generico delle RPC di gestione Pass/Bussola con solo esito.
+ * Risultato generico delle RPC di gestione del Pass con solo esito.
  */
 type PassActionResult = {
     ok: boolean;
     reason?: string;
-};
-/**
- * Parametri per requestBussola (cliente tesserato).
- */
-type RequestBussolaParams = {
-    /** Preferenza di data/ora (ISO 8601), opzionale. */
-    preferredAt?: string;
-    /** Cosa vorrebbe affrontare, opzionale. */
-    note?: string;
-};
-/**
- * Risultato della RPC request_bussola.
- */
-type RequestBussolaResult = {
-    ok: boolean;
-    /**
-     * Dalla v0.3.8 (D6, la Bussola è dei soci): 'NOT_A_MEMBER', 'PENDING_ADMISSION' (domanda ancora da
-     * deliberare), 'MEMBERSHIP_FEE_DUE' (quota non versata oltre la data di decadenza), 'NOTE_TOO_LONG'
-     * (oltre 1000 caratteri), 'ALREADY_OPEN'. Prima: 'NO_ACTIVE_PASS' (Community Pass).
-     */
-    reason?: string;
-    request_id?: string;
-    /** Con i rifiuti di iscrizione: lo stato di `internal.member_booking_status`. */
-    member_status?: string;
 };
 /**
  * Wrapper tipizzato per la RPC get_my_membership.
@@ -6880,30 +6774,6 @@ declare function assignMembership(client: SupabaseClient<Database>, params: Assi
  * @throws Error se la chiamata RPC fallisce
  */
 declare function cancelMembership(client: SupabaseClient<Database>, membershipId: string): Promise<PassActionResult>;
-/**
- * Wrapper tipizzato per la RPC request_bussola.
- * Dalla v0.3.8 unə sociə in regola (ammessə, con la quota versata o ancora nei tempi) richiede una
- * consulenza Bussola di 15', anche con "solo soci" spenta. Una sola richiesta aperta per volta; lo
- * staff la trasforma in una lezione individuale.
- *
- * @param client - Il client Supabase autenticato (cliente)
- * @param params - preferredAt?, note?
- * @returns Promise<RequestBussolaResult>
- * @throws Error se la chiamata RPC fallisce
- */
-declare function requestBussola(client: SupabaseClient<Database>, params?: RequestBussolaParams): Promise<RequestBussolaResult>;
-/**
- * Wrapper tipizzato per la RPC cancel_bussola_request.
- * Annulla una richiesta Bussola aperta: lo staff qualsiasi, il cliente solo la propria ancora da
- * fissare (dalla v0.3.8 una fissata risponde 'ALREADY_SCHEDULED'; quella di un'altra persona
- * 'NOT_FOUND').
- *
- * @param client - Il client Supabase autenticato
- * @param requestId - id della richiesta da annullare
- * @returns Promise<PassActionResult>
- * @throws Error se la chiamata RPC fallisce
- */
-declare function cancelBussolaRequest(client: SupabaseClient<Database>, requestId: string): Promise<PassActionResult>;
 /**
  * Stato di una persona rispetto all'iscrizione all'associazione.
  * - `none`               nessuna domanda inviata
@@ -7619,4 +7489,4 @@ type GetEventsWithAvailabilityParams = {
  */
 declare function getEventsWithAvailability(client: SupabaseClient<Database>, params?: GetEventsWithAvailabilityParams): Promise<EventWithAvailability[]>;
 
-export { type AcceptMyLegalDocumentsResult, type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyNotificationsResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetMyReceiptsResult, type GetPublicEventsParams, type GetPublicScheduleParams, type JourneySummaryResult, type JourneyTimelineItem, type JourneyTimelineKind, type JourneyTimelineResult, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type MyNotification, type MyReceipt, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, type RequestBussolaParams, type RequestBussolaResult, RpcError, type SetMyNewsletterSubscriptionResult, type StaffArchiveLessonsResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type StaffSavePlanInput, type StaffSavePlanResult, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type UpdateMyProfileResult, type Views, type WaitlistResult, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelBussolaRequest, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, requestBussola, setMyNewsletterSubscription, staffArchiveLessons, staffBookEvent, staffCancelEventBooking, staffSavePlan, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };
+export { type AcceptMyLegalDocumentsResult, type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyNotificationsResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetMyReceiptsResult, type GetPublicEventsParams, type GetPublicScheduleParams, type JourneySummaryResult, type JourneyTimelineItem, type JourneyTimelineKind, type JourneyTimelineResult, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type MyNotification, type MyReceipt, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, RpcError, type SetMyNewsletterSubscriptionResult, type StaffArchiveLessonsResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type StaffSavePlanInput, type StaffSavePlanResult, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type UpdateMyProfileResult, type Views, type WaitlistResult, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, setMyNewsletterSubscription, staffArchiveLessons, staffBookEvent, staffCancelEventBooking, staffSavePlan, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };

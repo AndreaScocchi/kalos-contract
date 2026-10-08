@@ -48,7 +48,7 @@ Helper usati da policy e RPC: `is_staff()` (operator, admin, finance), `is_admin
 
 Solo RPC che controllano login e ruolo **al loro interno**:
 - **cliente:** prenotazioni (`book_*`, `cancel_*`), percorso e pratica, notifiche, token push,
-  Bussola, feedback;
+  feedback;
 - **staff:** `staff_*`, tessere, campagne, `promote_profile_to_operator` (solo admin),
   `queue_new_event`;
 - **soci:** `submit_member_application`, `get_my_membership_status`, `get_my_member_card`;
@@ -75,8 +75,8 @@ Solo RPC che controllano login e ruolo **al loro interno**:
 - **profilo dell'app (sessione 10):** `get_my_receipts` (elenco delle ricevute degli incassi della
   propria scheda) e `get_my_receipt` (i dati del PDF di una propria ricevuta; una altrui risponde
   `RECEIPT_NOT_FOUND`). `receipts` e `transactions` restano chiuse ai clienti: sull'incasso ci sono le
-  note dello staff. `request_bussola` è dei soci in regola (`internal.member_booking_status` in `ok`
-  o `fee_due_grace`), non più del Community Pass;
+  note dello staff. (La Bussola, `request_bussola` per i soci in regola, è stata tolta nella
+  v0.3.16 con la sua tabella);
 - **notifiche e account (sessione 11):** `update_my_profile` (nome, telefono e compleanno sul
   proprio profilo e sulla propria scheda: la scheda cliente resta chiusa alle scritture dirette) e
   `accept_my_legal_documents` (privacy e termini accettati con l'ora del server). `delete_account_data`

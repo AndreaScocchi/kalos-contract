@@ -159,7 +159,7 @@ npm run verify:migrations   # Check migration integrity
 | `transactions` | Registro degli incassi; i rimborsi sono righe negative |
 | `receipts`, `receipt_sequences` | Ricevute numerate per anno, senza buchi |
 | `expense_categories`, `recurring_expenses` | Categorie modificabili e spese ricorrenti da confermare |
-| `compensation_models`, `compensation_components`, `compensation_tiers`, `compensation_assignments`, `compensation_entries` | Compensi a mattoni (dalla v0.3.14 con le spese della lezione e il tetto a lezione), congelati quando il mese si chiude |
+| `compensation_models`, `compensation_components`, `compensation_tiers`, `compensation_assignments`, `compensation_entries` | Compensi a mattoni (dalla v0.3.14 con le spese della lezione e il tetto a lezione, dalla v0.3.17 con un modello predefinito), congelati quando il mese si chiude |
 | `event_operators` | Chi tiene un evento, per calcolarne il compenso |
 | `activity_groups`, `locations` | Gruppi di attività e luoghi (sito e app) |
 | `trials` | Lezioni di prova: una per attività, sempre gratuite; «convertita» = ha comprato dopo la prova (dalla v0.3.13 non scala ingressi) |
@@ -320,6 +320,7 @@ Contabilità per cassa dell'associazione, dal 19/08/2026, con il rendiconto nell
 | `staff_undo_compensation_payment(p_payment_id)` | Annulla un pagamento sbagliato |
 | `staff_save_compensation_model(p_payload)` | Modello, spese, mattoni, scaglioni e tetti in un colpo solo (`INVALID_MODEL` e niente di scritto se un mattone è sbagliato) |
 | `preview_compensation(p_model_id, p_duration_minutes, p_participants, p_revenue_cents)` | Prova di un modello |
+| `staff_set_default_compensation_model(p_model_id)` | (v0.3.17) Il modello che vale per chi non ha un modello assegnato |
 
 Test: `supabase/tests/finanze.test.sql` (66).
 
@@ -379,8 +380,8 @@ dal primo ingresso) e `…120200` (pagamenti dall'app, eventi, avviso della prov
 
 Migrazione `20260928160000`.
 
-- **La Bussola è dei soci (D6):** `request_bussola` non chiede più il Community Pass (spento dalla
-  sessione 3) ma di essere sociə in regola, cioè poter partecipare (`internal.member_booking_status`
+- **La Bussola è dei soci (D6; tolta del tutto nella v0.3.16):** `request_bussola` non chiede più
+  il Community Pass (spento dalla sessione 3) ma di essere sociə in regola, cioè poter partecipare (`internal.member_booking_status`
   in `ok` o `fee_due_grace`), anche con "solo soci" spenta. Risposte: `NOT_A_MEMBER`,
   `PENDING_ADMISSION`, `MEMBERSHIP_FEE_DUE`, `NOTE_TOO_LONG` (oltre 1000 caratteri), `ALREADY_OPEN`.
   `cancel_bussola_request`: il cliente ritira solo una richiesta ancora da fissare
@@ -561,6 +562,23 @@ Stripe non li accredita sul conto: «In banca» del gestionale non tornava con l
 - Test: `supabase/tests/stripe_conto.test.sql` (32), `finanze.test.sql` aggiornato (carta su Stripe),
   `verify-access` (+3), scenari `scripts/stripe-local/run-scenarios-payouts.mjs` (21).
 
+### v0.3.16 (07/10/2026: via la Bussola)
+
+Migrazione `20261007190000`. Su decisione dell'utente la Bussola (consulenza 1:1 di 15' per i soci,
+chiesta dall'app e fissata dallo staff come lezione individuale) non c'è più, con tutta la sua
+gestione. In produzione non c'era nessuna richiesta.
+
+- **Tolti:** `request_bussola`, `cancel_bussola_request` (e i wrapper `requestBussola`,
+  `cancelBussolaRequest`, `RequestBussolaParams`, `RequestBussolaResult`), la tabella
+  `bussola_requests` e il tipo `bussola_request_status`. `delete_account_data` non annulla più le
+  richieste di Bussola. La migrazione si ferma se trova una richiesta aperta.
+- **Community Pass** (spento, nessuna app lo usa): via il vantaggio «Bussola inclusa» e il valore
+  `bussola` di `pass_benefit_type` (tipo ricreato senza; `PassBenefitType` di conseguenza).
+- Restano «Bussola Interiore» (attività passata, cancellata, con le sue lezioni nello storico) e le
+  «Bussole» del brand (i valori): non c'entrano con la consulenza.
+- Test: `sessione10.test.sql` senza la parte della Bussola (9), `access_model.test.sql` senza le due
+  funzioni, `verify-access` senza il controllo della Bussola.
+
 ### v0.3.17 (08/10/2026: il modello di compenso predefinito)
 
 Migrazione `20261008110000`. Richiesta dell'utente: una ricetta che valga di base senza assegnarla a
@@ -660,7 +678,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.15**
+Current: **v0.3.17**
 
 Consumers reference via git tag:
 ```json

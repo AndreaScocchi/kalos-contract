@@ -227,26 +227,6 @@ async function cancelMembership(client, membershipId) {
   }
   return data;
 }
-async function requestBussola(client, params = {}) {
-  const { preferredAt, note } = params;
-  const { data, error } = await client.rpc("request_bussola", {
-    p_preferred_at: preferredAt,
-    p_note: note
-  });
-  if (error) {
-    handleRpcError(error, "request_bussola");
-  }
-  return data;
-}
-async function cancelBussolaRequest(client, requestId) {
-  const { data, error } = await client.rpc("cancel_bussola_request", {
-    p_request_id: requestId
-  });
-  if (error) {
-    handleRpcError(error, "cancel_bussola_request");
-  }
-  return data;
-}
 async function submitMemberApplication(client, params) {
   const payload = {
     year: params.year,
@@ -637,7 +617,6 @@ exports.bookEvent = bookEvent;
 exports.bookLesson = bookLesson;
 exports.bookTrialLesson = bookTrialLesson;
 exports.cancelBooking = cancelBooking;
-exports.cancelBussolaRequest = cancelBussolaRequest;
 exports.cancelEventBooking = cancelEventBooking;
 exports.cancelMembership = cancelMembership;
 exports.createSupabaseBrowserClient = createSupabaseBrowserClient;
@@ -665,7 +644,6 @@ exports.prepareMyFeePayment = prepareMyFeePayment;
 exports.prepareMyPlanPurchase = prepareMyPlanPurchase;
 exports.prepareMySettlement = prepareMySettlement;
 exports.queueFeedbackRequest = queueFeedbackRequest;
-exports.requestBussola = requestBussola;
 exports.setMyNewsletterSubscription = setMyNewsletterSubscription;
 exports.staffArchiveLessons = staffArchiveLessons;
 exports.staffBookEvent = staffBookEvent;

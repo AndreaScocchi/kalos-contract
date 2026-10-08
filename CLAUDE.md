@@ -379,8 +379,8 @@ dal primo ingresso) e `…120200` (pagamenti dall'app, eventi, avviso della prov
 
 Migrazione `20260928160000`.
 
-- **La Bussola è dei soci (D6):** `request_bussola` non chiede più il Community Pass (spento dalla
-  sessione 3) ma di essere sociə in regola, cioè poter partecipare (`internal.member_booking_status`
+- **La Bussola è dei soci (D6; tolta del tutto nella v0.3.16):** `request_bussola` non chiede più
+  il Community Pass (spento dalla sessione 3) ma di essere sociə in regola, cioè poter partecipare (`internal.member_booking_status`
   in `ok` o `fee_due_grace`), anche con "solo soci" spenta. Risposte: `NOT_A_MEMBER`,
   `PENDING_ADMISSION`, `MEMBERSHIP_FEE_DUE`, `NOTE_TOO_LONG` (oltre 1000 caratteri), `ALREADY_OPEN`.
   `cancel_bussola_request`: il cliente ritira solo una richiesta ancora da fissare
@@ -560,6 +560,23 @@ Stripe non li accredita sul conto: «In banca» del gestionale non tornava con l
   (lo somma il gestionale).
 - Test: `supabase/tests/stripe_conto.test.sql` (32), `finanze.test.sql` aggiornato (carta su Stripe),
   `verify-access` (+3), scenari `scripts/stripe-local/run-scenarios-payouts.mjs` (21).
+
+### v0.3.16 (07/10/2026: via la Bussola)
+
+Migrazione `20261007190000`. Su decisione dell'utente la Bussola (consulenza 1:1 di 15' per i soci,
+chiesta dall'app e fissata dallo staff come lezione individuale) non c'è più, con tutta la sua
+gestione. In produzione non c'era nessuna richiesta.
+
+- **Tolti:** `request_bussola`, `cancel_bussola_request` (e i wrapper `requestBussola`,
+  `cancelBussolaRequest`, `RequestBussolaParams`, `RequestBussolaResult`), la tabella
+  `bussola_requests` e il tipo `bussola_request_status`. `delete_account_data` non annulla più le
+  richieste di Bussola. La migrazione si ferma se trova una richiesta aperta.
+- **Community Pass** (spento, nessuna app lo usa): via il vantaggio «Bussola inclusa» e il valore
+  `bussola` di `pass_benefit_type` (tipo ricreato senza; `PassBenefitType` di conseguenza).
+- Restano «Bussola Interiore» (attività passata, cancellata, con le sue lezioni nello storico) e le
+  «Bussole» del brand (i valori): non c'entrano con la consulenza.
+- Test: `sessione10.test.sql` senza la parte della Bussola (9), `access_model.test.sql` senza le due
+  funzioni, `verify-access` senza il controllo della Bussola.
 
 ### get_my_client_id()
 - Returns current user's client_id

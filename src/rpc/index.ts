@@ -414,7 +414,7 @@ export async function queueFeedbackRequest(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Kalòs Community Pass (tesseramento) + Bussola — Fase 6 (item B / F)
+// Kalòs Community Pass (tesseramento) — Fase 6 (item B)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -423,7 +423,6 @@ export async function queueFeedbackRequest(
 export type PassBenefitType =
   | 'subscription_discount'
   | 'event_discount'
-  | 'bussola'
   | 'community_access'
   | 'priority_booking'
   | 'other';
@@ -488,37 +487,11 @@ export type AssignMembershipResult = {
 };
 
 /**
- * Risultato generico delle RPC di gestione Pass/Bussola con solo esito.
+ * Risultato generico delle RPC di gestione del Pass con solo esito.
  */
 export type PassActionResult = {
   ok: boolean;
   reason?: string;
-};
-
-/**
- * Parametri per requestBussola (cliente tesserato).
- */
-export type RequestBussolaParams = {
-  /** Preferenza di data/ora (ISO 8601), opzionale. */
-  preferredAt?: string;
-  /** Cosa vorrebbe affrontare, opzionale. */
-  note?: string;
-};
-
-/**
- * Risultato della RPC request_bussola.
- */
-export type RequestBussolaResult = {
-  ok: boolean;
-  /**
-   * Dalla v0.3.8 (D6, la Bussola è dei soci): 'NOT_A_MEMBER', 'PENDING_ADMISSION' (domanda ancora da
-   * deliberare), 'MEMBERSHIP_FEE_DUE' (quota non versata oltre la data di decadenza), 'NOTE_TOO_LONG'
-   * (oltre 1000 caratteri), 'ALREADY_OPEN'. Prima: 'NO_ACTIVE_PASS' (Community Pass).
-   */
-  reason?: string;
-  request_id?: string;
-  /** Con i rifiuti di iscrizione: lo stato di `internal.member_booking_status`. */
-  member_status?: string;
 };
 
 /**
@@ -592,61 +565,6 @@ export async function cancelMembership(
 
   if (error) {
     handleRpcError(error, 'cancel_membership');
-  }
-
-  return data as PassActionResult;
-}
-
-/**
- * Wrapper tipizzato per la RPC request_bussola.
- * Dalla v0.3.8 unə sociə in regola (ammessə, con la quota versata o ancora nei tempi) richiede una
- * consulenza Bussola di 15', anche con "solo soci" spenta. Una sola richiesta aperta per volta; lo
- * staff la trasforma in una lezione individuale.
- *
- * @param client - Il client Supabase autenticato (cliente)
- * @param params - preferredAt?, note?
- * @returns Promise<RequestBussolaResult>
- * @throws Error se la chiamata RPC fallisce
- */
-export async function requestBussola(
-  client: SupabaseClient<Database>,
-  params: RequestBussolaParams = {}
-): Promise<RequestBussolaResult> {
-  const { preferredAt, note } = params;
-
-  const { data, error } = await client.rpc('request_bussola', {
-    p_preferred_at: preferredAt,
-    p_note: note,
-  });
-
-  if (error) {
-    handleRpcError(error, 'request_bussola');
-  }
-
-  return data as RequestBussolaResult;
-}
-
-/**
- * Wrapper tipizzato per la RPC cancel_bussola_request.
- * Annulla una richiesta Bussola aperta: lo staff qualsiasi, il cliente solo la propria ancora da
- * fissare (dalla v0.3.8 una fissata risponde 'ALREADY_SCHEDULED'; quella di un'altra persona
- * 'NOT_FOUND').
- *
- * @param client - Il client Supabase autenticato
- * @param requestId - id della richiesta da annullare
- * @returns Promise<PassActionResult>
- * @throws Error se la chiamata RPC fallisce
- */
-export async function cancelBussolaRequest(
-  client: SupabaseClient<Database>,
-  requestId: string
-): Promise<PassActionResult> {
-  const { data, error } = await client.rpc('cancel_bussola_request', {
-    p_request_id: requestId,
-  });
-
-  if (error) {
-    handleRpcError(error, 'cancel_bussola_request');
   }
 
   return data as PassActionResult;

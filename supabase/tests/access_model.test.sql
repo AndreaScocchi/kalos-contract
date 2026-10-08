@@ -130,7 +130,9 @@ SELECT set_eq(
     -- chiamanti e chiusa `queue_feedback_request` (solo service_role).
     'set_my_newsletter_subscription(p_subscribed boolean)',
     'staff_archive_lessons(p_lesson_ids uuid[], p_reason text)',
-    'staff_save_plan(p_plan_id uuid, p_plan jsonb, p_activity_ids uuid[])'
+    'staff_save_plan(p_plan_id uuid, p_plan jsonb, p_activity_ids uuid[])',
+    -- v0.3.17 (08/10/2026): il modello di compenso predefinito, solo Finanze (can_access_finance()).
+    'staff_set_default_compensation_model(p_model_id uuid)'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );

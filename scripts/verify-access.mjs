@@ -203,6 +203,8 @@ async function anonChecks() {
   // v0.3.15: un id che Stripe non darebbe mai (deve iniziare con po_): anche se fosse aperta, non scriverebbe
   await expectRpcDenied(anon, 'stripe_apply_payout_state', { p_payout: { id: 'verifica' } });
   await expectRpcDenied(anon, 'staff_pay_compensation', { p_operator_id: ZERO_UUID, p_month_start: '1900-01-01' });
+  // v0.3.17: il modello di compenso predefinito si cambia solo dalle Finanze (id inesistente: non cambierebbe nulla)
+  await expectRpcDenied(anon, 'staff_set_default_compensation_model', { p_model_id: ZERO_UUID });
   await expectRpcNotExposed(anon, 'income_voce', { p_kind: 'donation', p_is_commercial: false, p_is_member: false });
   // Sessione 9: acquisti dall'app (id inesistenti: anche se fossero aperte, non troverebbero nulla)
   await expectRpcDenied(anon, 'prepare_my_plan_purchase', { p_plan_id: ZERO_UUID });
@@ -628,6 +630,10 @@ async function localChecks() {
   });
   await expectRpcOk(tesoriere, 'preview_compensation',
     { p_model_id: tesModel?.model_id, p_duration_minutes: 60, p_participants: 5, p_revenue_cents: 0 });
+  // Modello predefinito: su un id inesistente, così quello del database locale non cambia
+  const tesDefault = await rpc(tesoriere, 'staff_set_default_compensation_model', { p_model_id: ZERO_UUID });
+  check('Tesoriere: raggiunge il cambio del modello predefinito (qui su un modello inesistente)',
+    tesDefault.status === 200 && tesDefault.json?.reason === 'MODEL_NOT_FOUND', describe(tesDefault));
   const withholding = await insert(tesoriere, 'operator_compensation_settings',
     { operator_id: operatorRow.id, withholding_percent: 20 });
   check('Tesoriere: imposta la ritenuta d\'acconto di una persona', withholding.status === 201, describe(withholding));
@@ -657,6 +663,9 @@ async function localChecks() {
   const staffPayComp = await rpc(staff, 'staff_pay_compensation', { p_operator_id: operatorRow.id, p_month_start: monthStart });
   check('operatrice: non paga compensi',
     staffPayComp.status === 200 && staffPayComp.json?.reason === 'NOT_FINANCE', describe(staffPayComp));
+  const staffDefault = await rpc(staff, 'staff_set_default_compensation_model', { p_model_id: ZERO_UUID });
+  check('operatrice: non cambia il modello predefinito',
+    staffDefault.status === 200 && staffDefault.json?.reason === 'NOT_FINANCE', describe(staffDefault));
   for (const t of ['expenses', 'account_transfers', 'operator_compensation_settings', 'rendiconto_voci']) {
     await expectRowsHidden(staff, t);
   }

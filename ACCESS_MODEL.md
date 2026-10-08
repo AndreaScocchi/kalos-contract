@@ -103,7 +103,8 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   `finance_income_allocations`, `finance_account_balances`, `finance_set_opening_balances`,
   `staff_unfreeze_compensation`, `staff_pay_compensation` (al posto di
   `staff_mark_compensation_paid`), `staff_undo_compensation_payment`,
-  `staff_save_compensation_model`, `preview_compensation` (tutte con `can_access_finance()`).
+  `staff_save_compensation_model`, `preview_compensation` e, dalla v0.3.17,
+  `staff_set_default_compensation_model` (tutte con `can_access_finance()`).
   `staff_register_payment` accetta la voce del rendiconto solo dalle Finanze;
 - due funzioni pure chiamate dai trigger `SECURITY INVOKER` su `announcements` e `activities`.
 

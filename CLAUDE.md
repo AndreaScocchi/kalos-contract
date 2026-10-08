@@ -159,7 +159,7 @@ npm run verify:migrations   # Check migration integrity
 | `transactions` | Registro degli incassi; i rimborsi sono righe negative |
 | `receipts`, `receipt_sequences` | Ricevute numerate per anno, senza buchi |
 | `expense_categories`, `recurring_expenses` | Categorie modificabili e spese ricorrenti da confermare |
-| `compensation_models`, `compensation_components`, `compensation_tiers`, `compensation_assignments`, `compensation_entries` | Compensi a mattoni (dalla v0.3.14 con le spese della lezione e il tetto a lezione), congelati quando il mese si chiude |
+| `compensation_models`, `compensation_components`, `compensation_tiers`, `compensation_assignments`, `compensation_entries` | Compensi a mattoni (dalla v0.3.14 con le spese della lezione e il tetto a lezione, dalla v0.3.17 con un modello predefinito), congelati quando il mese si chiude |
 | `event_operators` | Chi tiene un evento, per calcolarne il compenso |
 | `activity_groups`, `locations` | Gruppi di attività e luoghi (sito e app) |
 | `trials` | Lezioni di prova: una per attività, sempre gratuite; «convertita» = ha comprato dopo la prova (dalla v0.3.13 non scala ingressi) |
@@ -320,6 +320,7 @@ Contabilità per cassa dell'associazione, dal 19/08/2026, con il rendiconto nell
 | `staff_undo_compensation_payment(p_payment_id)` | Annulla un pagamento sbagliato |
 | `staff_save_compensation_model(p_payload)` | Modello, spese, mattoni, scaglioni e tetti in un colpo solo (`INVALID_MODEL` e niente di scritto se un mattone è sbagliato) |
 | `preview_compensation(p_model_id, p_duration_minutes, p_participants, p_revenue_cents)` | Prova di un modello |
+| `staff_set_default_compensation_model(p_model_id)` | (v0.3.17) Il modello che vale per chi non ha un modello assegnato |
 
 Test: `supabase/tests/finanze.test.sql` (66).
 
@@ -578,6 +579,25 @@ gestione. In produzione non c'era nessuna richiesta.
 - Test: `sessione10.test.sql` senza la parte della Bussola (9), `access_model.test.sql` senza le due
   funzioni, `verify-access` senza il controllo della Bussola.
 
+### v0.3.17 (08/10/2026: il modello di compenso predefinito)
+
+Migrazione `20261008110000`. Richiesta dell'utente: una ricetta che valga di base senza assegnarla a
+ogni persona («dagli incassi della lezione si tolgono affitto sala, usura dei materiali e accoglienza;
+quello che resta va all'insegnante fino a 40 € a lezione, il resto rimane all'Associazione»).
+
+- **`compensation_models.is_default`**: al massimo un modello (indice unico parziale), sempre attivo
+  (vincolo `compensation_models_default_is_active`).
+- **`internal.resolve_compensation_model`**: prima l'assegnazione per l'attività, poi quella generale,
+  poi il **predefinito**. Il modello scelto per un evento (`event_operators.model_id`) vince ancora.
+  Senza predefinito il calcolo è quello di prima (`NO_MODEL`); i volontari restano esclusi.
+- **`staff_set_default_compensation_model(p_model_id)`** (Finanze): `SAVED`, `MODEL_NOT_FOUND`,
+  `MODEL_INACTIVE`, `NOT_FINANCE`; toglie il segno al predefinito di prima.
+- **`staff_save_compensation_model`**: stessa firma; disattivare il predefinito risponde
+  `DEFAULT_MODEL_ACTIVE`.
+- La migrazione non crea modelli: in produzione il modello della richiesta («Compenso Standard») era
+  già stato creato dal gestionale l'08/10, e il predefinito si sceglie da lì.
+- Test: `supabase/tests/compenso_predefinito.test.sql` (26), `verify-access` (+3).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -658,7 +678,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.15**
+Current: **v0.3.17**
 
 Consumers reference via git tag:
 ```json

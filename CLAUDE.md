@@ -561,6 +561,25 @@ Stripe non li accredita sul conto: «In banca» del gestionale non tornava con l
 - Test: `supabase/tests/stripe_conto.test.sql` (32), `finanze.test.sql` aggiornato (carta su Stripe),
   `verify-access` (+3), scenari `scripts/stripe-local/run-scenarios-payouts.mjs` (21).
 
+### Dopo la v0.3.15: il modello di compenso predefinito (07/10/2026, nessun tag)
+
+Migrazione `20261007160000`. Richiesta dell'utente: una ricetta che valga di base senza assegnarla a
+ogni persona («dagli incassi della lezione si tolgono affitto sala, usura dei materiali e accoglienza;
+quello che resta va all'insegnante fino a 40 € a lezione, il resto rimane all'Associazione»).
+
+- **`compensation_models.is_default`**: al massimo un modello (indice unico parziale), sempre attivo
+  (vincolo `compensation_models_default_is_active`).
+- **`internal.resolve_compensation_model`**: prima l'assegnazione per l'attività, poi quella generale,
+  poi il **predefinito**. Il modello scelto per un evento (`event_operators.model_id`) vince ancora.
+  Senza predefinito il calcolo è quello di prima (`NO_MODEL`); i volontari restano esclusi.
+- **`staff_set_default_compensation_model(p_model_id)`** (Finanze): `SAVED`, `MODEL_NOT_FOUND`,
+  `MODEL_INACTIVE`, `NOT_FINANCE`; toglie il segno al predefinito di prima.
+- **`staff_save_compensation_model`**: stessa firma; disattivare il predefinito risponde
+  `DEFAULT_MODEL_ACTIVE`.
+- La migrazione non crea modelli: in produzione il modello della richiesta («Compenso Standard») era
+  già stato creato dal gestionale l'08/10, e il predefinito si sceglie da lì.
+- Test: `supabase/tests/compenso_predefinito.test.sql` (26), `verify-access` (+3).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su

@@ -3003,6 +3003,15 @@
           "isArray": false,
           "nullable": true,
           "hasDefault": false
+        },
+        {
+          "name": "is_default",
+          "dataType": "boolean",
+          "udtName": "bool",
+          "isEnum": false,
+          "isArray": false,
+          "nullable": false,
+          "hasDefault": true
         }
       ]
     },

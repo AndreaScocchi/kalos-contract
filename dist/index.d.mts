@@ -1412,6 +1412,7 @@ type Database = {
                     description: string | null;
                     id: string;
                     is_active: boolean;
+                    is_default: boolean;
                     max_hourly_cents: number | null;
                     max_per_lesson_cents: number | null;
                     min_guaranteed_cents: number | null;
@@ -1424,6 +1425,7 @@ type Database = {
                     description?: string | null;
                     id?: string;
                     is_active?: boolean;
+                    is_default?: boolean;
                     max_hourly_cents?: number | null;
                     max_per_lesson_cents?: number | null;
                     min_guaranteed_cents?: number | null;
@@ -1436,6 +1438,7 @@ type Database = {
                     description?: string | null;
                     id?: string;
                     is_active?: boolean;
+                    is_default?: boolean;
                     max_hourly_cents?: number | null;
                     max_per_lesson_cents?: number | null;
                     min_guaranteed_cents?: number | null;
@@ -6243,6 +6246,12 @@ type Database = {
                     p_activity_ids: string[];
                     p_plan: Json;
                     p_plan_id: string;
+                };
+                Returns: Json;
+            };
+            staff_set_default_compensation_model: {
+                Args: {
+                    p_model_id: string;
                 };
                 Returns: Json;
             };

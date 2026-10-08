@@ -203,7 +203,7 @@ async function anonChecks() {
   // v0.3.15: un id che Stripe non darebbe mai (deve iniziare con po_): anche se fosse aperta, non scriverebbe
   await expectRpcDenied(anon, 'stripe_apply_payout_state', { p_payout: { id: 'verifica' } });
   await expectRpcDenied(anon, 'staff_pay_compensation', { p_operator_id: ZERO_UUID, p_month_start: '1900-01-01' });
-  // 07/10/2026: il modello di compenso predefinito si cambia solo dalle Finanze (id inesistente: non cambierebbe nulla)
+  // v0.3.17: il modello di compenso predefinito si cambia solo dalle Finanze (id inesistente: non cambierebbe nulla)
   await expectRpcDenied(anon, 'staff_set_default_compensation_model', { p_model_id: ZERO_UUID });
   await expectRpcNotExposed(anon, 'income_voce', { p_kind: 'donation', p_is_commercial: false, p_is_member: false });
   // Sessione 9: acquisti dall'app (id inesistenti: anche se fossero aperte, non troverebbero nulla)

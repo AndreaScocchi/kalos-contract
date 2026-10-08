@@ -1,4 +1,4 @@
--- Migration 20261007160000: il modello di compenso predefinito
+-- Migration 20261008110000: il modello di compenso predefinito
 --
 -- Richiesta dell'utente del 07/10/2026: fra tutte le combinazioni possibili ne serve una che valga
 -- di base, senza doverla assegnare a ogni persona:

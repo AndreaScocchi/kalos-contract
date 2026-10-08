@@ -561,9 +561,9 @@ Stripe non li accredita sul conto: «In banca» del gestionale non tornava con l
 - Test: `supabase/tests/stripe_conto.test.sql` (32), `finanze.test.sql` aggiornato (carta su Stripe),
   `verify-access` (+3), scenari `scripts/stripe-local/run-scenarios-payouts.mjs` (21).
 
-### Dopo la v0.3.15: il modello di compenso predefinito (07/10/2026, nessun tag)
+### v0.3.17 (08/10/2026: il modello di compenso predefinito)
 
-Migrazione `20261007160000`. Richiesta dell'utente: una ricetta che valga di base senza assegnarla a
+Migrazione `20261008110000`. Richiesta dell'utente: una ricetta che valga di base senza assegnarla a
 ogni persona («dagli incassi della lezione si tolgono affitto sala, usura dei materiali e accoglienza;
 quello che resta va all'insegnante fino a 40 € a lezione, il resto rimane all'Associazione»).
 

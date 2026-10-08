@@ -1,4 +1,4 @@
--- Il modello di compenso predefinito (migrazione 20261007160000): vale per chi non ha un modello
+-- Il modello di compenso predefinito (migrazione 20261008110000): vale per chi non ha un modello
 -- assegnato (lezioni ed eventi), le assegnazioni e il modello dell'evento vincono, i volontari restano
 -- esclusi, il predefinito si cambia solo dalle Finanze e resta uno solo e sempre attivo. Il modello di
 -- prova è quello della richiesta: affitto sala 4 €, usura materiali 3 €, accoglienza 1 €, il resto

@@ -79,6 +79,10 @@ con la stessa compressione. L'originale non si tocca. Il 07/10/2026 le 15 foto p
 già state compresse a parte: originali salvati in `kalos-contract/backups/storage-originali-2026-10-07/`,
 cartella esclusa da git.
 
+L'11/10/2026 le versioni di tutte le 51 foto caricate prima sono state create con sharp (stesse
+qualità e formati), e i 10 file che nessuna tabella citava (9 foto e l'audio delle pratiche) sono
+stati tolti: backup e registro in `kalos-contract/backups/storage-rimossi-2026-10-11/`.
+
 ## Da non fare
 
 - Non usare `render/image` di Supabase né Netlify Image CDN per queste foto.

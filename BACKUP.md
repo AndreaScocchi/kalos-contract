@@ -15,12 +15,13 @@ posto di Supabase Pro.
 | | |
 |---|---|
 | **Quando** | ogni notte alle 03:17 in estate e 02:17 in inverno ([`nightly-backup.yml`](.github/workflows/nightly-backup.yml)); anche a mano da *Actions → Backup notturno → Run workflow* |
-| **Cosa contiene** | ruoli, schema e dati di `public` e `auth` (utenti e password cifrate comprese); tutti i file dello Storage con i bucket e le loro policy; definizione dei job pg_cron; righe per tabella, per verificare il ripristino |
-| **Cosa non contiene** | valori dei secret (Vault, edge function), impostazioni Auth della dashboard: vanno rifatti a mano (§4) |
+| **Cosa contiene** | ruoli, schema e dati di `public` e `auth` (utenti e password cifrate comprese); i file dello Storage con i bucket e le loro policy; definizione dei job pg_cron; righe per tabella, per verificare il ripristino |
+| **Cosa non contiene** | valori dei secret (Vault, edge function), impostazioni Auth della dashboard: vanno rifatti a mano (§4). Dal 13/10/2026 nemmeno le cartelle `varianti/` delle foto: sono le versioni ridotte, si ricreano dagli originali (§4) e pesavano più degli originali stessi |
 | **Cifratura** | [age](https://age-encryption.org), a chiave pubblica: GitHub conosce solo la chiave pubblica, che basta per cifrare. Per decifrare serve la chiave privata, che esiste solo da voi |
 | **Dove** | bucket S3 privato in `eu-central-1`, prefisso `backups/`, un file `kalos-AAAAMMGGTHHMMSSZ.tar.gz.age` a notte |
 | **Per quanto** | 30 giorni (lifecycle rule del bucket) |
-| **Quanto pesa** | qualche decina di MB a notte (oggi: DB ~20 MB di dati, Storage ~52 MB) |
+| **Quanto pesa** | qualche decina di MB a notte (al 13/10/2026: Storage 56 file, ~37 MB, più il database) |
+| **Traffico da Supabase** | tutto quello che il backup scarica conta nel traffico in uscita (egress) di Supabase, che nel piano gratuito ha un tetto mensile. Per questo il backup non copia `varianti/` e riprova solo il file che non arriva, non tutto il backup. `node scripts/backup/storage-sync.mjs list` dice quanto scaricherebbe senza scaricare nulla |
 | **Avvisi** | email via SES, dallo stesso dominio verificato delle notifiche: se il backup fallisce; se una notifica resta in coda più di 30 minuti; se ne fallisce anche una sola; se l'ultimo backup ha più di 30 ore; dalla sessione 5 anche per i pagamenti online (§3) ([`ops-health.yml`](.github/workflows/ops-health.yml)) |
 
 **Perché S3 e non GitHub.** Il repo `kalos-contract` è **pubblico**: artifact e log delle Actions
@@ -187,6 +188,8 @@ Da fare **in un progetto Supabase nuovo**, mai sopra la produzione. Tempo: meno 
    - edge function: `npx supabase secrets set …` (vedi AWS_SES_SETUP.md §6) e
      `npx supabase functions deploy`;
    - Auth: Site URL, Redirect URLs, provider Google e Apple, template email;
+   - versioni ridotte delle foto: Gestionale → **Sistema → Foto** le ricrea dagli originali (finché
+     mancano, sito, app e newsletter mostrano l'originale);
    - storico delle migrazioni: `npx supabase migration repair --status applied <versioni>` sul
      progetto nuovo, così i prossimi `db push` partono dal punto giusto.
 6. **Puntare le app al progetto nuovo:** `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (sito,

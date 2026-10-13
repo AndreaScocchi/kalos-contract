@@ -4,6 +4,7 @@
 // POST, questi casi:
 //   { purpose: 'membership_fee', year? }                    quota associativa, con il token di chi è loggato
 //   { purpose: 'donation', amount_cents, name, email, fiscal_code? }   donazione dal sito, anche senza login
+//                                                           (solo con `card_donations` acceso, oltre a `payments`)
 //   { purpose: 'subscription', plan_id }                    abbonamento dall'app (sessione 9)
 //   { purpose: 'event', event_booking_id }                  contributo di un evento a cui si è iscrittə (sessione 9)
 //   { purpose: 'settlement', transaction_id }               un "da saldare" registrato in studio (sessione 9)
@@ -24,7 +25,7 @@
 import { corsHeaders } from '../_shared/cors.ts'
 import { adminClient, clientIp, EMAIL_RE, jsonResponse, sha256Hex, userClient } from '../_shared/http.ts'
 import {
-  checkStripeMode, getStripe, paymentsEnabled, reconcilePaymentIntent, type Stripe,
+  cardDonationsEnabled, checkStripeMode, getStripe, paymentsEnabled, reconcilePaymentIntent, type Stripe,
 } from '../_shared/stripe.ts'
 
 const DONATION_MIN_CENTS = 500
@@ -380,6 +381,8 @@ async function donationCheckout(
 ): Promise<Response> {
   const admin = adminClient()
   if (!(await paymentsEnabled(admin))) return jsonResponse({ ok: false, reason: 'PAYMENTS_DISABLED' })
+  // Spente dal 13/10/2026 su richiesta di Stripe, finché manca il RUNTS: resta il bonifico
+  if (!(await cardDonationsEnabled(admin))) return jsonResponse({ ok: false, reason: 'DONATIONS_DISABLED' })
 
   const amount = Number(body.amount_cents)
   const name = typeof body.name === 'string' ? body.name.trim().replace(/\s+/g, ' ') : ''

@@ -80,6 +80,12 @@ export async function paymentsEnabled(admin: SupabaseClient): Promise<boolean> {
   return !!data?.enabled
 }
 
+/** Donazioni con carta: servono `payments` e `card_donations` (spenta finché manca il RUNTS). */
+export async function cardDonationsEnabled(admin: SupabaseClient): Promise<boolean> {
+  const { data } = await admin.from('feature_flags').select('enabled').eq('key', 'card_donations').maybeSingle()
+  return !!data?.enabled
+}
+
 /** Verifica la firma sul corpo GREZZO della richiesta (mai su un JSON riserializzato). */
 export async function verifyStripeEvent(stripe: Stripe, rawBody: string, signature: string): Promise<Stripe.Event> {
   const secrets = (Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '').split(',').map((s) => s.trim()).filter(Boolean)

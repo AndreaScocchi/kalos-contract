@@ -98,6 +98,7 @@ async function main() {
   const yearRow = await one(`association_years?year=eq.${year}&select=fee_cents`)
 
   await setFlag('payments', true)
+  await setFlag('card_donations', true)
   await setFlag('stripe_live', false)
   await setFlag('stripe_test_ledger', true)
   await setFlag('members_only', false)
@@ -190,6 +191,7 @@ async function main() {
     await browser.close()
     await rest(`plans?id=eq.${plan.id}`, { method: 'PATCH', body: { sold_in_app: false } })
     await setFlag('payments', flagWas('payments'))
+    await setFlag('card_donations', flagWas('card_donations'))
     await setFlag('stripe_live', flagWas('stripe_live'))
     await setFlag('members_only', flagWas('members_only'))
     if (yearRow) await rest(`association_years?year=eq.${year}`, { method: 'PATCH', body: { fee_cents: yearRow.fee_cents } })

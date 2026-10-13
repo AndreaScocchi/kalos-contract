@@ -37,6 +37,7 @@ async function main() {
   const yearRow = await one(`association_years?year=eq.${year}&select=fee_cents`)
 
   await setFlag('payments', true)
+  await setFlag('card_donations', true)
   await setFlag('stripe_live', false)
   await setFlag('stripe_test_ledger', true)
   await rest(`association_years?year=eq.${year}`, { method: 'PATCH', body: { fee_cents: 2500 } })
@@ -188,6 +189,14 @@ async function main() {
     check('pagamenti spenti: niente donazioni né quote', off.json?.reason === 'PAYMENTS_DISABLED' && offFee.json?.reason === 'PAYMENTS_DISABLED', JSON.stringify({ off: off.json, offFee: offFee.json }))
     await setFlag('payments', true)
 
+    await setFlag('card_donations', false)
+    const noCard = await fn('stripe-checkout', { purpose: 'donation', amount_cents: 1000, name: 'Mario Bianchi', email: 'mario@test.kalos' })
+    const feeStill = await fn('stripe-checkout', { purpose: 'membership_fee' }, { token: socia.token })
+    check('donazioni con carta spente: donazione rifiutata, la quota no',
+      noCard.json?.reason === 'DONATIONS_DISABLED' && feeStill.json?.reason !== 'PAYMENTS_DISABLED' && feeStill.json?.reason !== 'DONATIONS_DISABLED',
+      JSON.stringify({ noCard: noCard.json, feeStill: feeStill.json }))
+    await setFlag('card_donations', true)
+
     const small = await fn('stripe-checkout', { purpose: 'donation', amount_cents: 100, name: 'Mario Bianchi', email: 'mario@test.kalos' })
     check('sotto i 5 € la donazione è rifiutata', small.json?.reason === 'INVALID_AMOUNT', JSON.stringify(small.json))
     let last = null
@@ -203,6 +212,7 @@ async function main() {
     check('l\'operatrice sì (in locale l\'invio fallisce solo perché manca SES)', byStaff.json?.reason === 'SEND_FAILED' && /SES/.test(byStaff.json?.message ?? ''), JSON.stringify(byStaff.json))
   } finally {
     await setFlag('payments', flagWas('payments'))
+    await setFlag('card_donations', flagWas('card_donations'))
     await setFlag('stripe_live', flagWas('stripe_live'))
     await setFlag('stripe_test_ledger', flagWas('stripe_test_ledger'))
     await rest(`association_years?year=eq.${year}`, { method: 'PATCH', body: { fee_cents: yearRow?.fee_cents ?? null } })

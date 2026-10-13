@@ -40,6 +40,7 @@ async function main() {
   const yearRow = await one(`association_years?year=eq.${year}&select=fee_cents`)
 
   await setFlag('payments', true)
+  await setFlag('card_donations', true)
   await setFlag('stripe_live', false)
   await setFlag('stripe_test_ledger', true)
   await setFlag('members_only', false)
@@ -186,6 +187,7 @@ async function main() {
     check('le donazioni dal sito funzionano come prima', d8.json?.ok === true, JSON.stringify(d8.json))
   } finally {
     await setFlag('payments', flagWas('payments'))
+    await setFlag('card_donations', flagWas('card_donations'))
     await setFlag('stripe_live', flagWas('stripe_live'))
     await setFlag('stripe_test_ledger', flagWas('stripe_test_ledger'))
     await setFlag('members_only', flagWas('members_only'))

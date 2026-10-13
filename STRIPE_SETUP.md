@@ -84,8 +84,14 @@ numerazione delle ricevute non ha buchi, e una ricevuta di prova occuperebbe un 
 | Interruttore | Spento | Acceso |
 |---|---|---|
 | `payments` | Nessun checkout si apre; il sito nasconde il pagamento della quota e le donazioni con carta | Pagamenti online attivi |
+| `card_donations` | Il sito nasconde la donazione con carta (resta il bonifico) e `stripe-checkout` risponde `DONATIONS_DISABLED` | Donazioni con carta, se è acceso anche `payments` |
 | `stripe_live` | Le function accettano solo una chiave di prova | Accettano solo una chiave live |
 | `stripe_test_ledger` | (non esiste in produzione) | Solo in locale: i pagamenti di prova scrivono nel registro |
+
+**`card_donations` è spento dal 13/10/2026.** Stripe aveva fermato gli accrediti dal 05/10: per la
+sua verifica l'associazione era un ente benefico senza registrazione (il RUNTS), categoria vietata
+dai suoi termini. Dal 01/10 erano arrivate solo quote e abbonamenti. Si riaccende dopo l'iscrizione
+al RUNTS, comunicata a Stripe insieme al numero.
 
 Se la chiave e `stripe_live` non sono coerenti, nessun checkout si apre (`STRIPE_MODE_MISMATCH`): è
 il segnale che qualcosa è stato configurato a metà.

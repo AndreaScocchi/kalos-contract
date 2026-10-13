@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # restore — ripristina un backup di run-backup.sh in un progetto Supabase VUOTO. Vedi BACKUP.md.
 #
-#   scripts/backup/restore.sh <backup.tar.gz.age> <chiave-privata-age>
+#   scripts/backup/restore.sh <backup.tar.gz.age> <chiave-privata-age> [<file-dello-storage>]
+#
+# <file-dello-storage>: dal 13/10/2026 i file dello Storage di ogni notte stanno su S3 accanto
+# all'archivio, in storage/<nome-del-backup>/. Si scaricano con
+#   aws s3 cp --recursive s3://<bucket>/storage/<nome-del-backup>/ <cartella>
+# e si passa la cartella. I backup di prima hanno i file dentro l'archivio.
 #
 # Variabili:
 #   TARGET_DB_URL              database di destinazione (progetto nuovo, mai quello di produzione)
@@ -24,6 +29,19 @@ trap 'rm -rf "$work"' EXIT
 echo "▸ decifratura"
 age -d -i "$identity" "$archive" | tar -xz -C "$work"
 jq -r '"  backup del \(.created_at) · \(.supabase_cli)"' "$work/backup-info.json"
+
+restore_storage=0
+[ -n "${SUPABASE_URL:-}" ] && [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ] && restore_storage=1
+if [ "$restore_storage" = 1 ] && [ -f "$work/storage/snapshot.json" ]; then
+  # Prima del database: se mancano i file dello Storage ci si ferma senza aver toccato nulla.
+  if [ -z "${3:-}" ]; then
+    echo "❌ I file dello Storage di questo backup stanno su S3. Scaricali e passa la cartella come terzo argomento:"
+    jq -r '"   aws s3 cp --recursive s3://\(.bucket)/\(.prefix) <cartella>"' "$work/storage/snapshot.json"
+    exit 1
+  fi
+  echo "▸ decifratura dei file dello Storage"
+  node "$(dirname "$0")/storage-sync.mjs" unpack "$work/storage" "$3" "$identity"
+fi
 
 echo "▸ database"
 {
@@ -56,7 +74,7 @@ if [ -n "$diffs" ]; then
 fi
 echo "  ✅ $(jq 'length' "$work/db/row_counts.json") tabelle, $(jq '[.[]] | add' "$work/db/row_counts.json") righe: tutte uguali al backup"
 
-if [ -n "${SUPABASE_URL:-}" ] && [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+if [ "$restore_storage" = 1 ]; then
   echo "▸ storage"
   node "$(dirname "$0")/storage-sync.mjs" push "$work/storage"
   node "$(dirname "$0")/storage-sync.mjs" verify "$work/storage"

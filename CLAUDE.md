@@ -628,8 +628,9 @@ sull'originale. Regole, qualità e motivi in **[supabase/storage/FOTO.md](supaba
 - **Non usare il ridimensionamento di Supabase (`render/image`):** il piano gratuito non lo include.
 - **Newsletter:** `send-newsletter` e `retry-newsletter` mettono nell'email la versione `jpeg1200`
   (`_shared/fotoEmail.ts`, che controlla con HEAD che esista).
-- **Backup:** dal 13/10 il backup notturno non copia `varianti/` (si ricreano da Sistema → Foto),
-  per non consumare il traffico in uscita di Supabase (BACKUP.md).
+- **Backup:** dal 13/10 il backup notturno non copia `varianti/` (si ricreano da Sistema → Foto)
+  e scarica da Supabase solo i file nuovi o cambiati: gli altri li copia dentro S3
+  (`storage-sync.mjs snapshot`), per non consumare il traffico in uscita di Supabase (BACKUP.md).
 
 ## Row-Level Security e permessi
 

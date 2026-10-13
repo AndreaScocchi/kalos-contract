@@ -2,6 +2,8 @@ name: Backup notturno
 
 # Copia cifrata di database e Storage, ogni notte, in un bucket S3 privato in UE (eu-central-1),
 # conservata 30 giorni dalla lifecycle rule del bucket. Se fallisce, email di avviso via SES.
+# Lo Storage è incrementale: da Supabase si scaricano solo i file nuovi, gli altri si copiano
+# dentro S3 (storage/<notte>/), perché il traffico in uscita di Supabase ha un tetto.
 #
 # Non è una CI: non parte su push né su pull request e non tocca build né deploy.
 # Setup, secret e ripristino: BACKUP.md.

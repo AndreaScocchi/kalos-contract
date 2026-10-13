@@ -9,19 +9,22 @@ posto di Supabase Pro.
 > **Stato: attivo dal 2026-09-23.** Setup completato, prima esecuzione riuscita (76 MB cifrati nel
 > bucket `kalos-backup-2026`, 73 tabelle e 64 file dello Storage), controllo della coda verde e
 > avvisi email verificati sul campo. Ripristino provato in locale il 2026-09-22 (§4).
+>
+> **Dal 13/10/2026 lo Storage è incrementale:** da Supabase si scaricano solo i file nuovi o
+> cambiati, gli altri si copiano dentro S3 (§1). Sul setup esistente servono i due passi del §2.7.
 
 ## 1. Come funziona
 
 | | |
 |---|---|
 | **Quando** | ogni notte alle 03:17 in estate e 02:17 in inverno ([`nightly-backup.yml`](.github/workflows/nightly-backup.yml)); anche a mano da *Actions → Backup notturno → Run workflow* |
-| **Cosa contiene** | ruoli, schema e dati di `public` e `auth` (utenti e password cifrate comprese); i file dello Storage con i bucket e le loro policy; definizione dei job pg_cron; righe per tabella, per verificare il ripristino |
+| **Cosa contiene** | ruoli, schema e dati di `public` e `auth` (utenti e password cifrate comprese); i file dello Storage con i bucket e le loro policy; definizione dei job pg_cron; righe per tabella, per verificare il ripristino. Dal 13/10/2026 i file dello Storage non stanno nell'archivio ma accanto, su S3, cifrati uno per uno: l'archivio ne ha l'elenco |
 | **Cosa non contiene** | valori dei secret (Vault, edge function), impostazioni Auth della dashboard: vanno rifatti a mano (§4). Dal 13/10/2026 nemmeno le cartelle `varianti/` delle foto: sono le versioni ridotte, si ricreano dagli originali (§4) e pesavano più degli originali stessi |
 | **Cifratura** | [age](https://age-encryption.org), a chiave pubblica: GitHub conosce solo la chiave pubblica, che basta per cifrare. Per decifrare serve la chiave privata, che esiste solo da voi |
-| **Dove** | bucket S3 privato in `eu-central-1`, prefisso `backups/`, un file `kalos-AAAAMMGGTHHMMSSZ.tar.gz.age` a notte |
-| **Per quanto** | 30 giorni (lifecycle rule del bucket) |
+| **Dove** | bucket S3 privato in `eu-central-1`: `backups/kalos-AAAAMMGGTHHMMSSZ.tar.gz.age`, un archivio a notte, e `storage/kalos-AAAAMMGGTHHMMSSZ/<impronta>.age`, i file dello Storage di quella notte. I nomi su S3 sono impronte (sha256 di bucket, percorso e versione), non i nomi dei file |
+| **Per quanto** | 30 giorni, archivio e file della stessa notte insieme (lifecycle rule del bucket, una per prefisso) |
 | **Quanto pesa** | qualche decina di MB a notte (al 13/10/2026: Storage 56 file, ~37 MB, più il database) |
-| **Traffico da Supabase** | tutto quello che il backup scarica conta nel traffico in uscita (egress) di Supabase, che nel piano gratuito ha un tetto mensile. Per questo il backup non copia `varianti/` e riprova solo il file che non arriva, non tutto il backup. `node scripts/backup/storage-sync.mjs list` dice quanto scaricherebbe senza scaricare nulla |
+| **Traffico da Supabase** | tutto quello che il backup scarica conta nel traffico in uscita (egress) di Supabase, che nel piano gratuito ha un tetto mensile. Per questo: lo Storage è **incrementale** (un file già salvato una notte precedente si copia dentro S3, senza scaricarlo di nuovo; una notte normale scarica da Supabase solo i file caricati il giorno prima), le cartelle `varianti/` non si copiano, e un download che non arriva si riprova da solo, senza rifare tutto il backup. Il log dice quanti file e MB sono stati scaricati. `node scripts/backup/storage-sync.mjs list` dice quanto scaricherebbe una copia completa, senza scaricare nulla |
 | **Avvisi** | email via SES, dallo stesso dominio verificato delle notifiche: se il backup fallisce; se una notifica resta in coda più di 30 minuti; se ne fallisce anche una sola; se l'ultimo backup ha più di 30 ore; dalla sessione 5 anche per i pagamenti online (§3) ([`ops-health.yml`](.github/workflows/ops-health.yml)) |
 
 **Perché S3 e non GitHub.** Il repo `kalos-contract` è **pubblico**: artifact e log delle Actions
@@ -30,8 +33,10 @@ conteggi. S3 a Francoforte tiene i dati in UE (AWS è già fornitore per le emai
 centesimi al mese.
 
 **Perché le credenziali AWS sono "solo scrittura".** L'utente usato da GitHub può caricare i backup
-e vedere l'elenco dei file, ma non leggerli né cancellarli. Con il versioning attivo, anche un file
-sovrascritto resta recuperabile per 7 giorni.
+e vedere l'elenco dei file, ma non cancellarli né leggere gli archivi. Dal 13/10/2026 può leggere i
+file cifrati in `storage/`, perché S3 lo chiede per copiarli da una notte all'altra: senza la chiave
+privata age sono illeggibili. Con il versioning attivo, anche un file sovrascritto resta
+recuperabile per 7 giorni.
 
 ## 2. Setup una tantum
 
@@ -71,6 +76,9 @@ Poi, nel bucket → **Management → Create lifecycle rule** (`scadenza-30-giorn
 - *Permanently delete noncurrent versions of objects*: **7** giorni;
 - *Delete expired object delete markers*: sì.
 
+E una seconda regola uguale, `storage-30-giorni`, con prefisso `storage/` (i file dello Storage di
+ogni notte, dal 13/10/2026).
+
 ### 2.3 Utente IAM per GitHub
 
 **IAM → Users → Create user** `kalos-backup-github`, **senza** accesso alla console. Poi *Add
@@ -84,14 +92,20 @@ permissions → Create inline policy → JSON*, sostituendo `NOME-BUCKET`:
       "Sid": "CaricaBackup",
       "Effect": "Allow",
       "Action": "s3:PutObject",
-      "Resource": "arn:aws:s3:::NOME-BUCKET/backups/*"
+      "Resource": ["arn:aws:s3:::NOME-BUCKET/backups/*", "arn:aws:s3:::NOME-BUCKET/storage/*"]
+    },
+    {
+      "Sid": "CopiaFileStorageGiaSalvati",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::NOME-BUCKET/storage/*"
     },
     {
       "Sid": "ElencoPerLaVerifica",
       "Effect": "Allow",
       "Action": "s3:ListBucket",
       "Resource": "arn:aws:s3:::NOME-BUCKET",
-      "Condition": { "StringLike": { "s3:prefix": "backups/*" } }
+      "Condition": { "StringLike": { "s3:prefix": ["backups/*", "storage/*"] } }
     },
     {
       "Sid": "EmailDiAvviso",
@@ -148,6 +162,20 @@ Repo `kalos-contract` → **Settings → Secrets and variables → Actions**.
 4. Per provare l'email: lancia di nuovo il controllo con `BACKUP_S3_BUCKET` temporaneamente
    sbagliato, controlla che l'avviso arrivi, poi rimetti il nome giusto.
 
+### 2.7 Aggiornamento del 13/10/2026: Storage incrementale
+
+Sul setup fatto prima del 13/10/2026, dalla console AWS (account di SES), **prima** che il nuovo
+backup arrivi su `main`. Senza, il backup si ferma con «AccessDenied» e arriva l'email.
+
+1. **IAM → Users → `kalos-backup-github` → Permissions → policy `kalos-backup-github` → Edit →
+   JSON:** sostituisci tutto con la policy del §2.3, con `kalos-backup-2026` al posto di
+   `NOME-BUCKET`. Cambiano due cose: `PutObject` e `ListBucket` anche su `storage/`, e `GetObject`
+   solo su `storage/`, che S3 chiede per copiare i file da una notte all'altra.
+2. **S3 → bucket → Management → Create lifecycle rule** `storage-30-giorni`: prefisso `storage/`,
+   tutto il resto come `scadenza-30-giorni` (§2.2).
+3. *Actions → Backup notturno → Run workflow*, due volte. La prima scarica tutto lo Storage
+   («scaricati da Supabase 56»), la seconda deve dire «scaricati da Supabase 0» e copiare il resto.
+
 ## 3. Avvisi
 
 | Controllo | Quando scatta | Frequenza |
@@ -169,7 +197,19 @@ Da fare **in un progetto Supabase nuovo**, mai sopra la produzione. Tempo: meno 
 
 1. **Progetto nuovo** su Supabase, regione UE (oggi `eu-north-1`).
 2. **Scarica il backup** dal bucket S3 con il tuo accesso alla console (l'utente di GitHub non può
-   leggerlo, di proposito).
+   leggerlo, di proposito): l'archivio `backups/kalos-….tar.gz.age` e, se il backup ha lo Storage su
+   S3 (quelli col nuovo backup, dal 13/10/2026: se serve, lo script lo dice), la cartella con i file
+   dello Storage della stessa notte, `storage/kalos-…/`. La console scarica un
+   file alla volta: per la cartella conviene **CloudShell** (icona `>_` in alto nella console, usa il
+   tuo accesso, niente chiavi da creare):
+   ```bash
+   N=kalos-AAAAMMGGTHHMMSSZ   # il nome del backup scelto
+   aws s3 cp s3://kalos-backup-2026/backups/$N.tar.gz.age .
+   aws s3 cp --recursive s3://kalos-backup-2026/storage/$N/ storage-$N/
+   tar -cf ripristino-$N.tar $N.tar.gz.age storage-$N
+   ```
+   poi *Actions → Download file* `ripristino-$N.tar`, e sul computer `tar -xf ripristino-$N.tar`.
+   I file restano cifrati: senza la chiave privata non si leggono, nemmeno in CloudShell.
 3. **Prerequisiti sul computer:** `age`, `jq`, Node, e `psql` (oppure Docker: vedi sotto).
 4. Dalla cartella `kalos-contract`, con `npm ci` fatto:
    ```bash
@@ -177,8 +217,11 @@ Da fare **in un progetto Supabase nuovo**, mai sopra la produzione. Tempo: meno 
    SUPABASE_URL='https://<ref-nuovo>.supabase.co' \
    SUPABASE_SERVICE_ROLE_KEY='<service_role del progetto NUOVO>' \
    RESTORE_CRON=1 \
-   scripts/backup/restore.sh kalos-AAAAMMGGTHHMMSSZ.tar.gz.age /percorso/kalos-backup.key
+   scripts/backup/restore.sh kalos-AAAAMMGGTHHMMSSZ.tar.gz.age /percorso/kalos-backup.key storage-kalos-AAAAMMGGTHHMMSSZ
    ```
+   L'ultimo argomento è la cartella dei file dello Storage; per i backup che hanno i file
+   nell'archivio (quelli di prima) non serve. Se serve e manca, lo script si ferma prima di toccare il
+   database e dice cosa scaricare.
    Senza `psql` installato: `PSQL="docker run --rm -i postgres:17-alpine psql"`.
    Lo script decifra, ripristina database e policy dello Storage, ricarica i file e **verifica**
    righe per tabella e checksum di ogni file. Se qualcosa non torna, si ferma con l'elenco delle
@@ -200,7 +243,9 @@ Da fare **in un progetto Supabase nuovo**, mai sopra la produzione. Tempo: meno 
 Una volta ogni tre mesi conviene rifare la prova in locale, come il 2026-09-22: backup del DB
 locale, ripristino in un secondo progetto locale vuoto, login con un utente ripristinato. Servono
 Docker e lo Storage locale acceso (`[storage] enabled = true` in `supabase/config.toml`, solo per la
-prova). I comandi sono gli stessi del §4, con gli URL locali.
+prova). I comandi sono gli stessi del §4, con gli URL locali. Senza `BACKUP_S3_BUCKET`,
+`run-backup.sh` mette i file dello Storage dentro l'archivio (come prima del 13/10/2026), e il
+ripristino non chiede la cartella.
 
 ## 5. Limiti noti
 

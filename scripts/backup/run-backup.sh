@@ -8,8 +8,12 @@
 #   SUPABASE_URL               URL del progetto, per lo Storage
 #   SUPABASE_SERVICE_ROLE_KEY  chiave service_role, per lo Storage
 #   BACKUP_AGE_RECIPIENT       chiave PUBBLICA age: basta per cifrare, non per decifrare
+#   BACKUP_S3_BUCKET           se c'è, i file dello Storage vanno su S3 uno per uno (storage-sync
+#                              snapshot) e nell'archivio resta solo il loro elenco; se manca, i file
+#                              stanno nell'archivio (prove in locale)
 #
-# Richiede: Node (npm ci), Docker (per `supabase db dump`), jq, age.
+# Richiede: Node (npm ci), Docker (per `supabase db dump`), jq, age; con BACKUP_S3_BUCKET anche
+# l'AWS CLI con le credenziali del backup.
 # Non stampa dati: i log delle Actions del repo sono pubblici.
 set -euo pipefail
 
@@ -62,10 +66,17 @@ query "select table_schema || '.' || table_name as t,
        order by 1" | jq '[.[] | {(.t): .n}] | add' > "$work/db/row_counts.json"
 
 echo "▸ storage"
-node "$(dirname "$0")/storage-sync.mjs" pull "$work/storage"
+if [ -n "${BACKUP_S3_BUCKET:-}" ]; then
+  # Da Supabase si scaricano solo i file nuovi o cambiati: il traffico in uscita ha un tetto (BACKUP.md).
+  BACKUP_SNAPSHOT="$(basename "$out" .tar.gz.age)" node "$(dirname "$0")/storage-sync.mjs" snapshot "$work/storage"
+  storage_in=s3
+else
+  node "$(dirname "$0")/storage-sync.mjs" pull "$work/storage"
+  storage_in=archivio
+fi
 
-jq -n --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg cli "$(npx supabase --version 2>/dev/null | head -1)" \
-  '{created_at: $at, supabase_cli: $cli, format: 1}' > "$work/backup-info.json"
+jq -n --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg cli "$(npx supabase --version 2>/dev/null | head -1)" --arg storage "$storage_in" \
+  '{created_at: $at, supabase_cli: $cli, format: 2, storage: $storage}' > "$work/backup-info.json"
 
 echo "▸ cifratura"
 tar -C "$work" -czf - . | age -r "$BACKUP_AGE_RECIPIENT" -o "$out"

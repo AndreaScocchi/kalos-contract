@@ -83,6 +83,12 @@ L'11/10/2026 le versioni di tutte le 51 foto caricate prima sono state create co
 qualità e formati), e i 10 file che nessuna tabella citava (9 foto e l'audio delle pratiche) sono
 stati tolti: backup e registro in `kalos-contract/backups/storage-rimossi-2026-10-11/`.
 
+## Backup
+
+Dal 13/10/2026 il backup notturno (`BACKUP.md`) non copia le cartelle `varianti/`: pesano più
+degli originali e ogni MB scaricato conta nel traffico in uscita di Supabase. Dopo un ripristino si
+ricreano da Gestionale → **Sistema → Foto**.
+
 ## Da non fare
 
 - Non usare `render/image` di Supabase né Netlify Image CDN per queste foto.

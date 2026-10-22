@@ -50,7 +50,9 @@ Solo RPC che controllano login e ruolo **al loro interno**:
 - **cliente:** prenotazioni (`book_*`, `cancel_*`), percorso e pratica, notifiche, token push,
   feedback;
 - **staff:** `staff_*`, tessere, campagne, `promote_profile_to_operator` (solo admin),
-  `queue_new_event`;
+  `queue_new_event`; dal 22/10/2026 `staff_delete_operator` (solo admin): è l'unico modo di
+  eliminare una scheda di `operators`, perché authenticated non ha più DELETE sulla tabella e una
+  cancellazione diretta toglierebbe il nome alle lezioni passate;
 - **soci:** `submit_member_application`, `get_my_membership_status`, `get_my_member_card`;
 - **prove e lista d'attesa:** `book_trial_lesson`, `join_waitlist`, `leave_waitlist`;
 - **incassi (staff):** `staff_register_payment`, `issue_receipt`, `void_receipt`,

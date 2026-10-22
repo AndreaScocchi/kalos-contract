@@ -205,6 +205,8 @@ async function anonChecks() {
   await expectRpcDenied(anon, 'staff_pay_compensation', { p_operator_id: ZERO_UUID, p_month_start: '1900-01-01' });
   // v0.3.17: il modello di compenso predefinito si cambia solo dalle Finanze (id inesistente: non cambierebbe nulla)
   await expectRpcDenied(anon, 'staff_set_default_compensation_model', { p_model_id: ZERO_UUID });
+  // 22/10/2026: eliminare la scheda di un operatore, solo admin (id inesistente e solo la domanda)
+  await expectRpcDenied(anon, 'staff_delete_operator', { p_operator_id: ZERO_UUID, p_dry_run: true });
   await expectRpcNotExposed(anon, 'income_voce', { p_kind: 'donation', p_is_commercial: false, p_is_member: false });
   // Sessione 9: acquisti dall'app (id inesistenti: anche se fossero aperte, non troverebbero nulla)
   await expectRpcDenied(anon, 'prepare_my_plan_purchase', { p_plan_id: ZERO_UUID });
@@ -676,6 +678,9 @@ async function localChecks() {
   const staffDefault = await rpc(staff, 'staff_set_default_compensation_model', { p_model_id: ZERO_UUID });
   check('operatrice: non cambia il modello predefinito',
     staffDefault.status === 200 && staffDefault.json?.reason === 'NOT_FINANCE', describe(staffDefault));
+  const staffDelOp = await rpc(staff, 'staff_delete_operator', { p_operator_id: operatorRow.id, p_dry_run: true });
+  check('operatrice: non elimina le schede dello staff',
+    staffDelOp.status === 200 && staffDelOp.json?.reason === 'NOT_ADMIN', describe(staffDelOp));
   for (const t of ['expenses', 'account_transfers', 'operator_compensation_settings', 'rendiconto_voci']) {
     await expectRowsHidden(staff, t);
   }
@@ -694,6 +699,13 @@ async function localChecks() {
   check('admin: vede le schede clienti', adminClients.n >= 2, `righe visibili: ${adminClients.n}`);
   const promoted = await expectRpcOk(admin, 'promote_profile_to_operator', { p_profile_id: cliente.userId });
   check('admin: la promozione a operatrice ha effetto', promoted?.role === 'operator', JSON.stringify(promoted));
+  // L'operatrice di prova ha lezioni in programma: si chiede soltanto, e la funzione dice di no
+  const adminDelOp = await rpc(admin, 'staff_delete_operator', { p_operator_id: operatorRow.id, p_dry_run: true });
+  check('admin: raggiunge l\'eliminazione di un operatore (con lezioni in programma non si può)',
+    adminDelOp.status === 200 && adminDelOp.json?.reason === 'UPCOMING', describe(adminDelOp));
+  const directDelOp = await call(admin, 'DELETE', `/rest/v1/operators?id=eq.${operatorRow.id}`);
+  check('admin: una scheda dello staff non si cancella direttamente (solo con staff_delete_operator)',
+    isDenied(directDelOp), describe(directDelOp));
 
   console.log('\n▸ service_role — edge function e automazioni');
   await expectRpcOk(service, 'queue_birthday', {}, 'queue_birthday (job di pg_cron)');

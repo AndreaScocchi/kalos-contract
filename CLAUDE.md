@@ -629,6 +629,27 @@ cassa» (sette quote del 07/10) che erano già in banca.
 - Test: `supabase/tests/senza_cassa.test.sql` (9), `finanze.test.sql` e `stripe_conto.test.sql`
   aggiornati (test:db 568), `verify-access` 228 (l'accredito di prova lo scrive service_role).
 
+### Dopo la v0.3.19: eliminare un operatore (22/10/2026, nessun tag)
+
+Migrazione `20261022150000`. Richiesta dell'utente: dal gestionale un operatore si deve poter
+eliminare, non solo disattivare; decisione dell'utente: **lo storico tiene il nome**.
+
+- **`staff_delete_operator(p_operator_id, p_dry_run = false)`** (solo admin, `NOT_ADMIN`): rifiuta
+  con lezioni o eventi non ancora finiti (`UPCOMING`, con `upcoming_lessons` e `upcoming_events`).
+  Senza storico (nessuna lezione, anche archiviata, evento, compenso congelato o pagato, uscita,
+  registro dei volontari, vecchio payout) cancella la riga (`DELETED`; assegnazioni dei modelli e
+  ritenuta vanno via in cascata). Con uno storico tiene la riga solo per il nome (`NAME_KEPT`):
+  `deleted_at`, non attiva e non sul sito, senza bio, foto, discipline, ordine e account collegato;
+  nome, ruolo, rapporto con l'associazione, assegnazioni e ritenuta restano per i compensi dei mesi
+  in cui ha lavorato. `p_dry_run` dice solo cosa farebbe (`DRY_RUN`, `keeps_name`, `lessons`,
+  `events`). Restituisce `image_url` (se nessun'altra scheda la usa) da cancellare dallo storage.
+- **Vincolo `operators_deleted_is_hidden`:** una scheda eliminata non torna attiva né visibile sul sito.
+- **Niente DELETE diretto:** `operators_write_admin` (ALL) è diventata `operators_insert_admin` e
+  `operators_update_admin`, e authenticated non ha più DELETE su `operators`.
+- Lo staff legge ancora le schede eliminate (nomi nello storico); anon e clienti no, come per quelle
+  non attive. Tipi: `staff_delete_operator` in `src/types/database.ts`.
+- Test: `supabase/tests/elimina_operatore.test.sql` (31), `access_model.test.sql`, `verify-access` (+4).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su

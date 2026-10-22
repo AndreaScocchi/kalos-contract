@@ -5876,6 +5876,10 @@ export type Database = {
         }
         Returns: Json
       }
+      staff_delete_operator: {
+        Args: { p_dry_run?: boolean; p_operator_id: string }
+        Returns: Json
+      }
       staff_freeze_compensation: {
         Args: {
           p_month_end: string

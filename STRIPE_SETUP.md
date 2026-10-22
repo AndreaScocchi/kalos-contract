@@ -33,7 +33,8 @@ sito ──► stripe-checkout ──► Stripe Checkout (pagina di Stripe) ─�
   la quota segnata come pagata, la ricevuta numerata, l'email con il PDF, e la commissione di Stripe
   come uscita nella categoria "Commissioni" (H5).
 - **Stessa quota pagata due volte** (due schede del browser): il secondo incasso si registra (il denaro
-  è arrivato) come doppione, **senza ricevuta**, e compare in Incassi → Online da rimborsare.
+  è arrivato) come doppione, **senza ricevuta**, e compare da rimborsare in Incassi → Ricevute, sotto
+  «Pagamenti online senza ricevuta».
 - **Rimborsi:** mai automatici (D4). Dal gestionale, solo admin e Tesoriere: il denaro torna sulla
   carta e il registro si aggiorna da solo. Anche un rimborso fatto dalla dashboard di Stripe viene
   registrato. Stripe non restituisce la commissione: l'uscita resta.
@@ -64,7 +65,8 @@ sito ──► stripe-checkout ──► Stripe Checkout (pagina di Stripe) ─�
   `internal.stripe_record_income`.
 - Quello che al momento del pagamento non si può più fare (iscrizione disdetta o già pagata, "da
   saldare" già saldato in studio, annullato o superato, importo cambiato) diventa un **doppione**: registrato perché il
-  denaro è arrivato, senza ricevuta né collegamenti, in Incassi → Online da rimborsare.
+  denaro è arrivato, senza ricevuta né collegamenti, in Incassi → Ricevute → «Pagamenti online senza
+  ricevuta» da rimborsare.
 - Fonte degli incassi: `app`. Dall'app anche la quota torna all'app.
 - **Ritorno:** alla pagina `/payment/return?payment=<id>` dell'app. Sul web, la stessa origine se è
   fra `APP_RETURN_ORIGINS`; da iPhone e Android (nessuna origine) la prima di `APP_RETURN_ORIGINS`

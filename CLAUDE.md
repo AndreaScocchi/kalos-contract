@@ -167,6 +167,7 @@ npm run verify:migrations   # Check migration integrity
 | `stripe_events`, `stripe_payments`, `stripe_refunds` | Pagamenti online: memoria del webhook, pagamenti (con `source`, `metadata`, `is_duplicate`), rimborsi |
 | `stripe_checkout_attempts` | Limite orario dei checkout delle donazioni per impronta dell'IP (interna) |
 | `rendiconto_voci`, `account_transfers`, `operator_compensation_settings`, `compensation_payments` | Finanze (sessione 7): voci del Modello D, giroconti, ritenuta per persona, pagamenti dei compensi |
+| `bank_closings`, `bank_statement_lines`, `bank_line_links`, `bank_rules` | Chiusure con l'estratto conto (v0.3.20): periodi, righe del PDF, abbinamenti col registro, spese ricorrenti ricordate |
 
 ### Communication Tables
 
@@ -650,6 +651,32 @@ eliminare, non solo disattivare; decisione dell'utente: **lo storico tiene il no
   non attive. Tipi: `staff_delete_operator` in `src/types/database.ts`.
 - Test: `supabase/tests/elimina_operatore.test.sql` (31), `access_model.test.sql`, `verify-access` (+4).
 
+### v0.3.20 (22/10/2026: chiusura con l'estratto conto)
+
+Migrazione `20261022160000`, bucket `supabase/storage/estratti-conto.sql`. Richiesta dell'utente: a
+fine mese si carica il PDF dei movimenti della banca («Movimenti Globali» di Relax Banking, BCC
+Venezia Giulia) e il gestionale lo confronta col registro, proponendo le correzioni. Il PDF lo legge
+il gestionale nel browser; qui resta la traccia, che **non blocca** i movimenti del periodo
+(decisione dell'utente).
+
+| Oggetto | Cosa fa |
+|---|---|
+| `bank_closings` | Un periodo chiuso: dal giorno dopo la chiusura precedente (la prima dal 19/08/2026) fino a ieri al massimo. `opening_cents` = saldo della banca della chiusura prima (la prima: `opening_bank_cents`), `closing_cents` = più i movimenti del PDF (vincolo), `ledger_cents` = saldo del gestionale a fine periodo quando si chiude, `account_ref` (numero del rapporto, uguale da una chiusura all'altra), PDF in `file_path` |
+| `bank_statement_lines` | I movimenti del PDF dentro il periodo (data contabile e valuta, importo con segno, causale, descrizione, `note` per una riga lasciata senza movimento) |
+| `bank_line_links` | Riga ↔ incasso, uscita o accredito di Stripe (più incassi in contanti per un versamento). Un movimento del registro sta in una riga sola (unici); `closing_id` = la chiusura che ha abbinato, anche una riga rimasta aperta prima. Se il movimento si cancella l'abbinamento se ne va (cascade) e la riga torna aperta |
+| `bank_rules` | Spese ricorrenti ricordate: causale (uguale, senza maiuscole) e/o testo nella descrizione → categoria, fornitore, descrizione, voce. Uniche per causale e testo |
+| `finance_save_bank_closing(p_payload)` | Salva periodo, righe, abbinamenti e `carry_links` (righe di chiusure prima abbinate adesso). Ogni riga abbinata torna al centesimo (`internal.bank_link_cents`, stesse regole di `finance_account_balances`). Risposte `SAVED`, `NOT_FINANCE`, `INVALID_PERIOD`, `PERIOD_NOT_OVER`, `PERIOD_NOT_CONTIGUOUS` (con `expected_from`), `ACCOUNT_MISMATCH`, `INVALID_LINE`, `LINE_OUTSIDE_PERIOD`, `LINK_NOT_BANK`, `ALREADY_LINKED`, `LINE_NOT_OPEN`, `LINK_AMOUNT_MISMATCH` (con `detail`) |
+| `finance_delete_bank_closing(p_closing_id)` | Annulla **solo l'ultima** (`LAST_ONLY`): ogni saldo di partenza è quello della precedente. Restituisce `file_path` da togliere dal bucket |
+
+- **Permessi:** tutto solo Finanze. Chiusure, righe e abbinamenti si leggono con le policy e si
+  scrivono solo con le due funzioni; le regole si scrivono direttamente (policy `bank_rules_all_finance`).
+  Bucket `estratti-conto` privato, solo PDF fino a 10 MB, `can_access_finance()`.
+- **Il PDF non ha saldi:** per questo i periodi sono contigui e il saldo della banca passa da una
+  chiusura all'altra.
+- Test: `supabase/tests/chiusura_banca.test.sql` (30), `access_model.test.sql` con le due funzioni,
+  `verify-access` (+7, senza scritture: gira anche sulla produzione).
+- Il tag comprende anche «eliminare un operatore» (sezione sopra), uscito senza tag.
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -733,7 +760,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.19**
+Current: **v0.3.20**
 
 Consumers reference via git tag:
 ```json

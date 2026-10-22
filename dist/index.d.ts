@@ -499,6 +499,245 @@ type Database = {
                 };
                 Relationships: [];
             };
+            bank_closings: {
+                Row: {
+                    account_ref: string | null;
+                    closed_at: string;
+                    closed_by: string | null;
+                    closing_cents: number;
+                    created_at: string;
+                    file_name: string | null;
+                    file_path: string | null;
+                    id: string;
+                    ledger_cents: number;
+                    movements_cents: number;
+                    note: string | null;
+                    opening_cents: number;
+                    period_from: string;
+                    period_to: string;
+                    printed_on: string | null;
+                    updated_at: string;
+                };
+                Insert: {
+                    account_ref?: string | null;
+                    closed_at?: string;
+                    closed_by?: string | null;
+                    closing_cents: number;
+                    created_at?: string;
+                    file_name?: string | null;
+                    file_path?: string | null;
+                    id?: string;
+                    ledger_cents: number;
+                    movements_cents: number;
+                    note?: string | null;
+                    opening_cents: number;
+                    period_from: string;
+                    period_to: string;
+                    printed_on?: string | null;
+                    updated_at?: string;
+                };
+                Update: {
+                    account_ref?: string | null;
+                    closed_at?: string;
+                    closed_by?: string | null;
+                    closing_cents?: number;
+                    created_at?: string;
+                    file_name?: string | null;
+                    file_path?: string | null;
+                    id?: string;
+                    ledger_cents?: number;
+                    movements_cents?: number;
+                    note?: string | null;
+                    opening_cents?: number;
+                    period_from?: string;
+                    period_to?: string;
+                    printed_on?: string | null;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "bank_closings_closed_by_fkey";
+                        columns: ["closed_by"];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            bank_line_links: {
+                Row: {
+                    closing_id: string;
+                    created_at: string;
+                    expense_id: string | null;
+                    id: string;
+                    line_id: string;
+                    transaction_id: string | null;
+                    transfer_id: string | null;
+                };
+                Insert: {
+                    closing_id: string;
+                    created_at?: string;
+                    expense_id?: string | null;
+                    id?: string;
+                    line_id: string;
+                    transaction_id?: string | null;
+                    transfer_id?: string | null;
+                };
+                Update: {
+                    closing_id?: string;
+                    created_at?: string;
+                    expense_id?: string | null;
+                    id?: string;
+                    line_id?: string;
+                    transaction_id?: string | null;
+                    transfer_id?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "bank_line_links_closing_id_fkey";
+                        columns: ["closing_id"];
+                        isOneToOne: false;
+                        referencedRelation: "bank_closings";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "bank_line_links_expense_id_fkey";
+                        columns: ["expense_id"];
+                        isOneToOne: true;
+                        referencedRelation: "expenses";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "bank_line_links_line_id_fkey";
+                        columns: ["line_id"];
+                        isOneToOne: false;
+                        referencedRelation: "bank_statement_lines";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "bank_line_links_transaction_id_fkey";
+                        columns: ["transaction_id"];
+                        isOneToOne: true;
+                        referencedRelation: "transactions";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "bank_line_links_transfer_id_fkey";
+                        columns: ["transfer_id"];
+                        isOneToOne: true;
+                        referencedRelation: "account_transfers";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
+            bank_rules: {
+                Row: {
+                    category_id: string;
+                    created_at: string;
+                    created_by: string | null;
+                    id: string;
+                    match_causale: string | null;
+                    match_text: string | null;
+                    notes: string | null;
+                    rendiconto_voce: string | null;
+                    updated_at: string;
+                    vendor: string | null;
+                };
+                Insert: {
+                    category_id: string;
+                    created_at?: string;
+                    created_by?: string | null;
+                    id?: string;
+                    match_causale?: string | null;
+                    match_text?: string | null;
+                    notes?: string | null;
+                    rendiconto_voce?: string | null;
+                    updated_at?: string;
+                    vendor?: string | null;
+                };
+                Update: {
+                    category_id?: string;
+                    created_at?: string;
+                    created_by?: string | null;
+                    id?: string;
+                    match_causale?: string | null;
+                    match_text?: string | null;
+                    notes?: string | null;
+                    rendiconto_voce?: string | null;
+                    updated_at?: string;
+                    vendor?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "bank_rules_category_id_fkey";
+                        columns: ["category_id"];
+                        isOneToOne: false;
+                        referencedRelation: "expense_categories";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "bank_rules_created_by_fkey";
+                        columns: ["created_by"];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "bank_rules_rendiconto_voce_fkey";
+                        columns: ["rendiconto_voce"];
+                        isOneToOne: false;
+                        referencedRelation: "rendiconto_voci";
+                        referencedColumns: ["code"];
+                    }
+                ];
+            };
+            bank_statement_lines: {
+                Row: {
+                    amount_cents: number;
+                    booked_on: string;
+                    causale: string;
+                    closing_id: string;
+                    created_at: string;
+                    description: string;
+                    id: string;
+                    note: string | null;
+                    position: number;
+                    value_on: string | null;
+                };
+                Insert: {
+                    amount_cents: number;
+                    booked_on: string;
+                    causale?: string;
+                    closing_id: string;
+                    created_at?: string;
+                    description?: string;
+                    id?: string;
+                    note?: string | null;
+                    position: number;
+                    value_on?: string | null;
+                };
+                Update: {
+                    amount_cents?: number;
+                    booked_on?: string;
+                    causale?: string;
+                    closing_id?: string;
+                    created_at?: string;
+                    description?: string;
+                    id?: string;
+                    note?: string | null;
+                    position?: number;
+                    value_on?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "bank_statement_lines_closing_id_fkey";
+                        columns: ["closing_id"];
+                        isOneToOne: false;
+                        referencedRelation: "bank_closings";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             bookings: {
                 Row: {
                     client_id: string | null;
@@ -5686,6 +5925,12 @@ type Database = {
                 };
                 Returns: Json;
             };
+            finance_delete_bank_closing: {
+                Args: {
+                    p_closing_id: string;
+                };
+                Returns: Json;
+            };
             finance_income_allocations: {
                 Args: {
                     p_from: string;
@@ -5738,6 +5983,12 @@ type Database = {
                     voce: string;
                     voce_override: string;
                 }[];
+            };
+            finance_save_bank_closing: {
+                Args: {
+                    p_payload: Json;
+                };
+                Returns: Json;
             };
             finance_set_opening_balances: {
                 Args: {

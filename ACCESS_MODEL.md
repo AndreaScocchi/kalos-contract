@@ -105,8 +105,9 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   `finance_income_allocations`, `finance_account_balances`, `finance_set_opening_balances`,
   `staff_unfreeze_compensation`, `staff_pay_compensation` (al posto di
   `staff_mark_compensation_paid`), `staff_undo_compensation_payment`,
-  `staff_save_compensation_model`, `preview_compensation` e, dalla v0.3.17,
-  `staff_set_default_compensation_model` (tutte con `can_access_finance()`).
+  `staff_save_compensation_model`, `preview_compensation`, dalla v0.3.17
+  `staff_set_default_compensation_model` e, dalla v0.3.20, `finance_save_bank_closing` e
+  `finance_delete_bank_closing` (tutte con `can_access_finance()`).
   `staff_register_payment` accetta la voce del rendiconto solo dalle Finanze;
 - due funzioni pure chiamate dai trigger `SECURITY INVOKER` su `announcements` e `activities`.
 
@@ -140,6 +141,12 @@ riapri, paga, annulla), che tengono insieme compensi, pagamenti e uscite. Su `ex
 all'API vieta di inserire, cambiare o cancellare le uscite automatiche (compensi, commissioni
 Stripe, rimborsi ai volontari). La policy `expenses_delete_finance` permette al Tesoriere di
 cancellare le uscite scritte a mano (prima solo l'admin).
+
+**Chiusure con l'estratto conto (v0.3.20).** `bank_closings`, `bank_statement_lines` e
+`bank_line_links` si leggono solo con `can_access_finance()` e si scrivono **solo con le funzioni**
+(`finance_save_bank_closing`, `finance_delete_bank_closing`): periodi contigui e righe che tornano al
+centesimo con i movimenti del registro. `bank_rules` (spese ricorrenti ricordate) è delle Finanze in
+lettura e scrittura. I PDF stanno nel bucket privato `estratti-conto`, solo Finanze.
 
 **`site_rebuild_state`** (sessione 6) sta in `public` con RLS attivo, nessuna policy e nessun grant ad
 anon e authenticated: la scrive il job `internal.cron_site_rebuild`, la aggiorna l'edge function

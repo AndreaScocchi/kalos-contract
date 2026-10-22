@@ -134,7 +134,10 @@ SELECT set_eq(
     -- v0.3.17 (08/10/2026): il modello di compenso predefinito, solo Finanze (can_access_finance()).
     'staff_set_default_compensation_model(p_model_id uuid)',
     -- 22/10/2026: eliminare la scheda di un operatore, solo admin (is_admin()).
-    'staff_delete_operator(p_operator_id uuid, p_dry_run boolean)'
+    'staff_delete_operator(p_operator_id uuid, p_dry_run boolean)',
+    -- v0.3.20 (22/10/2026): chiusura con l'estratto conto, solo Finanze (can_access_finance()).
+    'finance_delete_bank_closing(p_closing_id uuid)',
+    'finance_save_bank_closing(p_payload jsonb)'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );

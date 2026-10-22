@@ -207,6 +207,9 @@ async function anonChecks() {
   await expectRpcDenied(anon, 'staff_set_default_compensation_model', { p_model_id: ZERO_UUID });
   // 22/10/2026: eliminare la scheda di un operatore, solo admin (id inesistente e solo la domanda)
   await expectRpcDenied(anon, 'staff_delete_operator', { p_operator_id: ZERO_UUID, p_dry_run: true });
+  // v0.3.20: chiusura con l'estratto conto (payload vuoto e id inesistente: anche se fossero aperte, non scriverebbero)
+  await expectRpcDenied(anon, 'finance_save_bank_closing', { p_payload: {} });
+  await expectRpcDenied(anon, 'finance_delete_bank_closing', { p_closing_id: ZERO_UUID });
   await expectRpcNotExposed(anon, 'income_voce', { p_kind: 'donation', p_is_commercial: false, p_is_member: false });
   // Sessione 9: acquisti dall'app (id inesistenti: anche se fossero aperte, non troverebbero nulla)
   await expectRpcDenied(anon, 'prepare_my_plan_purchase', { p_plan_id: ZERO_UUID });
@@ -646,6 +649,17 @@ async function localChecks() {
   const tesDefault = await rpc(tesoriere, 'staff_set_default_compensation_model', { p_model_id: ZERO_UUID });
   check('Tesoriere: raggiunge il cambio del modello predefinito (qui su un modello inesistente)',
     tesDefault.status === 200 && tesDefault.json?.reason === 'MODEL_NOT_FOUND', describe(tesDefault));
+  // Chiusura con l'estratto conto (v0.3.20): risposte che non scrivono niente
+  const tesClosing = await rpc(tesoriere, 'finance_save_bank_closing', { p_payload: { period_from: '1900-01-02', period_to: '1900-01-01' } });
+  check('Tesoriere: raggiunge la chiusura con l\'estratto conto (qui con un periodo al contrario)',
+    tesClosing.status === 200 && tesClosing.json?.reason === 'INVALID_PERIOD', describe(tesClosing));
+  const tesUnclose = await rpc(tesoriere, 'finance_delete_bank_closing', { p_closing_id: ZERO_UUID });
+  check('Tesoriere: raggiunge l\'annullo di una chiusura (qui inesistente)',
+    tesUnclose.status === 200 && tesUnclose.json?.reason === 'CLOSING_NOT_FOUND', describe(tesUnclose));
+  const directClosing = await insert(tesoriere, 'bank_closings', {
+    period_from: '1900-01-01', period_to: '1900-01-01', opening_cents: 0, movements_cents: 0, closing_cents: 0, ledger_cents: 0,
+  });
+  check('Tesoriere: le chiusure si scrivono solo con la funzione', isDenied(directClosing), describe(directClosing));
   const withholding = await insert(tesoriere, 'operator_compensation_settings',
     { operator_id: operatorRow.id, withholding_percent: 20 });
   check('Tesoriere: imposta la ritenuta d\'acconto di una persona', withholding.status === 201, describe(withholding));
@@ -681,6 +695,12 @@ async function localChecks() {
   const staffDelOp = await rpc(staff, 'staff_delete_operator', { p_operator_id: operatorRow.id, p_dry_run: true });
   check('operatrice: non elimina le schede dello staff',
     staffDelOp.status === 200 && staffDelOp.json?.reason === 'NOT_ADMIN', describe(staffDelOp));
+  const staffClosing = await rpc(staff, 'finance_save_bank_closing', { p_payload: {} });
+  check('operatrice: non chiude con l\'estratto conto',
+    staffClosing.status === 200 && staffClosing.json?.reason === 'NOT_FINANCE', describe(staffClosing));
+  // Una regola con una categoria inesistente: anche se la policy la lasciasse passare, non si salverebbe
+  const staffRule = await insert(staff, 'bank_rules', { match_causale: `Verifica ${stamp}`, category_id: ZERO_UUID });
+  check('operatrice: non scrive le regole dell\'estratto conto', isDenied(staffRule), describe(staffRule));
   for (const t of ['expenses', 'account_transfers', 'operator_compensation_settings', 'rendiconto_voci']) {
     await expectRowsHidden(staff, t);
   }

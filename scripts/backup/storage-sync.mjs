@@ -50,7 +50,7 @@ if (mode !== 'unpack' && (!url || !key)) {
 /**
  * Cartelle in cima ai bucket che il backup non copia. `varianti/` contiene le versioni ridotte
  * delle foto (supabase/storage/FOTO.md): pesano più degli originali, e dopo un ripristino si
- * ricreano dagli originali in Gestionale → Sistema → Foto. Ogni MB scaricato da qui conta nel
+ * ricreano dagli originali (FOTO.md, «Backup»). Ogni MB scaricato da qui conta nel
  * traffico in uscita (egress) di Supabase, che nel piano gratuito ha un tetto mensile.
  */
 const CARTELLE_ESCLUSE = new Set(['varianti']);

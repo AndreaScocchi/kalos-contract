@@ -74,20 +74,24 @@ browser era uguale a sharp con le stesse impostazioni: SSIM 0,962 contro 0,962.
 
 ## Foto caricate prima delle versioni
 
-Gestionale → **Sistema → Foto** (solo admin) conta le foto senza versioni e le crea nel browser
-con la stessa compressione. L'originale non si tocca. Il 07/10/2026 le 15 foto più pesanti erano
-già state compresse a parte: originali salvati in `kalos-contract/backups/storage-originali-2026-10-07/`,
-cartella esclusa da git.
+Il 07/10/2026 le 15 foto più pesanti erano già state compresse a parte: originali salvati in
+`kalos-contract/backups/storage-originali-2026-10-07/`, cartella esclusa da git.
 
 L'11/10/2026 le versioni di tutte le 51 foto caricate prima sono state create con sharp (stesse
 qualità e formati), e i 10 file che nessuna tabella citava (9 foto e l'audio delle pratiche) sono
 stati tolti: backup e registro in `kalos-contract/backups/storage-rimossi-2026-10-11/`.
 
+Fino al 22/10/2026 c'era anche Gestionale → Sistema → Foto, che contava le foto senza versioni e
+le creava nel browser. Non aveva più niente da fare e l'utente l'ha fatta togliere (gestionale
+`30e4d51`).
+
 ## Backup
 
 Dal 13/10/2026 il backup notturno (`BACKUP.md`) non copia le cartelle `varianti/`: pesano più
-degli originali e ogni MB scaricato conta nel traffico in uscita di Supabase. Dopo un ripristino si
-ricreano da Gestionale → **Sistema → Foto**.
+degli originali e ogni MB scaricato conta nel traffico in uscita di Supabase. Dopo un ripristino
+mancano: sito, app e newsletter mostrano l'originale, quindi tutto funziona ma con più traffico.
+Per ricrearle si rimette la pagina Sistema → Foto (`git revert 30e4d51` nel gestionale), la si usa
+e la si toglie di nuovo; oppure si ricarica la foto dalla sua scheda.
 
 ## Da non fare
 

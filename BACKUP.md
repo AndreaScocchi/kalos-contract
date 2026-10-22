@@ -231,8 +231,8 @@ Da fare **in un progetto Supabase nuovo**, mai sopra la produzione. Tempo: meno 
    - edge function: `npx supabase secrets set …` (vedi AWS_SES_SETUP.md §6) e
      `npx supabase functions deploy`;
    - Auth: Site URL, Redirect URLs, provider Google e Apple, template email;
-   - versioni ridotte delle foto: Gestionale → **Sistema → Foto** le ricrea dagli originali (finché
-     mancano, sito, app e newsletter mostrano l'originale);
+   - versioni ridotte delle foto: finché mancano, sito, app e newsletter mostrano l'originale, che
+     pesa di più sul traffico; come ricrearle in `supabase/storage/FOTO.md` («Backup»);
    - storico delle migrazioni: `npx supabase migration repair --status applied <versioni>` sul
      progetto nuovo, così i prossimi `db push` partono dal punto giusto.
 6. **Puntare le app al progetto nuovo:** `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (sito,

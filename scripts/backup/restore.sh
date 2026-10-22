@@ -87,4 +87,4 @@ echo "Da rifare a mano sul progetto nuovo (non sono nel backup, vedi BACKUP.md):
 echo "  - secret del Vault: $(tr '\n' ' ' < "$work/db/vault_secret_names.txt")"
 [ "${RESTORE_CRON:-0}" = 1 ] || echo "  - job pg_cron: RESTORE_CRON=1, oppure db/cron_jobs.sql"
 echo "  - secret e deploy delle edge function, impostazioni Auth (URL, email, provider)"
-echo "  - versioni ridotte delle foto (varianti/, non nel backup): Gestionale → Sistema → Foto"
+echo "  - versioni ridotte delle foto (varianti/, non nel backup): supabase/storage/FOTO.md, «Backup»"

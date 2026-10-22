@@ -616,14 +616,24 @@ async function localChecks() {
   });
   check('Tesoriere: registra un\'uscita a mano (la vecchia categoria la allinea il database)',
     exp.status === 201 && exp.json?.[0]?.category === 'materials' && !!exp.json?.[0]?.confirmed_at, describe(exp));
+  // v0.3.19: non c'è una cassa, i contanti contano in banca
   const transfer = await insert(tesoriere, 'account_transfers',
     { occurred_on: today, from_account: 'cash', to_account: 'bank', amount_cents: 100, note: 'verifica' });
-  check('Tesoriere: registra un giroconto fra cassa e banca', transfer.status === 201, describe(transfer));
+  check('Tesoriere: nessun giroconto con la cassa (non c\'è)',
+    transfer.status >= 400 && (transfer.text || '').includes('NO_CASH_ACCOUNT'), describe(transfer));
   // v0.3.15: il conto Stripe si muove solo con i pagamenti e gli accrediti
   const stripeTransfer = await insert(tesoriere, 'account_transfers',
     { occurred_on: today, from_account: 'stripe', to_account: 'bank', amount_cents: 100, note: 'verifica' });
   check('Tesoriere: un giroconto da Stripe non si scrive a mano (lo scrivono gli accrediti)',
     stripeTransfer.status >= 400 && (stripeTransfer.text || '').includes('AUTOMATIC_TRANSFER'), describe(stripeTransfer));
+  // Un accredito come lo scrive stripe_apply_payout_state: senza cassa è l'unico giroconto che esiste
+  const payout = await insert(service, 'account_transfers', {
+    occurred_on: today, from_account: 'stripe', to_account: 'bank', amount_cents: 100, stripe_payout_id: `po_verifica_${stamp}`,
+  });
+  check('service_role: scrive un accredito di Stripe (webhook)', payout.status === 201, describe(payout));
+  const delPayout = await call(tesoriere, 'DELETE', `/rest/v1/account_transfers?id=eq.${payout.json?.[0]?.id}`);
+  check('Tesoriere: un accredito di Stripe non si cancella dall\'interfaccia',
+    delPayout.status >= 400 && (delPayout.text || '').includes('AUTOMATIC_TRANSFER'), describe(delPayout));
   await expectRpcDenied(tesoriere, 'stripe_apply_payout_state', { p_payout: { id: 'po_verifica' } });
   const tesModel = await expectRpcOk(tesoriere, 'staff_save_compensation_model', {
     p_payload: { name: `Modello Tesoriere ${stamp}`, components: [{ kind: 'fixed_per_lesson', value_cents: 2000 }] },

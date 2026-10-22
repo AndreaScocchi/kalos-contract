@@ -1,5 +1,6 @@
 -- Finanze (sessione 7): voci del rendiconto per cassa e distinzione fra associatə e terzi, entrate
--- divise per attività in base alle prenotazioni, saldi di cassa e banca, uscite automatiche
+-- divise per attività in base alle prenotazioni, saldi di banca e Stripe (niente cassa dal 22/10/2026,
+-- v0.3.19: i contanti contano in banca), uscite automatiche
 -- protette, ricorrenze che recuperano i mesi, compensi congelati solo se già avvenuti, pagati con
 -- la ritenuta d'acconto e annullabili, modelli salvati tutto o niente.
 --
@@ -7,7 +8,7 @@
 -- database vuoto.
 
 BEGIN;
-SELECT plan(72);
+SELECT plan(74);
 
 -- ── Persone ──────────────────────────────────────────────────────────────────
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
@@ -57,7 +58,6 @@ VALUES ('4c000000-0000-0000-0000-000000000001', '4a000000-0000-0000-0000-0000000
 SET LOCAL request.jwt.claims = '{"sub":"17000000-0000-0000-0000-000000000001","role":"authenticated"}';
 CREATE TEMP TABLE s7_base AS
 SELECT public.finance_account_balances('2026-09-30') AS b,
-       (SELECT opening_cash_cents FROM public.association_settings) AS oc,
        (SELECT opening_bank_cents FROM public.association_settings) AS ob;
 GRANT SELECT ON s7_base TO authenticated;
 
@@ -98,9 +98,7 @@ SELECT is(
   public.staff_register_payment(jsonb_build_object('kind', 'other', 'amount_cents', 100, 'rendiconto_voce', 'E-A8'))->>'reason',
   'NOT_FINANCE', 'un''operatrice registra incassi ma non sceglie la voce del rendiconto');
 SELECT is((SELECT count(*)::int FROM public.expenses), 0, 'un''operatrice non vede le uscite');
-SELECT throws_ok(
-  $$ INSERT INTO public.account_transfers (from_account, to_account, amount_cents) VALUES ('cash', 'bank', 100) $$,
-  '42501', NULL, 'un''operatrice non registra giroconti');
+SELECT is((SELECT count(*)::int FROM public.account_transfers), 0, 'un''operatrice non vede i giroconti');
 
 RESET ROLE;
 
@@ -144,8 +142,8 @@ SELECT is(
      FROM public.finance_income_lines('2026-09-01', '2026-09-30') l
     WHERE l.transaction_id IN ('aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-000000000002',
                                'aa000000-0000-0000-0000-000000000004')),
-  'true/cash, false/bank, false/stripe',
-  'stato di sociə alla data e conto: contanti in cassa, bonifico in banca, carta su Stripe'
+  'true/bank, false/bank, false/stripe',
+  'stato di sociə alla data e conto: contanti e bonifico in banca (non c''è una cassa), carta su Stripe'
 );
 
 SELECT is(
@@ -550,24 +548,27 @@ SELECT is(
     WHERE e.id = (SELECT (r->>'expense_id')::uuid FROM s7_reimb)),
   '2026-09-20|cash|400', 'il rimborso esce il giorno in cui lo si paga, non quello dello scontrino');
 
-SELECT is(public.finance_set_opening_balances(10000, 50000)->>'ok', 'true', 'il Tesoriere imposta i saldi iniziali');
+SELECT is(public.finance_set_opening_balances(10000, 50000)->>'reason', 'NO_CASH_ACCOUNT',
+  'non c''è una cassa: un saldo iniziale di cassa si rifiuta');
+SELECT is(public.finance_set_opening_balances(0, 50000)->>'ok', 'true', 'il Tesoriere imposta il saldo iniziale del conto');
 
-INSERT INTO public.account_transfers (occurred_on, from_account, to_account, amount_cents, note)
-VALUES ('2026-09-14', 'cash', 'bank', 2000, 'S7 versamento');
+SELECT throws_ok(
+  $$ INSERT INTO public.account_transfers (occurred_on, from_account, to_account, amount_cents, note)
+     VALUES ('2026-09-14', 'cash', 'bank', 2000, 'S7 versamento') $$,
+  'P0001', 'NO_CASH_ACCOUNT', 'non c''è una cassa: nessun versamento da registrare');
 
--- Movimenti del test fino al 30/09: in cassa 10 + 25 − 1 + 8 (entrate) − 12 (materiali) − 20
--- (versamento) − 4 (rimborso) = 6 €; in banca 20 − 5 + 15 + 100 (entrate) + 20 (versamento) =
--- 150 €; su Stripe la donazione con carta meno la commissione, 50 − 1,50 = 48,50 € (v0.3.15: Stripe è
+-- Movimenti del test fino al 30/09, tutti in banca tranne la carta (v0.3.19): contanti 10 + 25 − 1
+-- + 8 (entrate) − 12 (materiali) − 4 (rimborso) = 26 €, bonifici 20 − 5 + 15 + 100 = 130 €, quindi
+-- 156 €; su Stripe la donazione con carta meno la commissione, 50 − 1,50 = 48,50 € (v0.3.15: Stripe è
 -- un conto finché non accredita). I compensi sono pagati in ottobre.
 SELECT is(
-  (SELECT (public.finance_account_balances('2026-09-30')->>'cash_cents')::bigint
-          - ((b->>'cash_cents')::bigint - oc + 10000) FROM s7_base),
-  600::bigint, 'saldo di cassa: saldo iniziale più i movimenti in contanti, meno quello che è andato in banca');
+  (SELECT (public.finance_account_balances('2026-09-30')->>'cash_cents')::bigint),
+  0::bigint, 'la cassa resta a zero: i contanti contano in banca');
 
 SELECT is(
   (SELECT (public.finance_account_balances('2026-09-30')->>'bank_cents')::bigint
           - ((b->>'bank_cents')::bigint - ob + 50000) FROM s7_base),
-  15000::bigint, 'saldo di banca: bonifici e versamento; la carta resta su Stripe fino all''accredito');
+  15600::bigint, 'saldo di banca: bonifici e contanti; la carta resta su Stripe fino all''accredito');
 
 SELECT is(
   (SELECT (public.finance_account_balances('2026-09-30')->>'stripe_cents')::bigint
@@ -577,7 +578,7 @@ SELECT is(
 SELECT is(
   (SELECT r->>'cash_cents' || '|' || (r->>'bank_cents') || '|' || (r->>'before_ledger')
      FROM (SELECT public.finance_account_balances('2026-08-01') AS r) x),
-  '10000|50000|true', 'prima dell''inizio della contabilità valgono i saldi iniziali');
+  '0|50000|true', 'prima dell''inizio della contabilità vale il saldo iniziale');
 
 RESET ROLE;
 

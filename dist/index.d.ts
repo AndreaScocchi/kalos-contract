@@ -5314,6 +5314,7 @@ type Database = {
                     location_province: string | null;
                     location_slug: string | null;
                     location_zip: string | null;
+                    performer_names: string[] | null;
                     price_cents: number | null;
                     registration_url: string | null;
                     start_date: string | null;

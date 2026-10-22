@@ -297,9 +297,9 @@ Contabilità per cassa dell'associazione, dal 19/08/2026, con il rendiconto nell
 | Oggetto | Cosa fa |
 |---|---|
 | `rendiconto_voci` | Le 58 voci del Modello D (entrate e uscite A–E, imposte, investimenti e disinvestimenti). Sola lettura: le categorie di uscita (`expense_categories.rendiconto_bucket`) e le righe (`expenses.rendiconto_voce`, `transactions.rendiconto_voce`) ci puntano; un trigger rifiuta una voce di entrata su un'uscita e viceversa |
-| `account_transfers` | Giroconti fra i conti (enum `cash_account`: cassa, banca e, dalla v0.3.15, Stripe); gli accrediti di Stripe hanno `stripe_payout_id` |
-| `association_settings.opening_cash_cents` / `opening_bank_cents` | Saldi al 19/08/2026; si impostano con `finance_set_opening_balances` |
-| `expenses.payment_method` | Conto dell'uscita (contanti = cassa, il resto banca). Trigger `internal.expenses_before_write`: allinea `category` da `category_id`, conferma le uscite a mano, e dall'API impedisce di inserire, cambiare o cancellare le uscite automatiche (`payout`, `stripe_fee`, `volunteer`) |
+| `account_transfers` | Giroconti fra i conti (enum `cash_account`: banca e, dalla v0.3.15, Stripe; la cassa non c'è più dalla v0.3.19): in pratica solo gli accrediti di Stripe, con `stripe_payout_id` |
+| `association_settings.opening_cash_cents` / `opening_bank_cents` | Saldi al 19/08/2026; si impostano con `finance_set_opening_balances`. Dalla v0.3.19 la cassa è sempre 0 (vincolo) |
+| `expenses.payment_method` | Conto dell'uscita (Stripe = commissioni, il resto banca; fino alla v0.3.18 i contanti andavano in cassa). Trigger `internal.expenses_before_write`: allinea `category` da `category_id`, conferma le uscite a mano, e dall'API impedisce di inserire, cambiare o cancellare le uscite automatiche (`payout`, `stripe_fee`, `volunteer`) |
 | `operator_compensation_settings` | Ritenuta d'acconto per persona (tabella a parte: `operators` è leggibile dal sito) |
 | `compensation_payments` | Un pagamento per persona e mese: lordo, ritenuta, netto, uscite collegate. `compensation_entries.payment_id`. I compensi congelati ora si scrivono solo con le funzioni |
 
@@ -307,8 +307,8 @@ Contabilità per cassa dell'associazione, dal 19/08/2026, con il rendiconto nell
 |---|---|
 | `finance_income_lines(p_from, p_to)` | Entrate del periodo, riga per riga (rimborsi in negativo): conto, voce del rendiconto (`internal.income_voce`: A1 quote, A4 donazioni, A3/A7 contributi da associatə/terzi secondo `internal.client_is_member_on`, B per le commerciali), ricevuta, abbonamento, evento |
 | `finance_income_allocations(p_from, p_to)` | Entrate per attività ed evento: un abbonamento si divide in proporzione alle lezioni prenotate con esso (resto dei centesimi alle quote più grandi); `unused` = abbonamento senza prenotazioni, `unlinked` = incasso non collegato |
-| `finance_account_balances(p_at)` | Saldi di cassa, banca e (v0.3.15) Stripe a fine giornata |
-| `finance_set_opening_balances(p_cash_cents, p_bank_cents)` | Saldi iniziali |
+| `finance_account_balances(p_at)` | Saldi di banca e (v0.3.15) Stripe a fine giornata; `cash_cents` sempre 0 dalla v0.3.19 |
+| `finance_set_opening_balances(p_cash_cents, p_bank_cents)` | Saldo iniziale; dalla v0.3.19 una cassa diversa da 0 risponde `NO_CASH_ACCOUNT` |
 | `staff_register_payment` | Stessa firma: accetta `rendiconto_voce` nel payload, solo dalle Finanze |
 | `generate_recurring_expenses(p_month?)` | Recupera i mesi mancanti fino a quello in corso (mai oltre); una ricorrenza riattivata riparte dal mese in corso |
 | `confirm_expense(p_expense_id, p_amount_cents?, p_expense_date?, p_payment_method?)` | Conferma con importo, data e metodo veri; l'importo della ritenuta non si cambia (`AMOUNT_LOCKED`) |
@@ -607,6 +607,28 @@ sito, non cancellate, come in `public_site_operators`), in ordine alfabetico; vu
 nessunə. `event_operators` resta chiusa ad anon (porta anche il modello di compenso).
 Test: `access_model.test.sql` invariato, `verify-access` invariato.
 
+### v0.3.19 (22/10/2026: niente cassa)
+
+Migrazione `20261022130000`. Decisione dell'utente: l'associazione **non ha una cassa fisica**, i
+pochi contanti dei soci si versano subito sul conto. Il conto «cassa» della sessione 7 teneva quei
+contanti fuori dalla banca finché non si registrava un giroconto: in produzione mostrava 245 € «in
+cassa» (sette quote del 07/10) che erano già in banca.
+
+- **`internal.cash_account_for`**: il metodo `cash` va in **banca** dal giorno dell'incasso (Stripe
+  resta sul conto Stripe). Il metodo resta `cash` su incassi e ricevute («Contanti»): cambia solo il
+  conto. Seguono `finance_income_lines` (`account`) e `finance_account_balances`.
+- **Unione dei conti:** il saldo iniziale di cassa passa alla banca e i giroconti fra cassa e banca
+  si cancellano (diventerebbero banca → banca); il totale non cambia. In produzione non c'era
+  nessuno dei due.
+- **Vincoli:** `association_settings_no_cash` (`opening_cash_cents = 0`) e `account_transfers_no_cash`
+  (nessun giroconto tocca la cassa); dall'API il trigger `internal.account_transfers_before_write`
+  risponde `NO_CASH_ACCOUNT`, e così `finance_set_opening_balances` con una cassa diversa da 0.
+- **Restano per compatibilità:** il valore `cash` di `cash_account`, la colonna `opening_cash_cents`,
+  `cash_cents` nella risposta dei saldi (sempre 0), la firma di `finance_set_opening_balances`.
+- Rendiconto (Modello D): la riga «Cassa» dello schema resta, a 0.
+- Test: `supabase/tests/senza_cassa.test.sql` (9), `finanze.test.sql` e `stripe_conto.test.sql`
+  aggiornati (test:db 568), `verify-access` 228 (l'accredito di prova lo scrive service_role).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -690,7 +712,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.18**
+Current: **v0.3.19**
 
 Consumers reference via git tag:
 ```json

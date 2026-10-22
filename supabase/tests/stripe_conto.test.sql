@@ -16,7 +16,7 @@ UPDATE public.profiles SET role = 'finance'  WHERE id = '17500000-0000-0000-0000
 UPDATE public.profiles SET role = 'operator' WHERE id = '17500000-0000-0000-0000-000000000002';
 
 -- ── Il conto di un metodo ────────────────────────────────────────────────────
-SELECT is(internal.cash_account_for('cash')::text, 'cash', 'i contanti vanno in cassa');
+SELECT is(internal.cash_account_for('cash')::text, 'bank', 'i contanti vanno in banca: non c''è una cassa (v0.3.19)');
 SELECT is(internal.cash_account_for('bank_transfer')::text, 'bank', 'un bonifico va in banca');
 SELECT is(internal.cash_account_for('other')::text, 'bank', '«altro» resta in banca');
 SELECT is(internal.cash_account_for('stripe')::text, 'stripe', 'un pagamento con carta va sul conto Stripe');
@@ -109,9 +109,9 @@ SELECT throws_ok(
 SELECT throws_ok(
   $$ INSERT INTO public.account_transfers (occurred_on, from_account, to_account, amount_cents, stripe_payout_id) VALUES ('2031-03-12', 'stripe', 'bank', 100, 'po_finto') $$,
   'P0001', 'AUTOMATIC_TRANSFER', 'nemmeno inventando un accredito');
-SELECT lives_ok(
+SELECT throws_ok(
   $$ INSERT INTO public.account_transfers (occurred_on, from_account, to_account, amount_cents, note) VALUES ('2031-03-12', 'cash', 'bank', 100, 'SC versamento') $$,
-  'i giroconti fra cassa e banca restano a mano');
+  'P0001', 'NO_CASH_ACCOUNT', 'niente giroconti con la cassa: non c''è (v0.3.19)');
 SELECT throws_ok(
   $$ SELECT public.stripe_apply_payout_state('{"id":"po_x","status":"paid","amount":1,"currency":"eur","arrival_date":0,"livemode":true}') $$,
   '42501', NULL, 'lo stato di un accredito lo scrive solo il servizio, non chi è loggatə');

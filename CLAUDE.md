@@ -196,7 +196,7 @@ npm run verify:migrations   # Check migration integrity
 - `public_site_pricing` - Subscription plans
 - `public_site_activities` - Activities
 - `public_site_operators` - Instructors
-- `public_site_events` - Events
+- `public_site_events` - Events (dalla v0.3.18 con `performer_names`, chi li tiene)
 
 ## RPC Functions (PostgreSQL)
 
@@ -598,6 +598,15 @@ quello che resta va all'insegnante fino a 40 € a lezione, il resto rimane all'
   già stato creato dal gestionale l'08/10, e il predefinito si sceglie da lì.
 - Test: `supabase/tests/compenso_predefinito.test.sql` (26), `verify-access` (+3).
 
+### v0.3.18 (22/10/2026: chi tiene l'evento sul sito)
+
+Migrazione `20261022110000`. Search Console ha segnalato i dati strutturati degli eventi del sito
+senza `performer`. `public_site_events` ha in fondo **`performer_names`** (`text[]`): i nomi di chi
+tiene l'evento (`event_operators`), solo le persone che il sito mostra già (attive, visibili sul
+sito, non cancellate, come in `public_site_operators`), in ordine alfabetico; vuoto se non c'è
+nessunə. `event_operators` resta chiusa ad anon (porta anche il modello di compenso).
+Test: `access_model.test.sql` invariato, `verify-access` invariato.
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -681,7 +690,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.17**
+Current: **v0.3.18**
 
 Consumers reference via git tag:
 ```json

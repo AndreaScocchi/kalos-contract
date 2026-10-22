@@ -293,7 +293,7 @@ email con il PDF della domanda). Condivise: `_shared/stripe.ts`, `receiptEmail.t
 
 Contabilità per cassa dell'associazione, dal 19/08/2026, con il rendiconto nello schema del
 **Modello D** degli enti del Terzo Settore (DM 5 marzo 2020). Tutto solo Finanze
-(`can_access_finance()`: admin e Tesoriere).
+(`can_access_finance()`: admin e Tesoriere, dal 22/10/2026 tutto lo staff, vedi sotto).
 
 | Oggetto | Cosa fa |
 |---|---|
@@ -676,6 +676,25 @@ il gestionale nel browser; qui resta la traccia, che **non blocca** i movimenti 
 - Test: `supabase/tests/chiusura_banca.test.sql` (30), `access_model.test.sql` con le due funzioni,
   `verify-access` (+7, senza scritture: gira anche sulla produzione).
 - Il tag comprende anche «eliminare un operatore» (sezione sopra), uscito senza tag.
+
+### Dopo la v0.3.20: le operatrici in tutte le sezioni (22/10/2026, nessun tag)
+
+Migrazione `20261022170000`, bucket `supabase/storage/bug-reports.sql`. Richiesta dell'utente:
+anche le operatrici hanno tutte le sezioni del gestionale, con le azioni che contengono (Finanze,
+rimborsi ai volontari, annulli e rimborsi degli incassi, esoneri, Marketing, Annunci, Segnalazioni).
+
+- **`can_access_finance()`** vale per operator, admin e finance (prima admin e finance): policy,
+  RPC e l'edge function `stripe-reconcile` seguono senza altre modifiche. Il nome resta.
+- **Segnalazioni:** `bug_reports_select_own_or_staff`, `bug_reports_update_staff`,
+  `bug_reports_delete_staff` (prima `…_admin`, con `is_admin()`); nel bucket `bug-reports`
+  `bug_reports_staff_*` al posto di `bug_reports_admins_*`.
+- **Marketing e Annunci** erano già `is_staff()` nel database.
+- **Restano all'admin:** schede dello staff, ruoli, `association_settings`, `association_years`,
+  `feature_flags`. `is_finance()` resta e non la usa nessuno.
+- Nessun tipo nuovo: il gestionale non ha bisogno di un bump.
+- Test: `supabase/tests/operatori_tutte_le_sezioni.test.sql` (17); nei test che provavano «chi non
+  è delle Finanze non passa» con un'operatrice ora c'è unə cliente; `verify-access` con le
+  operatrici nelle Finanze e nelle Segnalazioni, e fuori da quota e schede dello staff.
 
 ### get_my_client_id()
 - Returns current user's client_id

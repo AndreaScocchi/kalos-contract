@@ -186,9 +186,9 @@ SELECT is(internal.member_booking_status((SELECT anna FROM v30)), 'fee_overdue',
   'con l''importo deliberato e la decadenza passata: quota scaduta');
 
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claims = '{"sub":"1c000000-0000-0000-0000-000000000003","role":"authenticated"}';
+SET LOCAL request.jwt.claims = '{"sub":"1c000000-0000-0000-0000-000000000002","role":"authenticated"}';
 SELECT is((public.staff_set_member_fee((SELECT anna FROM v30), (SELECT yr FROM v30), 'waived'))->>'reason',
-  'FINANCE_ONLY', 'un''operatrice non esonera dalla quota');
+  'NOT_STAFF', 'un cliente non esonera dalla quota');
 SET LOCAL request.jwt.claims = '{"sub":"1c000000-0000-0000-0000-000000000004","role":"authenticated"}';
 SELECT is((public.staff_set_member_fee((SELECT anna FROM v30), (SELECT yr FROM v30), 'waived'))->>'ok',
   'true', 'il Tesoriere sì');

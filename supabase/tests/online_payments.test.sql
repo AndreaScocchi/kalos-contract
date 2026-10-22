@@ -11,9 +11,8 @@ SELECT plan(48);
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
   ('15000000-0000-0000-0000-000000000001', 'socia@test.kalos', '{"full_name":"Socia Online"}', 'authenticated', 'authenticated'),
   ('15000000-0000-0000-0000-000000000002', 'tesoriere@test.kalos', '{"full_name":"Tesoriere"}', 'authenticated', 'authenticated'),
-  ('15000000-0000-0000-0000-000000000003', 'operatrice@test.kalos', '{"full_name":"Operatrice"}', 'authenticated', 'authenticated');
+  ('15000000-0000-0000-0000-000000000003', 'cliente-rimborso@test.kalos', '{"full_name":"Cliente"}', 'authenticated', 'authenticated');
 UPDATE public.profiles SET role = 'finance'  WHERE id = '15000000-0000-0000-0000-000000000002';
-UPDATE public.profiles SET role = 'operator' WHERE id = '15000000-0000-0000-0000-000000000003';
 
 UPDATE public.feature_flags SET enabled = false WHERE key = 'payments';
 INSERT INTO public.feature_flags (key, enabled) VALUES ('stripe_test_ledger', true)
@@ -248,7 +247,7 @@ SELECT is(
   public.staff_prepare_stripe_refund(
     (SELECT id FROM public.transactions WHERE stripe_payment_id = '90000000-0000-0000-0000-000000000001'),
     1000)->>'reason',
-  'NOT_FINANCE', 'un''operatrice no');
+  'NOT_FINANCE', 'un cliente no');
 RESET ROLE;
 
 -- Stripe racconta un rimborso parziale, due volte

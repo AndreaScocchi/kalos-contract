@@ -371,8 +371,8 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub": "22222222-2222-2222-2222-222222222222", "role": "authenticated"}';
 SELECT throws_ok($$ UPDATE public.profiles SET role = 'admin' WHERE id = auth.uid() $$, '42501', NULL,
   'operatrice: non può darsi il ruolo admin');
-SELECT throws_ok($$ SELECT * FROM public.calculate_operator_compensation('1900-01-01', '1900-01-31', NULL) $$, '42501', NULL,
-  'operatrice: Finanze rifiutate');
+SELECT lives_ok($$ SELECT * FROM public.calculate_operator_compensation('1900-01-01', '1900-01-31', NULL) $$,
+  'operatrice: Finanze aperte (dal 22/10/2026)');
 RESET ROLE;
 
 -- admin

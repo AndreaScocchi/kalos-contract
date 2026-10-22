@@ -11,9 +11,8 @@ SELECT plan(26);
 
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
   ('0d160000-0000-0000-0000-000000000001', 'v316-tesoriere@test.kalos', '{"full_name":"Tesoriere 316"}', 'authenticated', 'authenticated'),
-  ('0d160000-0000-0000-0000-000000000002', 'v316-operatrice@test.kalos', '{"full_name":"Operatrice 316"}', 'authenticated', 'authenticated');
+  ('0d160000-0000-0000-0000-000000000002', 'v316-non-staff@test.kalos', '{"full_name":"Non Staff 316"}', 'authenticated', 'authenticated');
 UPDATE public.profiles SET role = 'finance'  WHERE id = '0d160000-0000-0000-0000-000000000001';
-UPDATE public.profiles SET role = 'operator' WHERE id = '0d160000-0000-0000-0000-000000000002';
 
 INSERT INTO public.operators (id, name, role, engagement_type) VALUES
   ('0d161000-0000-0000-0000-000000000001', 'V316 Senza assegnazione', 'istruttrice', 'paid'),
@@ -224,7 +223,7 @@ SELECT is(
 SET LOCAL request.jwt.claims = '{"sub":"0d160000-0000-0000-0000-000000000002","role":"authenticated"}';
 SELECT is(
   public.staff_set_default_compensation_model('00000000-0000-0000-0000-000000000000')->>'reason',
-  'NOT_FINANCE', 'un''operatrice non cambia il modello predefinito');
+  'NOT_FINANCE', 'un cliente non cambia il modello predefinito');
 
 RESET ROLE;
 

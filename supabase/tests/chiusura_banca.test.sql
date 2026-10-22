@@ -1,7 +1,8 @@
 -- Chiusura con l'estratto conto (v0.3.20, 22/10/2026): periodi contigui dall'inizio della
 -- contabilità, saldo della banca che passa da una chiusura all'altra, righe abbinate al centesimo
 -- con i movimenti del registro (anche più incassi in contanti per un versamento), ogni movimento in
--- una riga sola, righe rimaste aperte riprese dopo, annullo solo dell'ultima. Solo Finanze.
+-- una riga sola, righe rimaste aperte riprese dopo, annullo solo dell'ultima. Solo Finanze (dal 22/10/2026 tutto lo staff:
+-- `operatori_tutte_le_sezioni.test.sql`).
 --
 -- Le chiusure partono per forza dal 19/08/2026 e finiscono prima di oggi: i movimenti del test sono
 -- di agosto e settembre 2026, riconoscibili dalla descrizione «CB …».
@@ -11,9 +12,8 @@ SELECT plan(30);
 
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
   ('17700000-0000-0000-0000-000000000001', 'cb-tesoriere@test.kalos', '{"full_name":"Tesoriere Chiusura"}', 'authenticated', 'authenticated'),
-  ('17700000-0000-0000-0000-000000000002', 'cb-operatrice@test.kalos', '{"full_name":"Operatrice Chiusura"}', 'authenticated', 'authenticated');
+  ('17700000-0000-0000-0000-000000000002', 'cb-cliente@test.kalos', '{"full_name":"Cliente Chiusura"}', 'authenticated', 'authenticated');
 UPDATE public.profiles SET role = 'finance' WHERE id = '17700000-0000-0000-0000-000000000001';
-UPDATE public.profiles SET role = 'operator' WHERE id = '17700000-0000-0000-0000-000000000002';
 
 -- Il registro: un bonifico, due quote in contanti versate insieme, un pagamento con carta,
 -- una commissione bancaria
@@ -31,10 +31,10 @@ SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub":"17700000-0000-0000-0000-000000000002","role":"authenticated"}';
 SELECT is(
   public.finance_save_bank_closing('{"period_from":"2026-08-19","period_to":"2026-08-31","lines":[]}')->>'reason',
-  'NOT_FINANCE', 'un''operatrice non chiude');
+  'NOT_FINANCE', 'un cliente non chiude');
 SELECT throws_ok(
   $$ INSERT INTO public.bank_rules (match_causale, category_id) VALUES ('Commissioni', (SELECT id FROM public.expense_categories LIMIT 1)) $$,
-  '42501', NULL, 'un''operatrice non scrive le regole');
+  '42501', NULL, 'un cliente non scrive le regole');
 
 SET LOCAL request.jwt.claims = '{"sub":"17700000-0000-0000-0000-000000000001","role":"authenticated"}';
 
@@ -94,7 +94,7 @@ SELECT is(
   (SELECT closed_by FROM public.bank_closings WHERE period_from = '2026-08-19'),
   '17700000-0000-0000-0000-000000000001'::uuid, 'resta chi ha chiuso');
 SET LOCAL request.jwt.claims = '{"sub":"17700000-0000-0000-0000-000000000002","role":"authenticated"}';
-SELECT is((SELECT count(*)::int FROM public.bank_closings), 0, 'un''operatrice non legge le chiusure');
+SELECT is((SELECT count(*)::int FROM public.bank_closings), 0, 'un cliente non legge le chiusure');
 SET LOCAL request.jwt.claims = '{"sub":"17700000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 -- ── Seconda chiusura: settembre ──────────────────────────────────────────────

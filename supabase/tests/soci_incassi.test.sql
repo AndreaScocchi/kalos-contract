@@ -1,6 +1,6 @@
 -- Gestionale soci e incassi (sessione 4): saldare un "da saldare", incassare la quota in un gesto
 -- solo, leggere lo stato di iscrizione di più persone. Le operatrici registrano e saldano, ma non
--- vedono le Finanze (E3): per questo i test girano con il ruolo `operator`, non admin.
+-- vedevano le Finanze (E3, fino al 22/10/2026): per questo i test girano con il ruolo `operator`, non admin.
 
 BEGIN;
 SELECT plan(18);

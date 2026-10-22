@@ -13,9 +13,8 @@ SELECT plan(74);
 -- ── Persone ──────────────────────────────────────────────────────────────────
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
   ('17000000-0000-0000-0000-000000000001', 's7-tesoriere@test.kalos', '{"full_name":"Tesoriere Sette"}', 'authenticated', 'authenticated'),
-  ('17000000-0000-0000-0000-000000000002', 's7-operatrice@test.kalos', '{"full_name":"Operatrice Sette"}', 'authenticated', 'authenticated');
+  ('17000000-0000-0000-0000-000000000002', 's7-cliente@test.kalos', '{"full_name":"Cliente Sette"}', 'authenticated', 'authenticated');
 UPDATE public.profiles SET role = 'finance'  WHERE id = '17000000-0000-0000-0000-000000000001';
-UPDATE public.profiles SET role = 'operator' WHERE id = '17000000-0000-0000-0000-000000000002';
 
 INSERT INTO public.clients (id, full_name, email) VALUES
   ('27000000-0000-0000-0000-000000000001', 'Socia Sette', 's7-socia@test.kalos'),
@@ -80,25 +79,26 @@ INSERT INTO public.transactions (id, client_id, kind, amount_cents, method, sour
   ('aa000000-0000-0000-0000-000000000014', '27000000-0000-0000-0000-000000000002', 'subscription', -300, 'cash',          'studio', 'paid', '2026-09-17', 'aa000000-0000-0000-0000-000000000013', 'Rimborso');
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Chi non è delle Finanze non passa
+-- Chi non è delle Finanze non passa (dal 22/10/2026 le Finanze sono di tutto lo staff: resta fuori
+-- chi non è staff; le operatrici in `operatori_tutte_le_sezioni.test.sql`)
 -- ─────────────────────────────────────────────────────────────────────────────
 
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub":"17000000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 SELECT throws_ok($$ SELECT * FROM public.finance_income_lines('2026-09-01', '2026-09-30') $$, '42501', NULL,
-  'un''operatrice non legge le entrate delle Finanze');
+  'un cliente non legge le entrate delle Finanze');
 SELECT throws_ok($$ SELECT * FROM public.finance_income_allocations('2026-09-01', '2026-09-30') $$, '42501', NULL,
-  'un''operatrice non legge le entrate per attività');
+  'un cliente non legge le entrate per attività');
 SELECT is(public.finance_set_opening_balances(1, 1)->>'reason', 'NOT_FINANCE',
-  'un''operatrice non imposta i saldi iniziali');
+  'un cliente non imposta i saldi iniziali');
 SELECT is(public.staff_pay_compensation('00000000-0000-0000-0000-000000000000'::uuid, '2026-09-01')->>'reason', 'NOT_FINANCE',
-  'un''operatrice non paga compensi');
+  'un cliente non paga compensi');
 SELECT is(
   public.staff_register_payment(jsonb_build_object('kind', 'other', 'amount_cents', 100, 'rendiconto_voce', 'E-A8'))->>'reason',
-  'NOT_FINANCE', 'un''operatrice registra incassi ma non sceglie la voce del rendiconto');
-SELECT is((SELECT count(*)::int FROM public.expenses), 0, 'un''operatrice non vede le uscite');
-SELECT is((SELECT count(*)::int FROM public.account_transfers), 0, 'un''operatrice non vede i giroconti');
+  'NOT_STAFF', 'un cliente non registra incassi');
+SELECT is((SELECT count(*)::int FROM public.expenses), 0, 'un cliente non vede le uscite');
+SELECT is((SELECT count(*)::int FROM public.account_transfers), 0, 'un cliente non vede i giroconti');
 
 RESET ROLE;
 

@@ -120,6 +120,14 @@ async function expectRowsHidden(actor, table) {
     `righe esistenti: ${all.n}, visibili: ${mine.n} (HTTP ${mine.status})`);
 }
 
+async function expectRowsVisible(actor, table) {
+  const all = await count(service, table);
+  const mine = await count(actor, table);
+  check(`${actor.name}: ${table} mostra tutte le righe`,
+    all.n > 0 && (mine.status === 200 || mine.status === 206) && mine.n === all.n,
+    `righe esistenti: ${all.n}, visibili: ${mine.n} (HTTP ${mine.status})`);
+}
+
 async function expectRpcDenied(actor, fn, args, label = fn) {
   const r = await rpc(actor, fn, args);
   check(`${actor.name}: ${label} rifiutata`, isDenied(r), describe(r));
@@ -392,16 +400,18 @@ async function localChecks() {
   const staffEventBookingId = evBook.json?.[0]?.id;
   await expectRpcOk(staff, 'staff_cancel_event_booking', { p_booking_id: staffEventBookingId });
 
-  await expectRpcDenied(staff, 'get_monthly_revenue_by_client', FINANCE_1900);
+  // Dal 22/10/2026 le operatrici hanno tutte le sezioni del gestionale, Finanze comprese
+  // (migrazione 20261022170000): restano all'admin schede dello staff, ruoli, quota e interruttori.
+  await expectRpcOk(staff, 'get_monthly_revenue_by_client', FINANCE_1900);
 
-  // Sessione 3 — le operatrici registrano gli incassi ma non vedono le Finanze (E3)
+  // Sessione 3 — le operatrici registrano gli incassi
   const staffPay = await rpc(staff, 'staff_register_payment', {
     p_payload: { kind: 'other', amount_cents: 500, method: 'cash', source: 'studio' },
   });
   check('operatrice: registra un incasso in studio',
     staffPay.status === 200 && staffPay.json?.ok === true, describe(staffPay));
 
-  // Sessione 4 — "da saldare", quota e stato di iscrizione, sempre senza vedere le Finanze
+  // Sessione 4 — "da saldare", quota e stato di iscrizione
   const pending = await rpc(staff, 'staff_register_payment', {
     p_payload: { kind: 'other', amount_cents: 700, method: 'cash', source: 'studio', status: 'pending' },
   });
@@ -415,8 +425,8 @@ async function localChecks() {
   const statuses = await rpc(staff, 'staff_get_member_statuses', { p_client_ids: [clientId] });
   check('operatrice: legge lo stato di iscrizione dei clienti',
     statuses.status === 200 && typeof statuses.json?.statuses?.[clientId] === 'string', describe(statuses));
-  await expectRowsHidden(staff, 'compensation_models');
-  await expectRowsHidden(staff, 'volunteer_reimbursements');
+  await expectRowsVisible(staff, 'compensation_models');
+  await expectRowsVisible(staff, 'volunteer_reimbursements');
   // Sessione 6 — lista d'attesa dal gestionale (qui la lezione non è piena: la regola risponde)
   const wlNotFull = await rpc(staff, 'staff_add_to_waitlist', { p_lesson_id: lesson.id, p_client_id: clientId });
   check('operatrice: mette in lista d\'attesa (solo per le lezioni piene)',
@@ -427,18 +437,25 @@ async function localChecks() {
   const staffTrials = await count(staff, 'trials');
   check('operatrice: legge le prove (pagina Prove)', staffTrials.status === 200 || staffTrials.status === 206, `HTTP ${staffTrials.status}`);
   await expectReadDenied(staff, 'site_rebuild_state');
-  // Sessione 5 — i pagamenti online e i loro rimborsi sono cosa delle Finanze. Una riga "aperta" di
-  // prova (nessun pagamento, nessun incasso) serve a provare che esiste ma l'operatrice non la vede.
+  // Sessione 5 — i pagamenti online e i loro rimborsi sono cosa delle Finanze, dal 22/10/2026 di
+  // tutto lo staff. Una riga "aperta" di prova (nessun pagamento, nessun incasso) basta a provarlo.
   await insert(service, 'stripe_payments', {
     purpose: 'donation', amount_cents: 500, status: 'created', source: 'site', checkout_session_id: `cs_verify_${stamp}`,
   });
-  await expectRowsHidden(staff, 'stripe_payments');
+  await expectRowsVisible(staff, 'stripe_payments');
   const staffStripeRefund = await rpc(staff, 'staff_prepare_stripe_refund', { p_transaction_id: ZERO_UUID, p_amount_cents: 100 });
-  check('operatrice: non rimborsa pagamenti online',
-    staffStripeRefund.status === 200 && staffStripeRefund.json?.reason === 'NOT_FINANCE', describe(staffStripeRefund));
-  await expectRpcDenied(staff, 'calculate_compensation_v2', { ...FINANCE_1900, p_operator_id: null });
-  await expectRpcDenied(staff, 'calculate_operator_compensation', { ...FINANCE_1900, p_operator_id: null });
+  check('operatrice: arriva ai rimborsi dei pagamenti online',
+    staffStripeRefund.status === 200 && staffStripeRefund.json?.reason !== 'NOT_FINANCE', describe(staffStripeRefund));
+  await expectRpcOk(staff, 'calculate_compensation_v2', { ...FINANCE_1900, p_operator_id: null });
+  await expectRpcOk(staff, 'calculate_operator_compensation', { ...FINANCE_1900, p_operator_id: null });
   await expectReadDenied(staff, 'financial_monthly_summary');
+  // Segnalazioni: dal 22/10/2026 lo staff le vede tutte, non solo le proprie
+  await insert(service, 'bug_reports', { title: `Verifica ${stamp}`, description: 'segnalazione di prova', created_by_user_id: cliente.userId });
+  await expectRowsVisible(staff, 'bug_reports');
+  const staffYear = await insert(staff, 'association_years', { year: 2099, fee_cents: 100 });
+  check('operatrice: non decide la quota dell\'anno', isDenied(staffYear), describe(staffYear));
+  const staffNewOperator = await insert(staff, 'operators', { name: `Verifica ${stamp}`, role: 'Insegnante' });
+  check('operatrice: non crea schede dello staff', isDenied(staffNewOperator), describe(staffNewOperator));
   const staffSelfRole = await patch(staff, `profiles?id=eq.${staff.userId}`, { role: 'admin' });
   check('operatrice: non può darsi il ruolo admin', isDenied(staffSelfRole), describe(staffSelfRole));
   const staffOtherRole = await patch(staff, `profiles?id=eq.${cliente.userId}`, { role: 'operator' });
@@ -602,7 +619,7 @@ async function localChecks() {
     !!wlId && wlStill.json?.length === 1, `riga di prova: ${wlId ?? describe(wlRow)}, rimasta: ${describe(wlStill)}`);
   if (wlId) await call(service, 'DELETE', `/rest/v1/waitlist?id=eq.${wlId}`);
 
-  // Sessione 7 — le Finanze le usano admin e Tesoriere (ruolo finance); le operatrici no (E3)
+  // Sessione 7 — le Finanze: admin e Tesoriere (ruolo finance), dal 22/10/2026 anche le operatrici
   console.log('\n▸ Tesoriere — Finanze');
   const tesoriere = await staffUser('tesoriere', 'finance');
   const today = iso(new Date()).slice(0, 10);
@@ -683,26 +700,29 @@ async function localChecks() {
   check('Tesoriere: un\'uscita automatica non si cancella dall\'interfaccia',
     delFee.status >= 400 && (delFee.text || '').includes('AUTOMATIC_EXPENSE'), describe(delFee));
 
-  console.log('\n▸ operatrice — le Finanze restano chiuse');
-  await expectRpcDenied(staff, 'finance_income_lines', period);
-  await expectRpcDenied(staff, 'finance_account_balances', { p_at: today });
+  console.log('\n▸ operatrice — le Finanze (dal 22/10/2026), ma non le schede dello staff');
+  await expectRpcOk(staff, 'finance_income_lines', period);
+  await expectRpcOk(staff, 'finance_account_balances', { p_at: today });
+  // Il mese in corso non ha lezioni da pagare: la funzione risponde sul mese, non sul ruolo
   const staffPayComp = await rpc(staff, 'staff_pay_compensation', { p_operator_id: operatorRow.id, p_month_start: monthStart });
-  check('operatrice: non paga compensi',
-    staffPayComp.status === 200 && staffPayComp.json?.reason === 'NOT_FINANCE', describe(staffPayComp));
+  check('operatrice: arriva al pagamento dei compensi',
+    staffPayComp.status === 200 && staffPayComp.json?.reason !== 'NOT_FINANCE', describe(staffPayComp));
   const staffDefault = await rpc(staff, 'staff_set_default_compensation_model', { p_model_id: ZERO_UUID });
-  check('operatrice: non cambia il modello predefinito',
-    staffDefault.status === 200 && staffDefault.json?.reason === 'NOT_FINANCE', describe(staffDefault));
+  check('operatrice: arriva al modello predefinito (qui su un modello inesistente)',
+    staffDefault.status === 200 && staffDefault.json?.reason === 'MODEL_NOT_FOUND', describe(staffDefault));
   const staffDelOp = await rpc(staff, 'staff_delete_operator', { p_operator_id: operatorRow.id, p_dry_run: true });
   check('operatrice: non elimina le schede dello staff',
     staffDelOp.status === 200 && staffDelOp.json?.reason === 'NOT_ADMIN', describe(staffDelOp));
+  // Un periodo vuoto: la funzione risponde sul periodo, non sul ruolo, e non salva niente
   const staffClosing = await rpc(staff, 'finance_save_bank_closing', { p_payload: {} });
-  check('operatrice: non chiude con l\'estratto conto',
-    staffClosing.status === 200 && staffClosing.json?.reason === 'NOT_FINANCE', describe(staffClosing));
-  // Una regola con una categoria inesistente: anche se la policy la lasciasse passare, non si salverebbe
-  const staffRule = await insert(staff, 'bank_rules', { match_causale: `Verifica ${stamp}`, category_id: ZERO_UUID });
-  check('operatrice: non scrive le regole dell\'estratto conto', isDenied(staffRule), describe(staffRule));
+  check('operatrice: arriva alla chiusura con l\'estratto conto',
+    staffClosing.status === 200 && staffClosing.json?.ok === false && staffClosing.json?.reason !== 'NOT_FINANCE',
+    describe(staffClosing));
+  const staffRule = await insert(staff, 'bank_rules', { match_causale: `Verifica ${stamp}`, category_id: cat.json?.[0]?.id });
+  check('operatrice: scrive le regole dell\'estratto conto', staffRule.status === 201, describe(staffRule));
+  if (staffRule.json?.[0]?.id) await call(service, 'DELETE', `/rest/v1/bank_rules?id=eq.${staffRule.json[0].id}`);
   for (const t of ['expenses', 'account_transfers', 'operator_compensation_settings', 'rendiconto_voci']) {
-    await expectRowsHidden(staff, t);
+    await expectRowsVisible(staff, t);
   }
 
   console.log('\n▸ admin — gestionale e Finanze');

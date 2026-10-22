@@ -17,7 +17,19 @@ migrazione ne apre altre. Questa pagina spiega il perché.
 | `postgres` | Cron (`pg_cron`), trigger e RPC `SECURITY DEFINER` | proprietario degli oggetti |
 
 Helper usati da policy e RPC: `is_staff()` (operator, admin, finance), `is_admin()`,
-`can_access_finance()` (admin, finance), `get_my_client_id()`.
+`can_access_finance()` (dal 22/10/2026 operator, admin, finance; prima admin e finance),
+`get_my_client_id()`.
+
+**Le operatrici in tutte le sezioni (22/10/2026, migrazione `20261022170000`).** Richiesta
+dell'utente: le operatrici hanno tutte le sezioni del gestionale, con le azioni che contengono.
+`can_access_finance()` vale per tutto lo staff, quindi dove qui sotto si legge «solo Finanze» oggi
+vuol dire tutto lo staff (compensi e ritenute di tuttə compresi: l'utente lo sa e l'ha confermato).
+Le Segnalazioni (`bug_reports` e bucket `bug-reports`) usano `is_staff()` al posto di `is_admin()`.
+Restano solo all'admin (`is_admin()`): le schede dello staff (`operators_insert_admin`,
+`operators_update_admin`, `staff_delete_operator`), i ruoli (`promote_profile_to_operator`,
+`guard_profile_privileged_columns`), `association_settings`, `association_years` (importo e
+scadenza della quota) e `feature_flags`. Per separare di nuovo le Finanze basta riportare
+`can_access_finance()` ad admin e finance: policy, funzioni ed edge function la chiamano già.
 
 ## Regola base: tutto chiuso
 
@@ -59,7 +71,7 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   `staff_refund_transaction`, `staff_set_member_fee`, `staff_create_member_application`,
   `staff_decide_member_applications`, `staff_book_trial`, `staff_create_client_and_book_trial`,
   `staff_unconvert_trial`; dalla sessione 4 `staff_settle_transaction` (salda un "da saldare":
-  le operatrici registrano e saldano, ma correggere o annullare resta alle Finanze),
+  correggere o annullare resta alle Finanze, che dal 22/10/2026 sono tutto lo staff),
   `staff_pay_member_fee` (quota dell'anno in una transazione sola) e `staff_get_member_statuses`
   (espone allo staff la regola "solo soci" di `internal.member_booking_status`). `void_receipt` e
   `staff_refund_transaction` controllano `can_access_finance()`;
@@ -247,8 +259,8 @@ di questo tipo fa fallire il test: se serve davvero, la si aggiunge all'elenco e
 - **Bucket privati** (creati in produzione con gli script in `supabase/storage/`, non da
   migrazione: vedi sotto): `documenti-spese` per i documenti dei rimborsi ai volontari e delle
   uscite, leggibile e scrivibile solo con `can_access_finance()`; `bug-reports` per gli screenshot
-  delle segnalazioni, ognunə nella propria cartella `<id utente>/`, gli admin tutto (esisteva già,
-  lo script del 29/09 lo descrive com'è). Il bucket `newsletter` (immagini,
+  delle segnalazioni, ognunə nella propria cartella `<id utente>/`, lo staff tutto (dal 22/10/2026,
+  prima gli admin; esisteva già, lo script del 29/09 lo descrive com'è). Il bucket `newsletter` (immagini,
   lettura pubblica, scrittura staff) è stato creato a mano prima di questo modello.
 
 ## Come si verifica

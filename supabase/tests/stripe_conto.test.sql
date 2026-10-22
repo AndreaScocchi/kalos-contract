@@ -11,9 +11,8 @@ SELECT plan(32);
 -- ── Persone ──────────────────────────────────────────────────────────────────
 INSERT INTO auth.users (id, email, raw_user_meta_data, aud, role) VALUES
   ('17500000-0000-0000-0000-000000000001', 'sc-tesoriere@test.kalos', '{"full_name":"Tesoriere Conto"}', 'authenticated', 'authenticated'),
-  ('17500000-0000-0000-0000-000000000002', 'sc-operatrice@test.kalos', '{"full_name":"Operatrice Conto"}', 'authenticated', 'authenticated');
+  ('17500000-0000-0000-0000-000000000002', 'sc-cliente@test.kalos', '{"full_name":"Cliente Conto"}', 'authenticated', 'authenticated');
 UPDATE public.profiles SET role = 'finance'  WHERE id = '17500000-0000-0000-0000-000000000001';
-UPDATE public.profiles SET role = 'operator' WHERE id = '17500000-0000-0000-0000-000000000002';
 
 -- ── Il conto di un metodo ────────────────────────────────────────────────────
 SELECT is(internal.cash_account_for('cash')::text, 'bank', 'i contanti vanno in banca: non c''è una cassa (v0.3.19)');
@@ -143,11 +142,11 @@ SELECT is(
     'currency', 'usd', 'arrival_date', extract(epoch FROM timestamptz '2031-03-10 00:00+00')::bigint, 'livemode', true))->>'reason',
   'UNSUPPORTED_CURRENCY', 'solo euro');
 
--- Un'operatrice non vede i saldi
+-- Un cliente non vede i saldi
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub":"17500000-0000-0000-0000-000000000002","role":"authenticated"}';
 SELECT throws_ok($$ SELECT public.finance_account_balances('2031-03-31') $$, '42501', NULL,
-  'un''operatrice non legge i saldi');
+  'un cliente non legge i saldi');
 RESET ROLE;
 
 SELECT * FROM finish();

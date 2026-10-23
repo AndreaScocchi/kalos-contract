@@ -43,7 +43,7 @@
     "gen:schema": "node scripts/introspect-schema.mjs",
     "gen:kotlin": "node scripts/gen-kotlin-models.mjs",
     "codegen": "npm run gen:types && npm run gen:schema && npm run gen:kotlin",
-    "codegen:check": "npm run codegen && git diff --exit-code -- src/types/database.ts codegen/schema.json codegen/kotlin",
+    "codegen:check": "npm run codegen && git diff --exit-code -- src/types/database.ts codegen/schema.json codegen/kotlin && ! git ls-files --others --exclude-standard -- codegen/kotlin | grep .",
     "db:snapshot": "node scripts/db-snapshot.mjs",
     "db:push:safe": "node scripts/db-push-safe.mjs",
     "seed:anon": "node scripts/make-anon-seed.mjs",

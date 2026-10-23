@@ -26,6 +26,8 @@ on:
       - 'supabase/migrations/**'
       - 'scripts/introspect-schema.mjs'
       - 'scripts/gen-kotlin-models.mjs'
+      - 'codegen/**'
+      - 'src/types/database.ts'
       - 'package.json'
       - '.github/workflows/codegen.yml'
 
@@ -63,7 +65,9 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
       - name: Drift check (i file generati devono essere già committati e aggiornati)
+        # intent-to-add: un modello Kotlin nuovo e mai committato compare nel diff (git diff ignora i file non tracciati).
         run: |
+          git add --intent-to-add -- codegen/kotlin
           if ! git diff --exit-code -- src/types/database.ts codegen/schema.json codegen/kotlin; then
             echo "::error::DRIFT: i tipi TS / lo schema.json / i modelli Kotlin non sono allineati allo schema."
             echo "Rigenera in locale con 'npm run codegen' (richiede Docker) e committa i file aggiornati."

@@ -6338,7 +6338,10 @@ export type Database = {
         Args: { p_payload: Json }
         Returns: Json
       }
-      staff_save_compensation_override: { Args: { p_payload: Json }; Returns: Json }
+      staff_save_compensation_override: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
       staff_save_plan: {
         Args: { p_activity_ids: string[]; p_plan: Json; p_plan_id: string }
         Returns: Json

@@ -6,7 +6,7 @@ name: Consumer Compat (early warning)
 # l'upgrade opt-in. Non blocca il merge (continue-on-error + non va messo tra i required checks).
 #
 # PREREQUISITO: secret `CONSUMER_REPOS_TOKEN` = PAT (fine-grained, sola lettura) con accesso ai
-# repo privati AndreaScocchi/Kalos, kalos-app-management, kalos-webapp, kalos-app. Senza il token i checkout
+# repo privati AndreaScocchi/kalos-website, kalos-management, kalos-webapp, kalos-app. Senza il token i checkout
 # falliscono ma il workflow resta verde (è solo informativo).
 
 on:
@@ -53,11 +53,11 @@ jobs:
       matrix:
         include:
           - name: website
-            repo: AndreaScocchi/Kalos
+            repo: AndreaScocchi/kalos-website
             dir: kalos-react
             cmd: npm run type-check
           - name: management
-            repo: AndreaScocchi/kalos-app-management
+            repo: AndreaScocchi/kalos-management
             dir: .
             cmd: npx --yes tsc --noEmit
           - name: webapp

@@ -160,7 +160,7 @@ async function anonChecks() {
   for (const t of ['clients', 'device_tokens', 'notification_logs', 'notification_queue', 'financial_monthly_summary',
     // Sessione 3: soci, incassi e compensi non si leggono senza accesso
     'members', 'member_applications', 'member_fees', 'member_registry', 'transactions', 'receipts',
-    'volunteers', 'volunteer_reimbursements', 'compensation_models', 'compensation_entries',
+    'volunteers', 'volunteer_reimbursements', 'compensation_models', 'compensation_entries', 'compensation_line_overrides',
     'association_settings', 'trials', 'stripe_payments',
     // Sessione 5: pagamenti online
     'stripe_refunds', 'stripe_events', 'stripe_checkout_attempts',
@@ -213,6 +213,10 @@ async function anonChecks() {
   await expectRpcDenied(anon, 'staff_pay_compensation', { p_operator_id: ZERO_UUID, p_month_start: '1900-01-01' });
   // v0.3.17: il modello di compenso predefinito si cambia solo dalle Finanze (id inesistente: non cambierebbe nulla)
   await expectRpcDenied(anon, 'staff_set_default_compensation_model', { p_model_id: ZERO_UUID });
+  await expectRpcDenied(anon, 'staff_save_compensation_override', { p_payload: {} });
+  await expectRpcDenied(anon, 'staff_delete_compensation_override', { p_operator_id: ZERO_UUID, p_lesson_id: ZERO_UUID });
+  await expectRpcDenied(anon, 'preview_compensation_override',
+    { p_model_id: ZERO_UUID, p_duration_minutes: 60, p_participants: 5, p_revenue_cents: 0 });
   // 22/10/2026: eliminare la scheda di un operatore, solo admin (id inesistente e solo la domanda)
   await expectRpcDenied(anon, 'staff_delete_operator', { p_operator_id: ZERO_UUID, p_dry_run: true });
   // v0.3.20: chiusura con l'estratto conto (payload vuoto e id inesistente: anche se fossero aperte, non scriverebbero)
@@ -537,6 +541,10 @@ async function localChecks() {
     statusesAsClient.status === 200 && statusesAsClient.json?.reason === 'NOT_STAFF', describe(statusesAsClient));
   await expectRowsHidden(cliente, 'transactions');
   await expectRowsHidden(cliente, 'compensation_models');
+  await expectRowsHidden(cliente, 'compensation_line_overrides');
+  const clienteOverride = await rpc(cliente, 'staff_save_compensation_override', { p_payload: {} });
+  check('cliente: non modifica il compenso di una lezione',
+    clienteOverride.status === 200 && clienteOverride.json?.reason === 'NOT_FINANCE', describe(clienteOverride));
   // Sessione 5 — pagare la propria quota: il cliente chiede, il database decide
   const myFee = await rpc(cliente, 'prepare_my_fee_payment', {});
   check('cliente: chiede se può pagare la quota online',
@@ -666,6 +674,22 @@ async function localChecks() {
   const tesDefault = await rpc(tesoriere, 'staff_set_default_compensation_model', { p_model_id: ZERO_UUID });
   check('Tesoriere: raggiunge il cambio del modello predefinito (qui su un modello inesistente)',
     tesDefault.status === 200 && tesDefault.json?.reason === 'MODEL_NOT_FOUND', describe(tesDefault));
+  // Compenso di una singola lezione: risposte che non scrivono niente
+  const tesPreview = await expectRpcOk(tesoriere, 'preview_compensation_override', {
+    p_model_id: tesModel?.model_id, p_duration_minutes: 60, p_participants: 5, p_revenue_cents: 0,
+    p_costs: [{ note: 'Accoglienza', amount_cents: 100 }], p_amount_cents: 1500,
+  });
+  check('Tesoriere: prova il compenso di una lezione con le modifiche', tesPreview?.amount_cents === 1500, describe(tesPreview));
+  const tesOverride = await rpc(tesoriere, 'staff_save_compensation_override',
+    { p_payload: { operator_id: ZERO_UUID, lesson_id: ZERO_UUID, amount_cents: 100, note: 'verifica' } });
+  check('Tesoriere: raggiunge la modifica del compenso di una lezione (qui inesistente)',
+    tesOverride.status === 200 && tesOverride.json?.reason === 'LINE_NOT_FOUND', describe(tesOverride));
+  const tesOverrideDel = await rpc(tesoriere, 'staff_delete_compensation_override', { p_operator_id: ZERO_UUID });
+  check('Tesoriere: raggiunge il ritorno al modello (qui senza lezione)',
+    tesOverrideDel.status === 200 && tesOverrideDel.json?.reason === 'INVALID_OVERRIDE', describe(tesOverrideDel));
+  const directOverride = await insert(tesoriere, 'compensation_line_overrides',
+    { operator_id: operatorRow.id, lesson_id: lesson.id, note: 'verifica' });
+  check('Tesoriere: le modifiche ai compensi si scrivono solo con le funzioni', isDenied(directOverride), describe(directOverride));
   // Chiusura con l'estratto conto (v0.3.20): risposte che non scrivono niente
   const tesClosing = await rpc(tesoriere, 'finance_save_bank_closing', { p_payload: { period_from: '1900-01-02', period_to: '1900-01-01' } });
   check('Tesoriere: raggiunge la chiusura con l\'estratto conto (qui con un periodo al contrario)',

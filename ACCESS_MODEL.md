@@ -147,7 +147,11 @@ sistema.
 dall'API (lo schema del rendiconto cambia con una migrazione). `account_transfers` e
 `operator_compensation_settings` sono delle Finanze in lettura e scrittura. `compensation_payments` e
 `compensation_entries` si leggono dalle Finanze ma si scrivono **solo con le funzioni** (congela,
-riapri, paga, annulla), che tengono insieme compensi, pagamenti e uscite. Su `expenses` il trigger
+riapri, paga, annulla), che tengono insieme compensi, pagamenti e uscite. Lo stesso vale per
+`compensation_line_overrides` (02/11/2026): le modifiche al compenso di una singola lezione si leggono
+dalle Finanze e si scrivono solo con `staff_save_compensation_override` e
+`staff_delete_compensation_override`, che rifiutano le righe congelate o pagate; `preview_compensation_override`
+non scrive. Tutte controllano `can_access_finance()` in testa. Su `expenses` il trigger
 `internal.expenses_before_write` è `SECURITY INVOKER` di proposito: da `current_user` distingue l'API
 (authenticated) dalle funzioni e dai trigger (postgres) e dalle edge function (service_role), e
 all'API vieta di inserire, cambiare o cancellare le uscite automatiche (compensi, commissioni

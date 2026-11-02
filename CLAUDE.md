@@ -160,6 +160,7 @@ npm run verify:migrations   # Check migration integrity
 | `receipts`, `receipt_sequences` | Ricevute numerate per anno, senza buchi |
 | `expense_categories`, `recurring_expenses` | Categorie modificabili e spese ricorrenti da confermare |
 | `compensation_models`, `compensation_components`, `compensation_tiers`, `compensation_assignments`, `compensation_entries` | Compensi a mattoni (dalla v0.3.14 con le spese della lezione e il tetto a lezione, dalla v0.3.17 con un modello predefinito), congelati quando il mese si chiude |
+| `compensation_line_overrides` | Le modifiche al compenso di una singola lezione o evento, per persona (02/11/2026) |
 | `event_operators` | Chi tiene un evento, per calcolarne il compenso |
 | `activity_groups`, `locations` | Gruppi di attività e luoghi (sito e app) |
 | `trials` | Lezioni di prova: una per attività, sempre gratuite; «convertita» = ha comprato dopo la prova (dalla v0.3.13 non scala ingressi) |
@@ -695,6 +696,29 @@ rimborsi ai volontari, annulli e rimborsi degli incassi, esoneri, Marketing, Ann
 - Test: `supabase/tests/operatori_tutte_le_sezioni.test.sql` (17); nei test che provavano «chi non
   è delle Finanze non passa» con un'operatrice ora c'è unə cliente; `verify-access` con le
   operatrici nelle Finanze e nelle Segnalazioni, e fuori da quota e schede dello staff.
+
+### Dopo la v0.3.20: il compenso di una singola lezione (02/11/2026, nessun tag)
+
+Migrazione `20261102100000`. Richiesta dell'utente: nel ricontrollare il mese, le voci del compenso di
+ogni lezione devono essere modificabili per le particolarità di quella lezione.
+
+| Oggetto | Cosa fa |
+|---|---|
+| `compensation_line_overrides` | Una riga per persona e lezione (o evento): `model_id`, `revenue_cents`, `costs` (`[{note, amount_cents}]`, al posto delle spese del modello; vuoto = nessuna spesa), `amount_cents` (al posto di mattoni, scaglioni, tetti e minimo), `note` obbligatoria. NULL = come da calcolo. Si legge dalle Finanze, si scrive solo con le funzioni |
+| `internal.compute_compensation_line` | Il calcolo, con le due sostituzioni facoltative; `compute_compensation` lo chiama senza, così la formula è una sola |
+| `calculate_compensation_v2` | Stessa firma. Una riga modificata ha `breakdown.override` (`note`, i valori cambiati, `base` con modello, incassi e importo senza modifiche). Il congelamento lo copia nella riga congelata |
+| `preview_compensation_override(p_model_id, p_duration_minutes, p_participants, p_revenue_cents, p_costs?, p_amount_cents?)` | La prova mentre si scrive; non legge la lezione e non salva |
+| `staff_save_compensation_override(p_payload)` | Salva. `SAVED`, `NOT_FINANCE`, `INVALID_OVERRIDE`, `LINE_NOT_FOUND` (non è di quella persona, o è volontariə), `LINE_FROZEN`, `LINE_PAID`, `REASON_REQUIRED`, `NO_CHANGES`, `MODEL_NOT_FOUND`, `MODEL_DISABLED`, `MODEL_REQUIRED` |
+| `staff_delete_compensation_override(p_operator_id, p_lesson_id?, p_event_id?)` | Torna al calcolo del modello. `RESET`, `NOT_FINANCE`, `INVALID_OVERRIDE`, `LINE_FROZEN`, `LINE_PAID` |
+
+- **Sta in una tabella a parte** perché «Riapri» cancella le righe congelate: le modifiche sopravvivono.
+- **Una riga congelata o pagata non cambia:** prima si riapre il mese o si annulla il pagamento.
+- Ciò che non si cambia resta dal vivo. Presenti e durata non si modificano: vengono dalla lezione. Le
+  spese scritte qui, come quelle dei modelli, non diventano uscite.
+- Tipi: tabella e funzioni in `src/types/database.ts`; il gestionale le chiama con `rpcV0310` finché non
+  c'è un tag.
+- Test: `supabase/tests/compenso_per_lezione.test.sql` (64), `access_model.test.sql`, `verify-access` (+11,
+  senza scritture).
 
 ### get_my_client_id()
 - Returns current user's client_id

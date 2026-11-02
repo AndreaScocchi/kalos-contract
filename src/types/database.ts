@@ -1584,6 +1584,132 @@ export type Database = {
           },
         ]
       }
+      compensation_line_overrides: {
+        Row: {
+          amount_cents: number | null
+          costs: Json | null
+          created_at: string
+          created_by: string | null
+          event_id: string | null
+          id: string
+          lesson_id: string | null
+          model_id: string | null
+          note: string
+          operator_id: string
+          revenue_cents: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          costs?: Json | null
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          id?: string
+          lesson_id?: string | null
+          model_id?: string | null
+          note: string
+          operator_id: string
+          revenue_cents?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          costs?: Json | null
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          id?: string
+          lesson_id?: string | null
+          model_id?: string | null
+          note?: string
+          operator_id?: string
+          revenue_cents?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compensation_line_overrides_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_line_overrides_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_line_overrides_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_line_overrides_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_occupancy"
+            referencedColumns: ["lesson_id"]
+          },
+          {
+            foreignKeyName: "compensation_line_overrides_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_line_overrides_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_schedule"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_line_overrides_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "compensation_models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_line_overrides_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_line_overrides_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_operators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compensation_line_overrides_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "public_site_schedule"
+            referencedColumns: ["operator_id"]
+          },
+          {
+            foreignKeyName: "compensation_line_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compensation_models: {
         Row: {
           created_at: string
@@ -6026,6 +6152,17 @@ export type Database = {
         }
         Returns: Json
       }
+      preview_compensation_override: {
+        Args: {
+          p_amount_cents?: number
+          p_costs?: Json
+          p_duration_minutes: number
+          p_model_id: string
+          p_participants: number
+          p_revenue_cents: number
+        }
+        Returns: Json
+      }
       process_recurring_announcements: { Args: never; Returns: undefined }
       promote_profile_to_operator: {
         Args: { p_profile_id: string }
@@ -6120,6 +6257,14 @@ export type Database = {
         }
         Returns: Json
       }
+      staff_delete_compensation_override: {
+        Args: {
+          p_event_id?: string
+          p_lesson_id?: string
+          p_operator_id: string
+        }
+        Returns: Json
+      }
       staff_delete_operator: {
         Args: { p_dry_run?: boolean; p_operator_id: string }
         Returns: Json
@@ -6193,6 +6338,7 @@ export type Database = {
         Args: { p_payload: Json }
         Returns: Json
       }
+      staff_save_compensation_override: { Args: { p_payload: Json }; Returns: Json }
       staff_save_plan: {
         Args: { p_activity_ids: string[]; p_plan: Json; p_plan_id: string }
         Returns: Json

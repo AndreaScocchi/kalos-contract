@@ -106,6 +106,7 @@ SELECT set_eq(
     'finance_income_lines(p_from date, p_to date)',
     'finance_set_opening_balances(p_cash_cents integer, p_bank_cents integer)',
     'preview_compensation(p_model_id uuid, p_duration_minutes integer, p_participants integer, p_revenue_cents bigint)',
+    'preview_compensation_override(p_model_id uuid, p_duration_minutes integer, p_participants integer, p_revenue_cents bigint, p_costs jsonb, p_amount_cents bigint)',
     'staff_pay_compensation(p_operator_id uuid, p_month_start date, p_paid_on date, p_method payment_method, p_withholding_percent numeric, p_gross_cents bigint, p_note text)',
     'staff_pay_volunteer_reimbursement(p_reimbursement_id uuid, p_paid_on date, p_method payment_method)',
     'staff_save_compensation_model(p_payload jsonb)',
@@ -132,6 +133,8 @@ SELECT set_eq(
     'staff_archive_lessons(p_lesson_ids uuid[], p_reason text)',
     'staff_save_plan(p_plan_id uuid, p_plan jsonb, p_activity_ids uuid[])',
     -- v0.3.17 (08/10/2026): il modello di compenso predefinito, solo Finanze (can_access_finance()).
+    'staff_delete_compensation_override(p_operator_id uuid, p_lesson_id uuid, p_event_id uuid)',
+    'staff_save_compensation_override(p_payload jsonb)',
     'staff_set_default_compensation_model(p_model_id uuid)',
     -- 22/10/2026: eliminare la scheda di un operatore, solo admin (is_admin()).
     'staff_delete_operator(p_operator_id uuid, p_dry_run boolean)',

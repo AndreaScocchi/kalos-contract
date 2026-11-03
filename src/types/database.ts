@@ -6200,6 +6200,7 @@ export type Database = {
         Args: { p_error?: string; p_receipt_id: string; p_to: string }
         Returns: undefined
       }
+      record_app_usage: { Args: { p_hits: Json }; Returns: undefined }
       set_my_newsletter_subscription: {
         Args: { p_subscribed: boolean }
         Returns: Json
@@ -6277,6 +6278,7 @@ export type Database = {
         }
         Returns: Json
       }
+      staff_get_app_usage: { Args: { p_month?: string }; Returns: Json }
       staff_get_member_statuses: {
         Args: { p_client_ids: string[] }
         Returns: Json

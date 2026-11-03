@@ -1467,3 +1467,104 @@ export async function staffArchiveLessons(
   }
   return data as unknown as StaffArchiveLessonsResult;
 }
+
+/** Quello che è stato aperto nell'app. Il database tiene solo i totali, mai chi (dalla v0.3.21). */
+export type AppUsageHit =
+  | { metric: 'open' }
+  | { metric: 'page'; page: string; target_id?: string }
+  | { metric: 'practice_start' | 'practice_complete' | 'practice_audio'; target_id: string }
+  | { metric: 'practice_step'; target_id: string; step: number };
+
+/**
+ * Wrapper tipizzato per la RPC record_app_usage (dalla v0.3.21): al massimo 30 voci per chiamata, le
+ * altre si ignorano. Lo staff non si conta.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+export async function recordAppUsage(client: SupabaseClient<Database>, hits: AppUsageHit[]): Promise<void> {
+  const { error } = await client.rpc('record_app_usage', { p_hits: hits as unknown as Json });
+  if (error) {
+    handleRpcError(error, 'record_app_usage');
+  }
+}
+
+export type AppUsageTotals = {
+  /** Ognuna contata una volta nel mese */
+  people: number;
+  opens: number;
+};
+
+export type AppUsageDay = { day: string; people: number; opens: number };
+
+export type AppUsagePage = { page: string; views: number; people: number };
+
+export type AppUsageEvent = {
+  id: string;
+  name: string;
+  starts_at: string;
+  views: number;
+  people: number;
+  /** Iscrizioni del mese, anche quelle inserite dallo staff */
+  bookings: number;
+};
+
+export type AppUsageActivity = {
+  id: string;
+  name: string;
+  card_views: number;
+  card_people: number;
+  /** Chi ha aperto una lezione di questa attività */
+  lesson_views: number;
+  lesson_people: number;
+  /** Prenotazioni del mese, anche quelle inserite dallo staff, senza le lezioni individuali */
+  bookings: number;
+};
+
+export type AppUsagePractice = {
+  id: string;
+  title: string;
+  card_people: number;
+  card_views: number;
+  start_people: number;
+  start_views: number;
+  audio_people: number;
+  audio_views: number;
+  complete_people: number;
+  complete_views: number;
+  steps_count: number;
+  /** Quante persone arrivano a ogni passaggio (da 0) */
+  steps: { step: number; people: number }[];
+};
+
+export type StaffGetAppUsageResult = {
+  ok: boolean;
+  reason?: 'NOT_STAFF';
+  /** Primo giorno del mese */
+  month?: string;
+  /** Il primo giorno con dei numeri: prima non si contava */
+  first_period?: string | null;
+  totals?: AppUsageTotals;
+  previous?: AppUsageTotals;
+  days?: AppUsageDay[];
+  pages?: AppUsagePage[];
+  events?: AppUsageEvent[];
+  activities?: AppUsageActivity[];
+  practices?: AppUsagePractice[];
+};
+
+/**
+ * Wrapper tipizzato per la RPC staff_get_app_usage (dalla v0.3.21): le statistiche d'uso dell'app di
+ * un mese, solo totali. Senza mese, quello in corso.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+export async function staffGetAppUsage(
+  client: SupabaseClient<Database>,
+  month?: string
+): Promise<StaffGetAppUsageResult> {
+  const { data, error } = await client.rpc('staff_get_app_usage', month ? { p_month: month } : {});
+  if (error) {
+    handleRpcError(error, 'staff_get_app_usage');
+  }
+  return data as unknown as StaffGetAppUsageResult;
+}

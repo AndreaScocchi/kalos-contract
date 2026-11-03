@@ -720,6 +720,32 @@ ogni lezione devono essere modificabili per le particolarità di quella lezione.
 - Test: `supabase/tests/compenso_per_lezione.test.sql` (64), `access_model.test.sql`, `verify-access` (+11,
   senza scritture).
 
+### v0.3.21: statistiche d'uso dell'app, solo totali (03/11/2026)
+
+Migrazione `20261103120000`. Richiesta dell'utente: capire quante persone usano l'app, in quali pagine,
+quanti fanno partire le pratiche, quanti guardano eventi o attività. **Decisione dell'utente: solo
+totali, «non mi serve sapere chi»**; nessun fornitore esterno.
+
+| Oggetto | Cosa fa |
+|---|---|
+| `internal.app_usage_counts` | I contatori, per giorno e per mese: `views` (ogni apertura), `people` (ognuna una volta nel periodo). Metrica, pagina, `target_id`, passaggio. Nessun riferimento a persone: restano nel tempo e vanno nei backup |
+| `internal.app_usage_seen`, `internal.app_usage_salts` | Impronte (sha256 di chiave del mese + account + periodo + cosa) e chiave del mese, per contare una volta sola. Quelle del giorno scadono il giorno dopo, quelle del mese e la chiave a fine mese. Fuori dai backup |
+| `record_app_usage(p_hits)` | L'app segnala `[{metric, page?, target_id?, step?}]`, al massimo 30 voci. Metriche: `open`, `page`, `practice_start`, `practice_step`, `practice_complete`, `practice_audio`. Il giorno è quello italiano del server. Toglie impronte e chiavi scadute, quindi non serve un job di pg_cron |
+| `staff_get_app_usage(p_month?)` | I totali di un mese per il gestionale: `totals`, `previous`, `days`, `pages`, `events`, `activities`, `practices`. Risposta `NOT_STAFF` per chi non è staff |
+
+- **Lo staff non si conta.** Pagine in un elenco fisso (una sconosciuta diventa `altro`), bersagli solo se
+  esistono e solo per evento, attività, lezione, team, piano, pratica, annuncio. **Una rotta nuova dell'app
+  va aggiunta all'elenco di `record_app_usage`**, a `src/domain/usage.ts` dell'app e ai nomi in
+  `src/features/usage/constants.ts` del gestionale; se manca, nel gestionale si vede «Altre pagine».
+- Una lezione si conta sulla sua attività; quella individuale solo come pagina. Diario, notifiche,
+  segnalazioni e questionari non dicono mai quale voce è stata aperta.
+- **Il limite:** durante il mese in corso chi ha accesso diretto al database potrebbe rifare il calcolo
+  per un account preciso; finito il mese nessuno. Le persone di mesi diversi non si sommano.
+- Iscrizioni e prenotazioni nei numeri comprendono quelle inserite dallo staff, che il database non distingue.
+- Wrapper TS: `recordAppUsage`, `staffGetAppUsage`. L'app (ferma alla v0.3.10) chiama senza tipi, come
+  `src/data/newsletter.ts`.
+- Test: `supabase/tests/statistiche_app.test.sql` (36), `access_model.test.sql`, `verify-access`.
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -803,7 +829,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.20**
+Current: **v0.3.21**
 
 Consumers reference via git tag:
 ```json

@@ -217,6 +217,10 @@ async function anonChecks() {
   await expectRpcDenied(anon, 'staff_delete_compensation_override', { p_operator_id: ZERO_UUID, p_lesson_id: ZERO_UUID });
   await expectRpcDenied(anon, 'preview_compensation_override',
     { p_model_id: ZERO_UUID, p_duration_minutes: 60, p_participants: 5, p_revenue_cents: 0 });
+  // v0.3.21: statistiche d'uso dell'app (nessuna voce e un mese del 1900: anche se fossero aperte, niente)
+  await expectRpcDenied(anon, 'record_app_usage', { p_hits: [] });
+  await expectRpcDenied(anon, 'staff_get_app_usage', { p_month: '1900-01-01' });
+  await expectRpcNotExposed(anon, 'app_usage_bump', {});
   // 22/10/2026: eliminare la scheda di un operatore, solo admin (id inesistente e solo la domanda)
   await expectRpcDenied(anon, 'staff_delete_operator', { p_operator_id: ZERO_UUID, p_dry_run: true });
   // v0.3.20: chiusura con l'estratto conto (payload vuoto e id inesistente: anche se fossero aperte, non scriverebbero)
@@ -504,6 +508,14 @@ async function localChecks() {
   check('cliente: vede il proprio token push', tokens.n === 1, `righe visibili: ${tokens.n}`);
   await expectRpcOk(cliente, 'deactivate_device_token', { p_token: `ExponentPushToken[verify-${stamp}]` });
 
+  // v0.3.21: statistiche d'uso dell'app: unə cliente segnala cosa apre ma non legge i numeri, né i contatori
+  const usageHit = await rpc(cliente, 'record_app_usage', { p_hits: [{ metric: 'open' }] });
+  check('cliente: segnala l\'apertura dell\'app', usageHit.status === 204 || usageHit.status === 200, describe(usageHit));
+  const usageRead = await rpc(cliente, 'staff_get_app_usage', { p_month: '1900-01-01' });
+  check('cliente: non legge le statistiche d\'uso',
+    usageRead.status === 200 && usageRead.json?.reason === 'NOT_STAFF', describe(usageRead));
+  await expectRpcNotExposed(cliente, 'app_usage_bump', {});
+
   // Verifica del 30/09/2026: niente richieste di parere accodate da unə cliente; la newsletter si
   // spegne e si riaccende dall'app; le note dello staff e i token di Meta non si leggono.
   await expectRpcDenied(cliente, 'queue_feedback_request',
@@ -541,8 +553,14 @@ async function localChecks() {
     statusesAsClient.status === 200 && statusesAsClient.json?.reason === 'NOT_STAFF', describe(statusesAsClient));
   await expectRowsHidden(cliente, 'transactions');
   await expectRowsHidden(cliente, 'compensation_models');
+  // Su un database appena azzerato non c'è nessuna modifica: senza una riga il controllo non proverebbe
+  // niente e fallirebbe. Si toglie subito, perché non pesi sui calcoli dei compensi più avanti.
+  const hiddenOverride = await insert(service, 'compensation_line_overrides',
+    { operator_id: operatorRow.id, lesson_id: lesson.id, note: 'verifica' });
+  check('service_role: crea la modifica di un compenso da nascondere', hiddenOverride.status === 201, describe(hiddenOverride));
   await expectRowsHidden(cliente, 'compensation_line_overrides');
-  const clienteOverride = await rpc(cliente, 'staff_save_compensation_override', { p_payload: {} });
+  await call(service, 'DELETE', `/rest/v1/compensation_line_overrides?id=eq.${hiddenOverride.json?.[0]?.id}`);
+  const clienteOverride =await rpc(cliente, 'staff_save_compensation_override', { p_payload: {} });
   check('cliente: non modifica il compenso di una lezione',
     clienteOverride.status === 200 && clienteOverride.json?.reason === 'NOT_FINANCE', describe(clienteOverride));
   // Sessione 5 — pagare la propria quota: il cliente chiede, il database decide
@@ -737,6 +755,9 @@ async function localChecks() {
   const staffDelOp = await rpc(staff, 'staff_delete_operator', { p_operator_id: operatorRow.id, p_dry_run: true });
   check('operatrice: non elimina le schede dello staff',
     staffDelOp.status === 200 && staffDelOp.json?.reason === 'NOT_ADMIN', describe(staffDelOp));
+  const staffUsage = await rpc(staff, 'staff_get_app_usage', { p_month: '1900-01-01' });
+  check('operatrice: legge le statistiche d\'uso dell\'app',
+    staffUsage.status === 200 && staffUsage.json?.ok === true, describe(staffUsage));
   // Un periodo vuoto: la funzione risponde sul periodo, non sul ruolo, e non salva niente
   const staffClosing = await rpc(staff, 'finance_save_bank_closing', { p_payload: {} });
   check('operatrice: arriva alla chiusura con l\'estratto conto',

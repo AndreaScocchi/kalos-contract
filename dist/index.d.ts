@@ -1576,6 +1576,132 @@ type Database = {
                     }
                 ];
             };
+            compensation_line_overrides: {
+                Row: {
+                    amount_cents: number | null;
+                    costs: Json | null;
+                    created_at: string;
+                    created_by: string | null;
+                    event_id: string | null;
+                    id: string;
+                    lesson_id: string | null;
+                    model_id: string | null;
+                    note: string;
+                    operator_id: string;
+                    revenue_cents: number | null;
+                    updated_at: string;
+                    updated_by: string | null;
+                };
+                Insert: {
+                    amount_cents?: number | null;
+                    costs?: Json | null;
+                    created_at?: string;
+                    created_by?: string | null;
+                    event_id?: string | null;
+                    id?: string;
+                    lesson_id?: string | null;
+                    model_id?: string | null;
+                    note: string;
+                    operator_id: string;
+                    revenue_cents?: number | null;
+                    updated_at?: string;
+                    updated_by?: string | null;
+                };
+                Update: {
+                    amount_cents?: number | null;
+                    costs?: Json | null;
+                    created_at?: string;
+                    created_by?: string | null;
+                    event_id?: string | null;
+                    id?: string;
+                    lesson_id?: string | null;
+                    model_id?: string | null;
+                    note?: string;
+                    operator_id?: string;
+                    revenue_cents?: number | null;
+                    updated_at?: string;
+                    updated_by?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "compensation_line_overrides_created_by_fkey";
+                        columns: ["created_by"];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "compensation_line_overrides_event_id_fkey";
+                        columns: ["event_id"];
+                        isOneToOne: false;
+                        referencedRelation: "events";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "compensation_line_overrides_event_id_fkey";
+                        columns: ["event_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_events";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "compensation_line_overrides_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "lesson_occupancy";
+                        referencedColumns: ["lesson_id"];
+                    },
+                    {
+                        foreignKeyName: "compensation_line_overrides_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "lessons";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "compensation_line_overrides_lesson_id_fkey";
+                        columns: ["lesson_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "compensation_line_overrides_model_id_fkey";
+                        columns: ["model_id"];
+                        isOneToOne: false;
+                        referencedRelation: "compensation_models";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "compensation_line_overrides_operator_id_fkey";
+                        columns: ["operator_id"];
+                        isOneToOne: false;
+                        referencedRelation: "operators";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "compensation_line_overrides_operator_id_fkey";
+                        columns: ["operator_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_operators";
+                        referencedColumns: ["id"];
+                    },
+                    {
+                        foreignKeyName: "compensation_line_overrides_operator_id_fkey";
+                        columns: ["operator_id"];
+                        isOneToOne: false;
+                        referencedRelation: "public_site_schedule";
+                        referencedColumns: ["operator_id"];
+                    },
+                    {
+                        foreignKeyName: "compensation_line_overrides_updated_by_fkey";
+                        columns: ["updated_by"];
+                        isOneToOne: false;
+                        referencedRelation: "profiles";
+                        referencedColumns: ["id"];
+                    }
+                ];
+            };
             compensation_models: {
                 Row: {
                     created_at: string;
@@ -6182,6 +6308,17 @@ type Database = {
                 };
                 Returns: Json;
             };
+            preview_compensation_override: {
+                Args: {
+                    p_amount_cents?: number;
+                    p_costs?: Json;
+                    p_duration_minutes: number;
+                    p_model_id: string;
+                    p_participants: number;
+                    p_revenue_cents: number;
+                };
+                Returns: Json;
+            };
             process_recurring_announcements: {
                 Args: never;
                 Returns: undefined;
@@ -6243,6 +6380,12 @@ type Database = {
                     p_error?: string;
                     p_receipt_id: string;
                     p_to: string;
+                };
+                Returns: undefined;
+            };
+            record_app_usage: {
+                Args: {
+                    p_hits: Json;
                 };
                 Returns: undefined;
             };
@@ -6327,6 +6470,14 @@ type Database = {
                 };
                 Returns: Json;
             };
+            staff_delete_compensation_override: {
+                Args: {
+                    p_event_id?: string;
+                    p_lesson_id?: string;
+                    p_operator_id: string;
+                };
+                Returns: Json;
+            };
             staff_delete_operator: {
                 Args: {
                     p_dry_run?: boolean;
@@ -6339,6 +6490,12 @@ type Database = {
                     p_month_end: string;
                     p_month_start: string;
                     p_operator_id?: string;
+                };
+                Returns: Json;
+            };
+            staff_get_app_usage: {
+                Args: {
+                    p_month?: string;
                 };
                 Returns: Json;
             };
@@ -6414,6 +6571,12 @@ type Database = {
                 Returns: Json;
             };
             staff_save_compensation_model: {
+                Args: {
+                    p_payload: Json;
+                };
+                Returns: Json;
+            };
+            staff_save_compensation_override: {
                 Args: {
                     p_payload: Json;
                 };
@@ -7585,6 +7748,103 @@ declare function staffArchiveLessons(client: SupabaseClient<Database>, params: {
     lessonIds: string[];
     reason?: string | null;
 }): Promise<StaffArchiveLessonsResult>;
+/** Quello che è stato aperto nell'app. Il database tiene solo i totali, mai chi (dalla v0.3.21). */
+type AppUsageHit = {
+    metric: 'open';
+} | {
+    metric: 'page';
+    page: string;
+    target_id?: string;
+} | {
+    metric: 'practice_start' | 'practice_complete' | 'practice_audio';
+    target_id: string;
+} | {
+    metric: 'practice_step';
+    target_id: string;
+    step: number;
+};
+/**
+ * Wrapper tipizzato per la RPC record_app_usage (dalla v0.3.21): al massimo 30 voci per chiamata, le
+ * altre si ignorano. Lo staff non si conta.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+declare function recordAppUsage(client: SupabaseClient<Database>, hits: AppUsageHit[]): Promise<void>;
+type AppUsageTotals = {
+    /** Ognuna contata una volta nel mese */
+    people: number;
+    opens: number;
+};
+type AppUsageDay = {
+    day: string;
+    people: number;
+    opens: number;
+};
+type AppUsagePage = {
+    page: string;
+    views: number;
+    people: number;
+};
+type AppUsageEvent = {
+    id: string;
+    name: string;
+    starts_at: string;
+    views: number;
+    people: number;
+    /** Iscrizioni del mese, anche quelle inserite dallo staff */
+    bookings: number;
+};
+type AppUsageActivity = {
+    id: string;
+    name: string;
+    card_views: number;
+    card_people: number;
+    /** Chi ha aperto una lezione di questa attività */
+    lesson_views: number;
+    lesson_people: number;
+    /** Prenotazioni del mese, anche quelle inserite dallo staff, senza le lezioni individuali */
+    bookings: number;
+};
+type AppUsagePractice = {
+    id: string;
+    title: string;
+    card_people: number;
+    card_views: number;
+    start_people: number;
+    start_views: number;
+    audio_people: number;
+    audio_views: number;
+    complete_people: number;
+    complete_views: number;
+    steps_count: number;
+    /** Quante persone arrivano a ogni passaggio (da 0) */
+    steps: {
+        step: number;
+        people: number;
+    }[];
+};
+type StaffGetAppUsageResult = {
+    ok: boolean;
+    reason?: 'NOT_STAFF';
+    /** Primo giorno del mese */
+    month?: string;
+    /** Il primo giorno con dei numeri: prima non si contava */
+    first_period?: string | null;
+    totals?: AppUsageTotals;
+    previous?: AppUsageTotals;
+    days?: AppUsageDay[];
+    pages?: AppUsagePage[];
+    events?: AppUsageEvent[];
+    activities?: AppUsageActivity[];
+    practices?: AppUsagePractice[];
+};
+/**
+ * Wrapper tipizzato per la RPC staff_get_app_usage (dalla v0.3.21): le statistiche d'uso dell'app di
+ * un mese, solo totali. Senza mese, quello in corso.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+declare function staffGetAppUsage(client: SupabaseClient<Database>, month?: string): Promise<StaffGetAppUsageResult>;
 
 /**
  * Etichette e testi condivisi fra sito, gestionale e app, così che la stessa cosa si chiami allo
@@ -7748,4 +8008,4 @@ type GetEventsWithAvailabilityParams = {
  */
 declare function getEventsWithAvailability(client: SupabaseClient<Database>, params?: GetEventsWithAvailabilityParams): Promise<EventWithAvailability[]>;
 
-export { type AcceptMyLegalDocumentsResult, type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyNotificationsResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetMyReceiptsResult, type GetPublicEventsParams, type GetPublicScheduleParams, type JourneySummaryResult, type JourneyTimelineItem, type JourneyTimelineKind, type JourneyTimelineResult, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type MyNotification, type MyReceipt, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, RpcError, type SetMyNewsletterSubscriptionResult, type StaffArchiveLessonsResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type StaffSavePlanInput, type StaffSavePlanResult, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type UpdateMyProfileResult, type Views, type WaitlistResult, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, setMyNewsletterSubscription, staffArchiveLessons, staffBookEvent, staffCancelEventBooking, staffSavePlan, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };
+export { type AcceptMyLegalDocumentsResult, type AppUsageActivity, type AppUsageDay, type AppUsageEvent, type AppUsageHit, type AppUsagePage, type AppUsagePractice, type AppUsageTotals, type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyNotificationsResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetMyReceiptsResult, type GetPublicEventsParams, type GetPublicScheduleParams, type JourneySummaryResult, type JourneyTimelineItem, type JourneyTimelineKind, type JourneyTimelineResult, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type MyNotification, type MyReceipt, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, RpcError, type SetMyNewsletterSubscriptionResult, type StaffArchiveLessonsResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type StaffGetAppUsageResult, type StaffSavePlanInput, type StaffSavePlanResult, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type UpdateMyProfileResult, type Views, type WaitlistResult, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, recordAppUsage, setMyNewsletterSubscription, staffArchiveLessons, staffBookEvent, staffCancelEventBooking, staffGetAppUsage, staffSavePlan, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };

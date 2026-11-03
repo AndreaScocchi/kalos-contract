@@ -140,7 +140,11 @@ SELECT set_eq(
     'staff_delete_operator(p_operator_id uuid, p_dry_run boolean)',
     -- v0.3.20 (22/10/2026): chiusura con l'estratto conto, solo Finanze (can_access_finance()).
     'finance_delete_bank_closing(p_closing_id uuid)',
-    'finance_save_bank_closing(p_payload jsonb)'
+    'finance_save_bank_closing(p_payload jsonb)',
+    -- v0.3.21 (03/11/2026): statistiche d'uso dell'app, solo totali. Registrano le persone con
+    -- l'account (lo staff non si conta), leggono solo lo staff (is_staff()).
+    'record_app_usage(p_hits jsonb)',
+    'staff_get_app_usage(p_month date)'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );

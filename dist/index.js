@@ -445,6 +445,19 @@ async function staffArchiveLessons(client, params) {
   }
   return data;
 }
+async function recordAppUsage(client, hits) {
+  const { error } = await client.rpc("record_app_usage", { p_hits: hits });
+  if (error) {
+    handleRpcError(error, "record_app_usage");
+  }
+}
+async function staffGetAppUsage(client, month) {
+  const { data, error } = await client.rpc("staff_get_app_usage", month ? { p_month: month } : {});
+  if (error) {
+    handleRpcError(error, "staff_get_app_usage");
+  }
+  return data;
+}
 
 // src/labels.ts
 var EVENT_TYPE_LABELS = {
@@ -644,10 +657,12 @@ exports.prepareMyFeePayment = prepareMyFeePayment;
 exports.prepareMyPlanPurchase = prepareMyPlanPurchase;
 exports.prepareMySettlement = prepareMySettlement;
 exports.queueFeedbackRequest = queueFeedbackRequest;
+exports.recordAppUsage = recordAppUsage;
 exports.setMyNewsletterSubscription = setMyNewsletterSubscription;
 exports.staffArchiveLessons = staffArchiveLessons;
 exports.staffBookEvent = staffBookEvent;
 exports.staffCancelEventBooking = staffCancelEventBooking;
+exports.staffGetAppUsage = staffGetAppUsage;
 exports.staffSavePlan = staffSavePlan;
 exports.submitFeedback = submitFeedback;
 exports.submitMemberApplication = submitMemberApplication;

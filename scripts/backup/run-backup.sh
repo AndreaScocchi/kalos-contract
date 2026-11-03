@@ -37,7 +37,10 @@ npx supabase db dump --db-url "$SUPABASE_DB_URL" -f "$work/db/schema.sql"
 # Lo schema storage si ripristina via API (storage-sync): le sue tabelle appartengono al servizio
 # Storage e non si scrivono in SQL. I file e i bucket sono nella parte storage/.
 storage_tables="$(query "select string_agg(table_schema || '.' || table_name, ',') as t from information_schema.tables where table_schema = 'storage' and table_type = 'BASE TABLE'" | jq -r '.[0].t // empty')"
-npx supabase db dump --db-url "$SUPABASE_DB_URL" -f "$work/db/data.sql" --use-copy --data-only ${storage_tables:+-x "$storage_tables"}
+# Le impronte e le chiavi delle statistiche d'uso durano al massimo fino a fine mese: non devono
+# restare 30 giorni negli archivi. I contatori sì, non riguardano nessuno.
+exclude="internal.app_usage_seen,internal.app_usage_salts${storage_tables:+,$storage_tables}"
+npx supabase db dump --db-url "$SUPABASE_DB_URL" -f "$work/db/data.sql" --use-copy --data-only -x "$exclude"
 
 # Fuori dal dump: definizione dei job pg_cron e nomi (non valori) dei secret del Vault.
 if rows="$(query "select format('select cron.schedule(%L, %L, %L);', jobname, schedule, command) as s from cron.job order by jobname")"; then

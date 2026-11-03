@@ -110,6 +110,10 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   `submit_member_application` resta aperta, ma canale, IP e dispositivo li accetta solo da
   service_role (l'edge function `member-application`); `staff_set_member_fee` esonera, segna pagata o
   rimborsata solo con `can_access_finance()`;
+- **statistiche d'uso dell'app (v0.3.21):** `record_app_usage` (l'app segnala cosa è stato aperto; lo
+  staff non si conta; solo voci di un elenco chiuso e bersagli che esistono, al massimo 30 per chiamata,
+  perché unə cliente non possa creare righe a piacere) e `staff_get_app_usage` (`is_staff()`). Le tabelle
+  (`internal.app_usage_*`) stanno nello schema `internal`: dall'API non esistono. Vedi sotto;
 - **Finanze:** `calculate_operator_compensation`, `calculate_compensation_v2`,
   `get_monthly_revenue_by_*`,
   `staff_freeze_compensation`, `generate_recurring_expenses`, `confirm_expense`,
@@ -163,6 +167,12 @@ cancellare le uscite scritte a mano (prima solo l'admin).
 (`finance_save_bank_closing`, `finance_delete_bank_closing`): periodi contigui e righe che tornano al
 centesimo con i movimenti del registro. `bank_rules` (spese ricorrenti ricordate) è delle Finanze in
 lettura e scrittura. I PDF stanno nel bucket privato `estratti-conto`, solo Finanze.
+
+**Statistiche d'uso dell'app (v0.3.21).** Sono le prime tabelle nello schema `internal`
+(`app_usage_counts`, `app_usage_seen`, `app_usage_salts`): RLS attivo, nessuna policy, nessun grant, e
+senza `USAGE` sullo schema dall'API non esistono. Ci arrivano solo `record_app_usage` e
+`staff_get_app_usage`. I contatori non hanno riferimenti a persone; le impronte per contare una volta
+sola si cancellano a scadenza e restano fuori dai backup. Decisione dell'utente: solo totali.
 
 **`site_rebuild_state`** (sessione 6) sta in `public` con RLS attivo, nessuna policy e nessun grant ad
 anon e authenticated: la scrive il job `internal.cron_site_rebuild`, la aggiorna l'edge function

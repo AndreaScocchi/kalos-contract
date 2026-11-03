@@ -61,6 +61,8 @@ export {
   setMyNewsletterSubscription,
   staffSavePlan,
   staffArchiveLessons,
+  recordAppUsage,
+  staffGetAppUsage,
   RpcError,
 } from './rpc';
 export type {
@@ -120,6 +122,14 @@ export type {
   StaffSavePlanInput,
   StaffSavePlanResult,
   StaffArchiveLessonsResult,
+  AppUsageHit,
+  AppUsageTotals,
+  AppUsageDay,
+  AppUsagePage,
+  AppUsageEvent,
+  AppUsageActivity,
+  AppUsagePractice,
+  StaffGetAppUsageResult,
 } from './rpc';
 
 // Etichette e domande condivise fra sito, gestionale e app

@@ -391,8 +391,8 @@ Migrazione `20260928160000`.
 - **Le proprie ricevute:** `get_my_receipts()` (elenco, con metodo, tipo e stato dell'incasso) e
   `get_my_receipt(p_receipt_id)` (i campi del PDF). `receipt-pdf` le usa per chi non è staff, sempre col
   token di chi chiede (`_shared/receiptData.ts` → `loadMyReceiptPdfData`).
-- **Interruttore `home_practice`**, spento: la Pratica a casa nell'app la vede solo lo staff finché
-  non ci sono pratiche vere.
+- **Interruttore `home_practice`**: spento, la Pratica a casa nell'app la vede solo lo staff. Acceso
+  in produzione dal 03/11/2026, con le pratiche vere del gestionale.
 - Wrapper TS: `getMyReceipts`, `getJourneySummary`, `getJourneyTimeline` e i loro tipi.
 - Test: `supabase/tests/sessione10.test.sql` (24), `verify-access` (+7).
 

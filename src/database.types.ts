@@ -3046,7 +3046,13 @@ export type Database = {
         | "delivered"
         | "failed"
         | "skipped"
-      practice_block_type: "text" | "image" | "audio" | "video"
+      practice_block_type:
+        | "text"
+        | "image"
+        | "audio"
+        | "video"
+        | "quote"
+        | "journal_prompt"
       practice_category:
         | "meditazione"
         | "corpo"
@@ -3282,7 +3288,14 @@ export const Constants = {
         "failed",
         "skipped",
       ],
-      practice_block_type: ["text", "image", "audio", "video"],
+      practice_block_type: [
+        "text",
+        "image",
+        "audio",
+        "video",
+        "quote",
+        "journal_prompt",
+      ],
       practice_category: [
         "meditazione",
         "corpo",

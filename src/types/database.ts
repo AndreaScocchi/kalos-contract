@@ -6584,7 +6584,13 @@ export type Database = {
         | "priority_booking"
         | "other"
       payment_method: "cash" | "bank_transfer" | "stripe" | "other"
-      practice_block_type: "text" | "image" | "audio" | "video"
+      practice_block_type:
+        | "text"
+        | "image"
+        | "audio"
+        | "video"
+        | "quote"
+        | "journal_prompt"
       practice_category:
         | "meditazione"
         | "corpo"
@@ -6910,7 +6916,14 @@ export const Constants = {
         "other",
       ],
       payment_method: ["cash", "bank_transfer", "stripe", "other"],
-      practice_block_type: ["text", "image", "audio", "video"],
+      practice_block_type: [
+        "text",
+        "image",
+        "audio",
+        "video",
+        "quote",
+        "journal_prompt",
+      ],
       practice_category: [
         "meditazione",
         "corpo",

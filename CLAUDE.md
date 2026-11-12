@@ -746,6 +746,20 @@ totali, «non mi serve sapere chi»**; nessun fornitore esterno.
   `src/data/newsletter.ts`.
 - Test: `supabase/tests/statistiche_app.test.sql` (36), `access_model.test.sql`, `verify-access`.
 
+### v0.3.22: citazioni e domande per il Diario nelle pratiche (12/11/2026)
+
+Migrazione `20261112120000`. Richiesta dell'utente: portare nella Pratica a casa le tre pratiche di
+scrittura dei Cerchi Sociali sulla cura, con le domande a cui si risponde dentro la pratica.
+
+- **`practice_block_type`** ha due valori nuovi: `quote` (`content` = brano, `caption` = fonte:
+  autore, titolo, editore, anno) e `journal_prompt` (`content` = domanda, `caption` = suggerimento
+  facoltativo).
+- **La risposta è una nota del Diario:** l'app la salva in `journal_entries` (`title` NULL, `body` =
+  domanda + riga vuota + risposta, `practice_id`). Nessuna colonna nuova e nessuna policy cambiata: la
+  nota resta privata e la prima del giorno vale 10 Punti Kalòs come le altre.
+- Un'app che non conosce un tipo di blocco non lo mostra.
+- Test: `supabase/tests/pratiche_diario.test.sql` (8).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su
@@ -829,7 +843,7 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
 
 ## Versioning
 
-Current: **v0.3.21**
+Current: **v0.3.22**
 
 Consumers reference via git tag:
 ```json

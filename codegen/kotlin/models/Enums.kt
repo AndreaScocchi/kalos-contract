@@ -288,6 +288,8 @@ enum class PracticeBlockType {
     @SerialName("image") IMAGE,
     @SerialName("audio") AUDIO,
     @SerialName("video") VIDEO,
+    @SerialName("quote") QUOTE,
+    @SerialName("journal_prompt") JOURNAL_PROMPT,
 }
 
 @Serializable

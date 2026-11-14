@@ -144,7 +144,11 @@ SELECT set_eq(
     -- v0.3.21 (03/11/2026): statistiche d'uso dell'app, solo totali. Registrano le persone con
     -- l'account (lo staff non si conta), leggono solo lo staff (is_staff()).
     'record_app_usage(p_hits jsonb)',
-    'staff_get_app_usage(p_month date)'
+    'staff_get_app_usage(p_month date)',
+    -- 14/11/2026: calendario collegato, ognunə solo il proprio indirizzo (get_my_client_id()).
+    -- `calendar_feed_items` resta a service_role: la chiama l'edge function `calendar-feed`.
+    'get_my_calendar_feed()',
+    'reset_my_calendar_feed()'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );

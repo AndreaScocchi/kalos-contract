@@ -221,6 +221,10 @@ async function anonChecks() {
   await expectRpcDenied(anon, 'record_app_usage', { p_hits: [] });
   await expectRpcDenied(anon, 'staff_get_app_usage', { p_month: '1900-01-01' });
   await expectRpcNotExposed(anon, 'app_usage_bump', {});
+  // 14/11/2026: calendario collegato. L'indirizzo è di chi ha l'account; le prenotazioni le legge solo il sistema
+  await expectRpcDenied(anon, 'get_my_calendar_feed', {});
+  await expectRpcDenied(anon, 'reset_my_calendar_feed', {});
+  await expectRpcDenied(anon, 'calendar_feed_items', { p_token: '0'.repeat(64) });
   // 22/10/2026: eliminare la scheda di un operatore, solo admin (id inesistente e solo la domanda)
   await expectRpcDenied(anon, 'staff_delete_operator', { p_operator_id: ZERO_UUID, p_dry_run: true });
   // v0.3.20: chiusura con l'estratto conto (payload vuoto e id inesistente: anche se fossero aperte, non scriverebbero)
@@ -515,6 +519,15 @@ async function localChecks() {
   check('cliente: non legge le statistiche d\'uso',
     usageRead.status === 200 && usageRead.json?.reason === 'NOT_STAFF', describe(usageRead));
   await expectRpcNotExposed(cliente, 'app_usage_bump', {});
+
+  // 14/11/2026: calendario collegato. Unə cliente ha il suo indirizzo; le prenotazioni le legge solo il sistema
+  const feed = await rpc(cliente, 'get_my_calendar_feed', {});
+  check('cliente: riceve il proprio indirizzo del calendario',
+    feed.status === 200 && /^[0-9a-f]{64}$/.test(feed.json?.token ?? ''), describe(feed));
+  await expectRpcDenied(cliente, 'calendar_feed_items', { p_token: feed.json?.token ?? '0'.repeat(64) });
+  const feedItems = await rpc(service, 'calendar_feed_items', { p_token: feed.json?.token ?? '' });
+  check('service_role: legge le prenotazioni dell\'indirizzo',
+    feedItems.status === 200 && feedItems.json?.found === true && Array.isArray(feedItems.json?.items), describe(feedItems));
 
   // Verifica del 30/09/2026: niente richieste di parere accodate da unə cliente; la newsletter si
   // spegne e si riaccende dall'app; le note dello staff e i token di Meta non si leggono.

@@ -5996,6 +5996,7 @@ export type Database = {
           studio_margin_cents: number
         }[]
       }
+      calendar_feed_items: { Args: { p_token: string }; Returns: Json }
       can_access_finance: { Args: never; Returns: boolean }
       cancel_booking: { Args: { p_booking_id: string }; Returns: Json }
       cancel_event_booking: { Args: { p_booking_id: string }; Returns: Json }
@@ -6106,6 +6107,7 @@ export type Database = {
           total_revenue_cents: number
         }[]
       }
+      get_my_calendar_feed: { Args: never; Returns: Json }
       get_my_client_id: { Args: never; Returns: string }
       get_my_member_card: { Args: never; Returns: Json }
       get_my_membership: { Args: never; Returns: Json }
@@ -6201,6 +6203,7 @@ export type Database = {
         Returns: undefined
       }
       record_app_usage: { Args: { p_hits: Json }; Returns: undefined }
+      reset_my_calendar_feed: { Args: never; Returns: Json }
       set_my_newsletter_subscription: {
         Args: { p_subscribed: boolean }
         Returns: Json

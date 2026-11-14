@@ -114,6 +114,9 @@ Solo RPC che controllano login e ruolo **al loro interno**:
   staff non si conta; solo voci di un elenco chiuso e bersagli che esistono, al massimo 30 per chiamata,
   perché unə cliente non possa creare righe a piacere) e `staff_get_app_usage` (`is_staff()`). Le tabelle
   (`internal.app_usage_*`) stanno nello schema `internal`: dall'API non esistono. Vedi sotto;
+- **calendario collegato (14/11/2026):** `get_my_calendar_feed` e `reset_my_calendar_feed`, solo la
+  propria scheda (`get_my_client_id()`). `calendar_feed_items(p_token)` resta a service_role: la chiama
+  l'edge function `calendar-feed`, senza JWT, e la sicurezza è il token segreto. Vedi sotto;
 - **Finanze:** `calculate_operator_compensation`, `calculate_compensation_v2`,
   `get_monthly_revenue_by_*`,
   `staff_freeze_compensation`, `generate_recurring_expenses`, `confirm_expense`,
@@ -173,6 +176,14 @@ lettura e scrittura. I PDF stanno nel bucket privato `estratti-conto`, solo Fina
 senza `USAGE` sullo schema dall'API non esistono. Ci arrivano solo `record_app_usage` e
 `staff_get_app_usage`. I contatori non hanno riferimenti a persone; le impronte per contare una volta
 sola si cancellano a scadenza e restano fuori dai backup. Decisione dell'utente: solo totali.
+
+**Calendario collegato (14/11/2026).** `internal.calendar_feeds` (un token per scheda cliente) sta nello
+schema `internal`, con RLS attivo e nessun grant. Il token è in chiaro perché l'app deve poterlo
+mostrare di nuovo; chi lo conosce vede le prenotazioni della persona (attività, orari, luoghi), per
+questo `reset_my_calendar_feed` lo cambia e il vecchio smette subito di funzionare. Se la scheda perde
+o cambia l'account, o viene archiviata, l'indirizzo si cancella (trigger `clients_drop_calendar_feed`).
+L'edge function `calendar-feed` (senza JWT, come `unsubscribe-newsletter`) risponde 404 a ogni token
+sconosciuto, senza dire perché.
 
 **`site_rebuild_state`** (sessione 6) sta in `public` con RLS attivo, nessuna policy e nessun grant ad
 anon e authenticated: la scrive il job `internal.cron_site_rebuild`, la aggiorna l'edge function

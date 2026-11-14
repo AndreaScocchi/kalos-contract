@@ -5996,6 +5996,12 @@ type Database = {
                     studio_margin_cents: number;
                 }[];
             };
+            calendar_feed_items: {
+                Args: {
+                    p_token: string;
+                };
+                Returns: Json;
+            };
             can_access_finance: {
                 Args: never;
                 Returns: boolean;
@@ -6185,6 +6191,10 @@ type Database = {
                     subscription_count: number;
                     total_revenue_cents: number;
                 }[];
+            };
+            get_my_calendar_feed: {
+                Args: never;
+                Returns: Json;
             };
             get_my_client_id: {
                 Args: never;
@@ -6388,6 +6398,10 @@ type Database = {
                     p_hits: Json;
                 };
                 Returns: undefined;
+            };
+            reset_my_calendar_feed: {
+                Args: never;
+                Returns: Json;
             };
             set_my_newsletter_subscription: {
                 Args: {
@@ -6757,7 +6771,7 @@ type Database = {
             notification_status: "pending" | "sent" | "delivered" | "failed" | "skipped";
             pass_benefit_type: "subscription_discount" | "event_discount" | "community_access" | "priority_booking" | "other";
             payment_method: "cash" | "bank_transfer" | "stripe" | "other";
-            practice_block_type: "text" | "image" | "audio" | "video";
+            practice_block_type: "text" | "image" | "audio" | "video" | "quote" | "journal_prompt";
             practice_category: "meditazione" | "corpo" | "respiro" | "scrittura" | "rilassamento";
             practice_level: "principiante" | "intermedio" | "avanzato";
             practice_user_status: "started" | "completed";
@@ -7845,6 +7859,26 @@ type StaffGetAppUsageResult = {
  * @throws RpcError se la chiamata RPC fallisce
  */
 declare function staffGetAppUsage(client: SupabaseClient<Database>, month?: string): Promise<StaffGetAppUsageResult>;
+type MyCalendarFeedResult = {
+    ok: boolean;
+    reason?: 'NOT_AUTHENTICATED' | 'CLIENT_NOT_FOUND';
+    /** 64 cifre esadecimali: l'indirizzo è `<SUPABASE_URL>/functions/v1/calendar-feed/<token>.ics` */
+    token?: string;
+};
+/**
+ * Wrapper tipizzato per la RPC get_my_calendar_feed (14/11/2026): il token del calendario collegato
+ * della propria scheda, creato la prima volta.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+declare function getMyCalendarFeed(client: SupabaseClient<Database>): Promise<MyCalendarFeedResult>;
+/**
+ * Wrapper tipizzato per la RPC reset_my_calendar_feed (14/11/2026): un token nuovo; i calendari
+ * collegati col vecchio smettono di aggiornarsi.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+declare function resetMyCalendarFeed(client: SupabaseClient<Database>): Promise<MyCalendarFeedResult>;
 
 /**
  * Etichette e testi condivisi fra sito, gestionale e app, così che la stessa cosa si chiami allo
@@ -8008,4 +8042,4 @@ type GetEventsWithAvailabilityParams = {
  */
 declare function getEventsWithAvailability(client: SupabaseClient<Database>, params?: GetEventsWithAvailabilityParams): Promise<EventWithAvailability[]>;
 
-export { type AcceptMyLegalDocumentsResult, type AppUsageActivity, type AppUsageDay, type AppUsageEvent, type AppUsageHit, type AppUsagePage, type AppUsagePractice, type AppUsageTotals, type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyNotificationsResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetMyReceiptsResult, type GetPublicEventsParams, type GetPublicScheduleParams, type JourneySummaryResult, type JourneyTimelineItem, type JourneyTimelineKind, type JourneyTimelineResult, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type MyNotification, type MyReceipt, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, RpcError, type SetMyNewsletterSubscriptionResult, type StaffArchiveLessonsResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type StaffGetAppUsageResult, type StaffSavePlanInput, type StaffSavePlanResult, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type UpdateMyProfileResult, type Views, type WaitlistResult, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, recordAppUsage, setMyNewsletterSubscription, staffArchiveLessons, staffBookEvent, staffCancelEventBooking, staffGetAppUsage, staffSavePlan, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };
+export { type AcceptMyLegalDocumentsResult, type AppUsageActivity, type AppUsageDay, type AppUsageEvent, type AppUsageHit, type AppUsagePage, type AppUsagePractice, type AppUsageTotals, type AssignMembershipParams, type AssignMembershipResult, type BookEventParams, type BookEventResult, type BookLessonParams, type BookLessonResult, type CancelBookingParams, type CancelBookingResult, type CancelEventBookingParams, type CancelEventBookingResult, type Database, EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, type Enums, type EventWithAvailability, type FeedbackKind, type GetEventsWithAvailabilityParams, type GetMyMemberCardResult, type GetMyMembershipResult, type GetMyMembershipStatusResult, type GetMyNotificationsResult, type GetMyOpenPaymentsResult, type GetMyPaymentStatusResult, type GetMyReceiptsResult, type GetPublicEventsParams, type GetPublicScheduleParams, type JourneySummaryResult, type JourneyTimelineItem, type JourneyTimelineKind, type JourneyTimelineResult, type MemberFeeStatus, type MembershipBenefit, type MembershipStatus, type MyCalendarFeedResult, type MyNotification, type MyReceipt, type OpenPaymentItem, type PassActionResult, type PassBenefitType, type PlanSnapshot, type PrepareMyEventPaymentResult, type PrepareMyFeePaymentReason, type PrepareMyFeePaymentResult, type PrepareMyPlanPurchaseResult, type PrepareMySettlementResult, type PreparePurchaseReason, type PublicViewName, type QueueFeedbackRequestParams, type QueueFeedbackRequestResult, RpcError, type SetMyNewsletterSubscriptionResult, type StaffArchiveLessonsResult, type StaffBookEventParams, type StaffCancelEventBookingParams, type StaffGetAppUsageResult, type StaffSavePlanInput, type StaffSavePlanResult, type SubmitFeedbackParams, type SubmitFeedbackResult, type SubmitMemberApplicationParams, type SubmitMemberApplicationResult, type SubmitTrialFeedbackParams, type SubmitTrialFeedbackResult, type SupabaseBrowserClientConfig, type SupabaseExpoClientConfig, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, type Tables, type TablesInsert, type TablesUpdate, type TrialBookingResult, type TrialFeedbackAnswers, type TrialFeedbackQuestion, type UpdateMyProfileResult, type Views, type WaitlistResult, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyCalendarFeed, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, recordAppUsage, resetMyCalendarFeed, setMyNewsletterSubscription, staffArchiveLessons, staffBookEvent, staffCancelEventBooking, staffGetAppUsage, staffSavePlan, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };

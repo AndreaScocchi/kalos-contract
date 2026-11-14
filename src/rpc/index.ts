@@ -1568,3 +1568,38 @@ export async function staffGetAppUsage(
   }
   return data as unknown as StaffGetAppUsageResult;
 }
+
+export type MyCalendarFeedResult = {
+  ok: boolean;
+  reason?: 'NOT_AUTHENTICATED' | 'CLIENT_NOT_FOUND';
+  /** 64 cifre esadecimali: l'indirizzo è `<SUPABASE_URL>/functions/v1/calendar-feed/<token>.ics` */
+  token?: string;
+};
+
+/**
+ * Wrapper tipizzato per la RPC get_my_calendar_feed (14/11/2026): il token del calendario collegato
+ * della propria scheda, creato la prima volta.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+export async function getMyCalendarFeed(client: SupabaseClient<Database>): Promise<MyCalendarFeedResult> {
+  const { data, error } = await client.rpc('get_my_calendar_feed');
+  if (error) {
+    handleRpcError(error, 'get_my_calendar_feed');
+  }
+  return data as unknown as MyCalendarFeedResult;
+}
+
+/**
+ * Wrapper tipizzato per la RPC reset_my_calendar_feed (14/11/2026): un token nuovo; i calendari
+ * collegati col vecchio smettono di aggiornarsi.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+export async function resetMyCalendarFeed(client: SupabaseClient<Database>): Promise<MyCalendarFeedResult> {
+  const { data, error } = await client.rpc('reset_my_calendar_feed');
+  if (error) {
+    handleRpcError(error, 'reset_my_calendar_feed');
+  }
+  return data as unknown as MyCalendarFeedResult;
+}

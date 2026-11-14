@@ -760,6 +760,30 @@ scrittura dei Cerchi Sociali sulla cura, con le domande a cui si risponde dentro
 - Un'app che non conosce un tipo di blocco non lo mostra.
 - Test: `supabase/tests/pratiche_diario.test.sql` (8).
 
+### Calendario collegato (14/11/2026)
+
+Migrazione `20261114120000`. Richiesta dell'utente: collegare il calendario di Studio Kalòs a Google
+Calendar o al calendario del telefono. Decisioni dell'utente: **solo le proprie prenotazioni**, e un
+collegamento **che si aggiorna da solo** (iscrizione al calendario, non un evento alla volta).
+
+| Oggetto | Cosa fa |
+|---|---|
+| `internal.calendar_feeds` | Un token segreto per scheda cliente (64 cifre esadecimali), `last_read_at` (al più una scrittura all'ora). Fuori dall'API. Si cancella se la scheda perde o cambia l'account o viene archiviata (trigger `clients_drop_calendar_feed`) |
+| `get_my_calendar_feed()` | Cliente: il proprio token, creato la prima volta. `NOT_AUTHENTICATED`, `CLIENT_NOT_FOUND` |
+| `reset_my_calendar_feed()` | Cliente: un token nuovo; i calendari collegati col vecchio smettono di aggiornarsi |
+| `calendar_feed_items(p_token)` | Solo service_role: `{found, items}` con le lezioni e gli eventi non disdetti dagli ultimi 60 giorni in poi (lezioni non archiviate, eventi attivi), con luogo (della lezione o predefinito dell'attività; dell'evento o il testo dello staff), indirizzo e chi tiene la lezione. Un evento senza fine dura due ore |
+
+- **Edge function `calendar-feed`** (senza JWT, `config.toml`): `GET /functions/v1/calendar-feed/<token>.ics`
+  → iCalendar (`_shared/calendar.ts`: date in UTC, testo in escape, righe piegate a 75 byte, nome
+  «Studio Kalòs», `REFRESH-INTERVAL` di un'ora), `Cache-Control: private, max-age=900`. 404 uguale per
+  ogni token sconosciuto. Test: `supabase/functions/tests/calendar_test.ts`.
+- L'app dà `webcal://…` a iPhone e Mac, `https://calendar.google.com/calendar/render?cid=<webcal>` a
+  Google (anche per Android), e il link `https://…` da copiare per gli altri calendari.
+- Google rilegge un calendario collegato ogni qualche ora (non si cambia); iPhone secondo le sue
+  impostazioni. La disdetta si fa dall'app.
+- Wrapper TS: `getMyCalendarFeed`, `resetMyCalendarFeed`, `MyCalendarFeedResult`.
+- Test: `supabase/tests/calendario_collegato.test.sql` (24), `access_model.test.sql`, `verify-access` (+6).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su

@@ -390,3 +390,9 @@ verify_jwt = false
 # nessuno riusciva a disiscriversi (trovato il 30/09/2026).
 [functions.unsubscribe-newsletter]
 verify_jwt = false
+
+# Il calendario collegato lo rileggono Google Calendar e il calendario del telefono, che non hanno un
+# JWT: la sicurezza è il token segreto nell'indirizzo (internal.calendar_feeds), verificato dal
+# database con calendar_feed_items. Un token sconosciuto riceve 404.
+[functions.calendar-feed]
+verify_jwt = false

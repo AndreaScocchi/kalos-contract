@@ -63,6 +63,8 @@ export {
   staffArchiveLessons,
   recordAppUsage,
   staffGetAppUsage,
+  getMyCalendarFeed,
+  resetMyCalendarFeed,
   RpcError,
 } from './rpc';
 export type {
@@ -130,6 +132,7 @@ export type {
   AppUsageActivity,
   AppUsagePractice,
   StaffGetAppUsageResult,
+  MyCalendarFeedResult,
 } from './rpc';
 
 // Etichette e domande condivise fra sito, gestionale e app

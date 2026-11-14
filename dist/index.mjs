@@ -456,6 +456,20 @@ async function staffGetAppUsage(client, month) {
   }
   return data;
 }
+async function getMyCalendarFeed(client) {
+  const { data, error } = await client.rpc("get_my_calendar_feed");
+  if (error) {
+    handleRpcError(error, "get_my_calendar_feed");
+  }
+  return data;
+}
+async function resetMyCalendarFeed(client) {
+  const { data, error } = await client.rpc("reset_my_calendar_feed");
+  if (error) {
+    handleRpcError(error, "reset_my_calendar_feed");
+  }
+  return data;
+}
 
 // src/labels.ts
 var EVENT_TYPE_LABELS = {
@@ -615,6 +629,6 @@ async function getEventsWithAvailability(client, params) {
   return result;
 }
 
-export { EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, RpcError, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, recordAppUsage, setMyNewsletterSubscription, staffArchiveLessons, staffBookEvent, staffCancelEventBooking, staffGetAppUsage, staffSavePlan, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };
+export { EVENT_TYPE_LABELS, EVENT_TYPE_LABELS_PLURAL, RpcError, TRIAL_FEEDBACK_COMMENT_QUESTION, TRIAL_FEEDBACK_QUESTIONS, TRIAL_FEEDBACK_RATING_QUESTION, acceptMyLegalDocuments, assertSupabaseConfig, assignMembership, bookEvent, bookLesson, bookTrialLesson, cancelBooking, cancelEventBooking, cancelMembership, createSupabaseBrowserClient, createSupabaseExpoClient, fromPublic, getEventsWithAvailability, getJourneySummary, getJourneyTimeline, getMyCalendarFeed, getMyMemberCard, getMyMembership, getMyMembershipStatus, getMyNotifications, getMyOpenPayments, getMyPaymentStatus, getMyReceipts, getPublicActivities, getPublicEvents, getPublicOperators, getPublicPricing, getPublicSchedule, joinWaitlist, leaveWaitlist, prepareMyEventPayment, prepareMyFeePayment, prepareMyPlanPurchase, prepareMySettlement, queueFeedbackRequest, recordAppUsage, resetMyCalendarFeed, setMyNewsletterSubscription, staffArchiveLessons, staffBookEvent, staffCancelEventBooking, staffGetAppUsage, staffSavePlan, submitFeedback, submitMemberApplication, submitTrialFeedback, updateMyProfile };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

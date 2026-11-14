@@ -458,6 +458,20 @@ async function staffGetAppUsage(client, month) {
   }
   return data;
 }
+async function getMyCalendarFeed(client) {
+  const { data, error } = await client.rpc("get_my_calendar_feed");
+  if (error) {
+    handleRpcError(error, "get_my_calendar_feed");
+  }
+  return data;
+}
+async function resetMyCalendarFeed(client) {
+  const { data, error } = await client.rpc("reset_my_calendar_feed");
+  if (error) {
+    handleRpcError(error, "reset_my_calendar_feed");
+  }
+  return data;
+}
 
 // src/labels.ts
 var EVENT_TYPE_LABELS = {
@@ -638,6 +652,7 @@ exports.fromPublic = fromPublic;
 exports.getEventsWithAvailability = getEventsWithAvailability;
 exports.getJourneySummary = getJourneySummary;
 exports.getJourneyTimeline = getJourneyTimeline;
+exports.getMyCalendarFeed = getMyCalendarFeed;
 exports.getMyMemberCard = getMyMemberCard;
 exports.getMyMembership = getMyMembership;
 exports.getMyMembershipStatus = getMyMembershipStatus;
@@ -658,6 +673,7 @@ exports.prepareMyPlanPurchase = prepareMyPlanPurchase;
 exports.prepareMySettlement = prepareMySettlement;
 exports.queueFeedbackRequest = queueFeedbackRequest;
 exports.recordAppUsage = recordAppUsage;
+exports.resetMyCalendarFeed = resetMyCalendarFeed;
 exports.setMyNewsletterSubscription = setMyNewsletterSubscription;
 exports.staffArchiveLessons = staffArchiveLessons;
 exports.staffBookEvent = staffBookEvent;

@@ -737,6 +737,8 @@ totali, «non mi serve sapere chi»**; nessun fornitore esterno.
   esistono e solo per evento, attività, lezione, team, piano, pratica, annuncio. **Una rotta nuova dell'app
   va aggiunta all'elenco di `record_app_usage`**, a `src/domain/usage.ts` dell'app e ai nomi in
   `src/features/usage/constants.ts` del gestionale; se manca, nel gestionale si vede «Altre pagine».
+  Dal 14/11/2026 (migrazione `20261114140000`) c'è anche `activities`, la pagina «Le nostre attività»
+  aperta dalla card di Esplora.
 - Una lezione si conta sulla sua attività; quella individuale solo come pagina. Diario, notifiche,
   segnalazioni e questionari non dicono mai quale voce è stata aperta.
 - **Il limite:** durante il mese in corso chi ha accesso diretto al database potrebbe rifare il calcolo

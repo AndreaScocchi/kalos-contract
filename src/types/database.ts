@@ -6121,7 +6121,6 @@ export type Database = {
       get_my_receipt: { Args: { p_receipt_id: string }; Returns: Json }
       get_my_receipts: { Args: never; Returns: Json }
       get_unread_notifications_count: { Args: never; Returns: number }
-      has_active_membership: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_finance: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }

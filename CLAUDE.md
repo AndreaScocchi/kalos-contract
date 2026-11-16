@@ -794,7 +794,7 @@ soci tesserati. **`has_active_membership()`** (authenticated) è vera per chi è
 `practice_steps_select_active` e `practice_blocks_select_active` la chiedono, quindi passaggi e
 blocchi (testi e indirizzi di audio e video) arrivano solo a lei e allo staff. `practices` resta
 leggibile da tuttə con il login. Limite: il bucket `practices` resta pubblico, chi ha un indirizzo lo
-apre. `record_app_usage` conta anche `practices_meditazione`, `practices_yoga`, `practices_scrittura`
+apre. `record_app_usage` conta anche `practices_meditazione`, `practices_yoga`, `practices_riflessione`
 (il menù rapido dell'app) e comprende `activities` della `20261114140000`. Wrapper TS
 `hasActiveMembership`. Test: `supabase/tests/pratiche_soci.test.sql` (19), `access_model.test.sql`.
 

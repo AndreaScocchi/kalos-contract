@@ -11,7 +11,7 @@
 -- 2. Le policy di lettura di `practice_steps` e `practice_blocks` chiedono anche di essere sociə.
 --    Le policy dello staff restano com'erano.
 -- 3. `record_app_usage`: le pagine delle tre sezioni della Pratica a casa (Meditazione, Yoga,
---    Scrittura). Il resto è uguale alla migrazione 20261114140000, che aggiunge `activities`: questa
+--    Riflessione). Il resto è uguale alla migrazione 20261114140000, che aggiunge `activities`: questa
 --    la comprende, quindi vale anche se quella non è ancora stata applicata.
 --
 -- Limite noto: i file di audio e video stanno nel bucket pubblico `practices`. Il loro indirizzo ora
@@ -88,7 +88,7 @@ DECLARE
         'events', 'event', 'lesson', 'activities', 'activity', 'team', 'plans', 'plan',
         'membership', 'membership_apply', 'onboarding',
         'card', 'bookings', 'subscriptions', 'receipts', 'journey',
-        'practices', 'practices_meditazione', 'practices_yoga', 'practices_scrittura',
+        'practices', 'practices_meditazione', 'practices_yoga', 'practices_riflessione',
         'practice', 'practice_play',
         'journal', 'journal_entry', 'journal_new',
         'notifications', 'notification', 'notification_preferences', 'announcement',

@@ -17,8 +17,6 @@
 -- Limite noto: i file di audio e video stanno nel bucket pubblico `practices`. Il loro indirizzo ora
 -- lo legge solo chi è sociə, ma chi lo ha già (o lo riceve da qualcunə) lo può ancora aprire.
 
--- migration-lint:allow revoke — reason: la REVOKE riguarda solo la funzione nuova di questa migrazione (chiusa ad anon). Le policy di lettura di passaggi e blocchi si restringono per scelta dell'utente (solo soci in regola e staff); nessun consumer le legge fuori dall'app, che dalla stessa versione mostra il blocco ai non soci.
-
 -- ── 1. Sociə in regola ───────────────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION "public"."has_active_membership"() RETURNS boolean

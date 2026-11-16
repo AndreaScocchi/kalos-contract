@@ -31,20 +31,7 @@ SELECT lives_ok($$
     ('7e000000-0000-0000-0000-000000000002', 'journal_prompt', 'Domanda nascosta', NULL, 0);
 $$, 'lo staff salva citazioni e domande per il Diario');
 
--- Anna è sociə in regola: dal 16/11/2026 passaggi e blocchi li leggono solo i soci (20261116120000)
-RESET ROLE;
-INSERT INTO public.association_years (year, fee_cents, fee_due_date, is_open)
-VALUES (extract(year FROM internal.rome_today())::int, 3500, internal.rome_today() + 30, true)
-ON CONFLICT (year) DO UPDATE SET fee_cents = 3500, fee_due_date = internal.rome_today() + 30, is_open = true;
-INSERT INTO public.members (client_id, member_number, admitted_on, status)
-SELECT id, 'PD-0001', internal.rome_today() - 30, 'active' FROM public.clients
- WHERE profile_id = '1e000000-0000-0000-0000-000000000001';
-INSERT INTO public.member_fees (client_id, year, amount_cents, status, paid_at)
-SELECT id, extract(year FROM internal.rome_today())::int, 3500, 'paid', now() FROM public.clients
- WHERE profile_id = '1e000000-0000-0000-0000-000000000001';
-SET LOCAL ROLE authenticated;
-
--- Sociə: legge i blocchi della pratica attiva, non quelli della spenta
+-- Cliente: legge i blocchi della pratica attiva, non quelli della spenta
 SET LOCAL request.jwt.claims = '{"sub":"1e000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
 SELECT is(

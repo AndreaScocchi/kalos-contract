@@ -3,7 +3,7 @@
 -- e chiavi scadute spariscono; nessuna tabella contiene un id di account.
 
 BEGIN;
-SELECT plan(37);
+SELECT plan(38);
 
 -- ── Persone e contenuti ──────────────────────────────────────────────────────
 
@@ -102,6 +102,7 @@ SELECT public.record_app_usage($$[
   {"metric":"page","page":"lesson","target_id":"0f103000-0000-0000-0000-000000000001"},
   {"metric":"page","page":"journal_entry","target_id":"0f104000-0000-0000-0000-000000000001"},
   {"metric":"page","page":"activities"},
+  {"metric":"page","page":"practices_riflessione"},
   {"metric":"page","page":"pagina_inventata"},
   {"metric":"page","page":"un'altra_inventata"},
   {"metric":"inventata","page":"home"},
@@ -134,6 +135,8 @@ SELECT results_eq($$ SELECT views, people FROM pg_temp.month_count('page', 'altr
   'una pagina sconosciuta finisce in «altro»');
 SELECT results_eq($$ SELECT views, people FROM pg_temp.month_count('page', 'activities') $$, $$ VALUES (1, 1) $$,
   'la pagina delle attività (dal 14/11/2026) ha il suo nome');
+SELECT results_eq($$ SELECT views, people FROM pg_temp.month_count('page', 'practices_riflessione') $$, $$ VALUES (1, 1) $$,
+  'le sezioni della Pratica a casa (dal 16/11/2026) hanno il loro nome');
 SELECT is_empty($$ SELECT 1 FROM internal.app_usage_counts WHERE metric NOT IN ('open', 'page') $$,
   'metriche inventate e pratiche inesistenti non creano righe');
 

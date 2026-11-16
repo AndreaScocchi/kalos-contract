@@ -177,6 +177,11 @@ senza `USAGE` sullo schema dall'API non esistono. Ci arrivano solo `record_app_u
 `staff_get_app_usage`. I contatori non hanno riferimenti a persone; le impronte per contare una volta
 sola si cancellano a scadenza e restano fuori dai backup. Decisione dell'utente: solo totali.
 
+**Pratica a casa per i soci (16/11/2026).** `practice_steps` e `practice_blocks` si leggono
+(oltre che dallo staff) solo con `has_active_membership()`, cioè da sociə in regola; `practices` resta
+leggibile a chi ha il login, così chi non è sociə vede le pratiche ma non i contenuti. I file audio e
+video stanno ancora nel bucket pubblico `practices`.
+
 **Calendario collegato (14/11/2026).** `internal.calendar_feeds` (un token per scheda cliente) sta nello
 schema `internal`, con RLS attivo e nessun grant. Il token è in chiaro perché l'app deve poterlo
 mostrare di nuovo; chi lo conosce vede le prenotazioni della persona (attività, orari, luoghi), per

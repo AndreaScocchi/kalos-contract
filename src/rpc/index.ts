@@ -1603,3 +1603,18 @@ export async function resetMyCalendarFeed(client: SupabaseClient<Database>): Pro
   }
   return data as unknown as MyCalendarFeedResult;
 }
+
+/**
+ * Wrapper tipizzato per la RPC has_active_membership (16/11/2026): vero se chi chiama è sociə in
+ * regola (quota pagata o esonerata, oppure dell'anno e non ancora scaduta). È la regola dei contenuti
+ * della Pratica a casa.
+ *
+ * @throws RpcError se la chiamata RPC fallisce
+ */
+export async function hasActiveMembership(client: SupabaseClient<Database>): Promise<boolean> {
+  const { data, error } = await client.rpc('has_active_membership');
+  if (error) {
+    handleRpcError(error, 'has_active_membership');
+  }
+  return data === true;
+}

@@ -786,6 +786,18 @@ collegamento **che si aggiorna da solo** (iscrizione al calendario, non un event
 - Wrapper TS: `getMyCalendarFeed`, `resetMyCalendarFeed`, `MyCalendarFeedResult`.
 - Test: `supabase/tests/calendario_collegato.test.sql` (24), `access_model.test.sql`, `verify-access` (+6).
 
+### La Pratica a casa è dei soci (16/11/2026)
+
+Migrazione `20261116120000`. Richiesta dell'utente: le pratiche le vedono tuttə, ma le fanno solo i
+soci tesserati. **`has_active_membership()`** (authenticated) è vera per chi è sociə in regola,
+`internal.member_booking_status` in `ok` o `fee_due_grace` (la regola della Bussola, D6); le policy
+`practice_steps_select_active` e `practice_blocks_select_active` la chiedono, quindi passaggi e
+blocchi (testi e indirizzi di audio e video) arrivano solo a lei e allo staff. `practices` resta
+leggibile da tuttə con il login. Limite: il bucket `practices` resta pubblico, chi ha un indirizzo lo
+apre. `record_app_usage` conta anche `practices_meditazione`, `practices_yoga`, `practices_riflessione`
+(il menù rapido dell'app) e comprende `activities` della `20261114140000`. Wrapper TS
+`hasActiveMembership`. Test: `supabase/tests/pratiche_soci.test.sql` (19), `access_model.test.sql`.
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su

@@ -64,6 +64,7 @@ export {
   recordAppUsage,
   staffGetAppUsage,
   getMyCalendarFeed,
+  hasActiveMembership,
   resetMyCalendarFeed,
   RpcError,
 } from './rpc';

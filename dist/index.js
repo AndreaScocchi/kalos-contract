@@ -472,6 +472,13 @@ async function resetMyCalendarFeed(client) {
   }
   return data;
 }
+async function hasActiveMembership(client) {
+  const { data, error } = await client.rpc("has_active_membership");
+  if (error) {
+    handleRpcError(error, "has_active_membership");
+  }
+  return data === true;
+}
 
 // src/labels.ts
 var EVENT_TYPE_LABELS = {
@@ -665,6 +672,7 @@ exports.getPublicEvents = getPublicEvents;
 exports.getPublicOperators = getPublicOperators;
 exports.getPublicPricing = getPublicPricing;
 exports.getPublicSchedule = getPublicSchedule;
+exports.hasActiveMembership = hasActiveMembership;
 exports.joinWaitlist = joinWaitlist;
 exports.leaveWaitlist = leaveWaitlist;
 exports.prepareMyEventPayment = prepareMyEventPayment;

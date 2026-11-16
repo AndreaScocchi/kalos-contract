@@ -43,10 +43,6 @@ INSERT INTO public.practice_blocks (step_id, block_type, content, sort_order) VA
   ('3a200000-0000-0000-0000-000000000001', 'audio', 'pratiche/respiro.m4a', 0),
   ('3a200000-0000-0000-0000-000000000002', 'text', 'Spento', 0);
 
-CREATE OR REPLACE FUNCTION pg_temp.as_user(p_uid text) RETURNS void LANGUAGE sql AS $$
-  SELECT set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
-$$;
-
 -- ── Chi può chiamare la funzione ─────────────────────────────────────────────
 
 SELECT ok(NOT has_function_privilege('anon', 'public.has_active_membership()', 'EXECUTE'), 'anon non la chiama');
@@ -55,7 +51,7 @@ SELECT ok(has_function_privilege('authenticated', 'public.has_active_membership(
 -- ── Non sociə: vede la pratica, non i contenuti ──────────────────────────────
 
 SET LOCAL ROLE authenticated;
-SELECT pg_temp.as_user('3a000000-0000-0000-0000-000000000001');
+SET LOCAL request.jwt.claims = '{"sub":"3a000000-0000-0000-0000-000000000001","role":"authenticated"}';
 SELECT is(public.has_active_membership(), false, 'chi non è sociə non è in regola');
 SELECT is((SELECT count(*)::int FROM public.practices WHERE id = '3a100000-0000-0000-0000-000000000001'), 1,
   'chi non è sociə vede la pratica');
@@ -66,7 +62,7 @@ SELECT is((SELECT count(*)::int FROM public.practice_blocks WHERE step_id = '3a2
 
 -- ── Sociə con la quota pagata ────────────────────────────────────────────────
 
-SELECT pg_temp.as_user('3a000000-0000-0000-0000-000000000002');
+SET LOCAL request.jwt.claims = '{"sub":"3a000000-0000-0000-0000-000000000002","role":"authenticated"}';
 SELECT is(public.has_active_membership(), true, 'sociə con la quota pagata: in regola');
 SELECT is((SELECT count(*)::int FROM public.practice_steps WHERE practice_id = '3a100000-0000-0000-0000-000000000001'), 1,
   'legge i passaggi');
@@ -79,7 +75,7 @@ SELECT is((SELECT count(*)::int FROM public.practice_blocks WHERE step_id = '3a2
 
 -- ── Sociə con la quota ancora da pagare, prima della scadenza ────────────────
 
-SELECT pg_temp.as_user('3a000000-0000-0000-0000-000000000003');
+SET LOCAL request.jwt.claims = '{"sub":"3a000000-0000-0000-0000-000000000003","role":"authenticated"}';
 SELECT is(public.has_active_membership(), true, 'quota da pagare ma non scaduta: in regola');
 SELECT is((SELECT count(*)::int FROM public.practice_blocks WHERE step_id = '3a200000-0000-0000-0000-000000000001'), 1,
   'legge i blocchi');
@@ -90,16 +86,16 @@ RESET ROLE;
 UPDATE public.association_years SET fee_due_date = internal.rome_today() - 1
  WHERE year = extract(year FROM internal.rome_today())::int;
 SET LOCAL ROLE authenticated;
-SELECT pg_temp.as_user('3a000000-0000-0000-0000-000000000004');
+SET LOCAL request.jwt.claims = '{"sub":"3a000000-0000-0000-0000-000000000004","role":"authenticated"}';
 SELECT is(public.has_active_membership(), false, 'quota scaduta: non in regola');
 SELECT is((SELECT count(*)::int FROM public.practice_steps WHERE practice_id = '3a100000-0000-0000-0000-000000000001'), 0,
   'non legge più i passaggi');
-SELECT pg_temp.as_user('3a000000-0000-0000-0000-000000000002');
+SET LOCAL request.jwt.claims = '{"sub":"3a000000-0000-0000-0000-000000000002","role":"authenticated"}';
 SELECT is(public.has_active_membership(), true, 'chi ha pagato resta in regola');
 
 -- ── Staff: tutto, anche le pratiche spente ───────────────────────────────────
 
-SELECT pg_temp.as_user('3a000000-0000-0000-0000-000000000005');
+SET LOCAL request.jwt.claims = '{"sub":"3a000000-0000-0000-0000-000000000005","role":"authenticated"}';
 SELECT is(public.has_active_membership(), false, 'lo staff non è sociə');
 SELECT is((SELECT count(*)::int FROM public.practice_blocks
             WHERE step_id IN ('3a200000-0000-0000-0000-000000000001', '3a200000-0000-0000-0000-000000000002')), 2,

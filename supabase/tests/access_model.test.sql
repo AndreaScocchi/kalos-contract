@@ -148,7 +148,9 @@ SELECT set_eq(
     -- 14/11/2026: calendario collegato, ognunə solo il proprio indirizzo (get_my_client_id()).
     -- `calendar_feed_items` resta a service_role: la chiama l'edge function `calendar-feed`.
     'get_my_calendar_feed()',
-    'reset_my_calendar_feed()'
+    'reset_my_calendar_feed()',
+    -- 16/11/2026: la Pratica a casa è dei soci. Dice solo se chi chiama è sociə in regola.
+    'has_active_membership()'
   ],
   'authenticated esegue in più solo le RPC di clienti, staff e Finanze (con controlli interni)'
 );

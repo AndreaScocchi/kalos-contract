@@ -849,20 +849,20 @@ pubblici del sito e non scrive nulla. Verifiche: `npm run test:db` e `npm run ve
    npm run db:push
    ```
 
-4. **Rigenera i file generati, prima del commit:**
+4. **Rigenera i tipi TS, prima del commit:**
    ```bash
-   npm run codegen:check   # npm run codegen (tipi TS, codegen/schema.json, modelli Kotlin) + confronto
+   npm run codegen:check   # npm run codegen (src/types/database.ts) + confronto
    ```
    Serve Docker, col Supabase locale acceso e tutte le migrazioni applicate (passo 2). La CI
-   (**Codegen Drift Check**) rifà lo stesso da zero a ogni push su `main` che tocca le migrazioni e
-   fallisce se uno solo dei tre è diverso da quello committato. **Non bastano i tipi TS:** un valore
-   nuovo di un enum cambia anche `codegen/schema.json` e `codegen/kotlin/models/Enums.kt` (la v0.3.22
-   li aveva dimenticati, corretti in `27b0202`). Senza Docker si scrive a mano in `schema.json` la
-   stessa modifica della migrazione e si lancia `npm run gen:kotlin`, che legge solo quel file; poi
-   decide la CI. Se la CI cade a `supabase start` con «address already in use», è la macchina di
+   (**Codegen Drift Check**) rifà lo stesso da zero: su una PR fallisce se `database.ts` è diverso,
+   su `main` lo rigenera e fa lei il commit (`chore(codegen): tipi TS rigenerati dalla CI…`). Senza
+   Docker si mergia e si aspetta la CI. Dal 23/11/2026 non ci sono più `codegen/schema.json` e i
+   modelli Kotlin (servivano solo alla KMP archiviata; erano la causa dei fallimenti del 07/10, 22/10,
+   02/11 e 12/11). Se la CI cade a `supabase start` con «address already in use», è la macchina di
    GitHub: si rilancia il job.
 
-5. **Release:**
+5. **Release** (dopo che il Codegen Drift Check è verde, e dopo un `git pull`: il tag va
+   sull'eventuale commit dei tipi fatto dalla CI):
    ```bash
    # Update version in package.json
    git commit -am "feat: description"
@@ -915,4 +915,4 @@ dist/
 2. **Forward-only migrations** - Never modify applied migrations
 3. **Version before release** - Always tag releases
 4. **Verify before push** - Run `npm run verify` before `db:push`
-5. **I file generati seguono lo schema** - Dopo ogni migrazione `npm run codegen`, non solo i tipi TS (passo 4 sopra)
+5. **I file generati seguono lo schema** - Dopo ogni migrazione `npm run codegen`, o il commit della CI su `main` prima del tag (passo 4 sopra)

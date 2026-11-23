@@ -1,8 +1,17 @@
 name: Codegen Drift Check
 
-# Garantisce che tipi TS e modelli Kotlin siano SEMPRE in sync con lo schema (le migrazioni).
-# Pipeline ermetica: migrazioni → Supabase locale → gen tipi TS + schema.json → modelli Kotlin → drift-check.
-# Se i file generati e committati non combaciano con lo schema, la build FALLISCE.
+# Garantisce che i tipi TS (src/types/database.ts) seguano lo schema (le migrazioni).
+# Pipeline ermetica: migrazioni → Supabase locale → pgTAP → `supabase gen types` → confronto.
+#
+# - Su una PR: se database.ts non è quello generato, il controllo FALLISCE.
+# - Su `main`: se database.ts non è quello generato, la CI lo rigenera e fa lei il commit
+#   («chore(codegen): …», autore github-actions[bot]). In locale spesso non c'è Docker, e prima
+#   ogni migrazione arrivata su main senza i file rigenerati lasciava il controllo rosso finché
+#   qualcuno non li sistemava a mano. Il tag di una versione va creato DOPO quel commit.
+#   I push fatti con GITHUB_TOKEN non fanno ripartire i workflow: niente giri infiniti.
+#
+# Dal 23/11/2026 non si generano più schema.json e modelli Kotlin: servivano solo alla KMP,
+# archiviata, ed erano la causa di quasi tutti i fallimenti.
 #
 # IMPORTANTE: la CLI Supabase è pinnata come devDependency (package.json) e invocata via `npx`,
 # così CI e locale generano byte-identici. NON usare `supabase/setup-cli` con `version: latest`:
@@ -14,8 +23,6 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/**'
-      - 'scripts/introspect-schema.mjs'
-      - 'scripts/gen-kotlin-models.mjs'
       - 'codegen/**'
       - 'src/types/database.ts'
       - 'package.json'
@@ -24,17 +31,22 @@ on:
     branches: [main]
     paths:
       - 'supabase/migrations/**'
-      - 'scripts/introspect-schema.mjs'
-      - 'scripts/gen-kotlin-models.mjs'
       - 'codegen/**'
       - 'src/types/database.ts'
       - 'package.json'
       - '.github/workflows/codegen.yml'
 
+# Due push ravvicinati su main non devono fare il commit dei tipi insieme.
+concurrency:
+  group: codegen-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   codegen:
-    name: Codegen TS + Kotlin (drift-check)
+    name: Codegen TS (drift-check)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # solo per il commit dei tipi rigenerati su main
     steps:
       - uses: actions/checkout@v5
 
@@ -59,18 +71,35 @@ jobs:
         # Vedi ACCESS_MODEL.md.
         run: npx supabase test db
 
-      - name: Codegen (tipi TS + schema.json + modelli Kotlin)
+      - name: Codegen (tipi TS)
         run: npm run codegen
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
-      - name: Drift check (i file generati devono essere già committati e aggiornati)
-        # intent-to-add: un modello Kotlin nuovo e mai committato compare nel diff (git diff ignora i file non tracciati).
+      - name: Drift check
+        id: drift
         run: |
-          git add --intent-to-add -- codegen/kotlin
-          if ! git diff --exit-code -- src/types/database.ts codegen/schema.json codegen/kotlin; then
-            echo "::error::DRIFT: i tipi TS / lo schema.json / i modelli Kotlin non sono allineati allo schema."
-            echo "Rigenera in locale con 'npm run codegen' (richiede Docker) e committa i file aggiornati."
+          if git diff --quiet -- src/types/database.ts; then
+            echo "✅ Nessun drift: database.ts allineato allo schema."
+            exit 0
+          fi
+          git diff --stat -- src/types/database.ts
+          if [ "${{ github.event_name }}" != "push" ]; then
+            git diff -- src/types/database.ts
+            echo "::error::DRIFT: src/types/database.ts non è allineato allo schema. Rigenera con 'npm run codegen' (richiede Docker) e committalo, oppure mergia: su main la CI lo rigenera da sola."
             exit 1
           fi
-          echo "✅ Nessun drift: TS e Kotlin allineati allo schema."
+          echo "drift=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit dei tipi rigenerati (solo su main)
+        if: steps.drift.outputs.drift == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/types/database.ts
+          git commit -m "chore(codegen): tipi TS rigenerati dalla CI per ${GITHUB_SHA::7}"
+          git fetch origin main
+          if ! git rebase origin/main; then
+            echo "::error::Nel frattempo main ha cambiato anche database.ts: rigenera con 'npm run codegen' e committalo a mano."
+            exit 1
+          fi
+          git push origin HEAD:main
+          echo "::notice::database.ts era indietro: la CI l'ha rigenerato e committato su main. Crea il tag dopo questo commit."

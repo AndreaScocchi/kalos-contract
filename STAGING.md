@@ -20,7 +20,7 @@ git checkout -b feat/<nome>
 
 supabase start                 # avvia lo stack locale (richiede Docker)
 supabase db reset              # riapplica TUTTE le migrazioni da zero in locale
-npm run codegen                # rigenera tipi TS + modelli Kotlin dallo schema
+npm run codegen                # rigenera i tipi TS dallo schema
 npm run verify                 # migration-lint + typecheck + build
 ```
 
@@ -48,7 +48,7 @@ npm run db:push:safe
 3. mostra le migrazioni pendenti e chiede di digitare **`PUSH`** per confermare;
 4. `supabase db push`.
 
-Dopo il push: `npm run codegen`, commit dei file generati, **tag** nuova versione, upgrade **opt-in**
+Dopo il push: `npm run codegen` e commit di `database.ts` (o, senza Docker, il commit della CI su `main`), **tag** nuova versione, upgrade **opt-in**
 dei consumer (vedi CONTRACT_DISCIPLINE.md §3).
 
 ## 3. Backup manuale on-demand

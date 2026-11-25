@@ -786,6 +786,21 @@ collegamento **che si aggiorna da solo** (iscrizione al calendario, non un event
 - Wrapper TS: `getMyCalendarFeed`, `resetMyCalendarFeed`, `MyCalendarFeedResult`.
 - Test: `supabase/tests/calendario_collegato.test.sql` (24), `access_model.test.sql`, `verify-access` (+6).
 
+### Rendere amministratore un account (25/11/2026, nessun tag)
+
+Migrazione `20261125120000`. Richiesta dell'utente: dare il ruolo admin dal gestionale con un
+pulsante, invece che dal SQL Editor di Supabase.
+
+- **`promote_profile_to_admin(p_profile_id)`** (solo admin, `FORBIDDEN`): porta a `admin` un profilo
+  `user`, `operator` o `finance`. `PROFILE_NOT_FOUND` per un account inesistente o eliminato,
+  `ALREADY_ADMIN` senza scrivere niente. Risponde `{ ok, role, previous_role }`. Non declassa mai:
+  per togliere il ruolo resta l'intervento a mano.
+- Nel gestionale: «Rendi amministratore» nella scheda cliente, accanto a «Rendi operatore».
+- Tipi: la funzione in `src/types/database.ts`; il gestionale la chiama con `rpcV0310` finché non c'è
+  un tag.
+- Test: `supabase/tests/rendi_amministratore.test.sql` (13), `access_model.test.sql`, `verify-access`
+  (+2, senza scritture).
+
 ### get_my_client_id()
 - Returns current user's client_id
 - **Non crea la scheda cliente**: restituisce NULL se non c'è. La scheda nasce dal trigger su

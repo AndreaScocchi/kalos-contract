@@ -6166,6 +6166,10 @@ export type Database = {
         Returns: Json
       }
       process_recurring_announcements: { Args: never; Returns: undefined }
+      promote_profile_to_admin: {
+        Args: { p_profile_id: string }
+        Returns: Json
+      }
       promote_profile_to_operator: {
         Args: { p_profile_id: string }
         Returns: Json

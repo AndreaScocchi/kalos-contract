@@ -27,7 +27,7 @@ vuol dire tutto lo staff (compensi e ritenute di tuttə compresi: l'utente lo sa
 Le Segnalazioni (`bug_reports` e bucket `bug-reports`) usano `is_staff()` al posto di `is_admin()`.
 Restano solo all'admin (`is_admin()`): le schede dello staff (`operators_insert_admin`,
 `operators_update_admin`, `staff_delete_operator`), i ruoli (`promote_profile_to_operator`,
-`guard_profile_privileged_columns`), `association_settings`, `association_years` (importo e
+`promote_profile_to_admin`, `guard_profile_privileged_columns`), `association_settings`, `association_years` (importo e
 scadenza della quota) e `feature_flags`. Per separare di nuovo le Finanze basta riportare
 `can_access_finance()` ad admin e finance: policy, funzioni ed edge function la chiamano già.
 
@@ -61,7 +61,8 @@ scadenza della quota) e `feature_flags`. Per separare di nuovo le Finanze basta 
 Solo RPC che controllano login e ruolo **al loro interno**:
 - **cliente:** prenotazioni (`book_*`, `cancel_*`), percorso e pratica, notifiche, token push,
   feedback;
-- **staff:** `staff_*`, tessere, campagne, `promote_profile_to_operator` (solo admin),
+- **staff:** `staff_*`, tessere, campagne, `promote_profile_to_operator` e (dal 25/11/2026)
+  `promote_profile_to_admin` (solo admin; non declassano mai),
   `queue_new_event`; dal 22/10/2026 `staff_delete_operator` (solo admin): è l'unico modo di
   eliminare una scheda di `operators`, perché authenticated non ha più DELETE sulla tabella e una
   cancellazione diretta toglierebbe il nome alle lezioni passate;
